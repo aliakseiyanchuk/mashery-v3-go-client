@@ -1,0 +1,1 @@
+# mashery-v3-go-client
