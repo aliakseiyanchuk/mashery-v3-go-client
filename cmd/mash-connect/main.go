@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"io/ioutil"
 	"os"
 )
@@ -15,11 +15,11 @@ const accessTokenVariableOpt = "env-var"
 // Command line utility to log into the Mashery.
 var credsFile string
 var cmdTokenFile string
-var cmdCreds mashery_v3_go_client.MasheryV3Credentials
+var cmdCreds v3client.MasheryV3Credentials
 
 func refresh() int {
 	refreshCmd := flag.NewFlagSet("refresh", flag.ExitOnError)
-	refreshCmd.StringVar(&cmdTokenFile, customTokenFileOpt, mashery_v3_go_client.SavedAccessTokenFile(), "Use this file to read/write access token data")
+	refreshCmd.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.SavedAccessTokenFile(), "Use this file to read/write access token data")
 	refreshCmd.StringVar(&credsFile, "creds", "", "Path to the credentials file")
 	refreshCmd.StringVar(&(cmdCreds.ApiKey), "k", "", "Mashery V3 API key")
 	refreshCmd.StringVar(&(cmdCreds.ApiKey), "apiKey", "", "Mashery V3 API key")
@@ -28,11 +28,11 @@ func refresh() int {
 
 	_ = refreshCmd.Parse(os.Args[:2])
 
-	if tkn, err := mashery_v3_go_client.ReadSavedV3TokenData(cmdTokenFile); err == nil && tkn != nil {
-		creds := mashery_v3_go_client.DeriveAccessCredentials(credsFile)
+	if tkn, err := v3client.ReadSavedV3TokenData(cmdTokenFile); err == nil && tkn != nil {
+		creds := v3client.DeriveAccessCredentials(credsFile)
 		creds.Inherit(&cmdCreds)
 
-		ccProvider := mashery_v3_go_client.NewClientCredentialsProvider(creds)
+		ccProvider := v3client.NewClientCredentialsProvider(creds)
 		ccProvider.Response = tkn
 
 		fmt.Println("Trying to refresh Mashery V3 access token...")
@@ -55,11 +55,11 @@ func refresh() int {
 
 func export() int {
 	exportCmd := flag.NewFlagSet("export", flag.ExitOnError)
-	exportCmd.StringVar(&cmdTokenFile, customTokenFileOpt, mashery_v3_go_client.SavedAccessTokenFile(), "Use specified custom file")
+	exportCmd.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.SavedAccessTokenFile(), "Use specified custom file")
 
 	_ = exportCmd.Parse(os.Args[:2])
 
-	if tkn, err := mashery_v3_go_client.ReadSavedV3TokenData(cmdTokenFile); err == nil && tkn != nil {
+	if tkn, err := v3client.ReadSavedV3TokenData(cmdTokenFile); err == nil && tkn != nil {
 		fmt.Print(tkn.AccessToken)
 		return 0
 	} else {
@@ -83,10 +83,10 @@ func show() int {
 	if len(cmdTokenFile) > 0 {
 		f = cmdTokenFile
 	} else {
-		f = mashery_v3_go_client.SavedAccessTokenFile()
+		f = v3client.SavedAccessTokenFile()
 	}
 
-	if tkn, err := mashery_v3_go_client.ReadSavedV3TokenData(f); err == nil && tkn != nil {
+	if tkn, err := v3client.ReadSavedV3TokenData(f); err == nil && tkn != nil {
 		if tkn.Expired() {
 			fmt.Printf("You access token has already expired (on %s)", tkn.ExpiryTime())
 		} else {
@@ -113,7 +113,7 @@ func show() int {
 	}
 }
 
-func saveTokenResponse(dat *mashery_v3_go_client.TimedAccessTokenResponse) int {
+func saveTokenResponse(dat *v3client.TimedAccessTokenResponse) int {
 	if b, err := json.Marshal(dat); err == nil {
 		if err = ioutil.WriteFile(cmdTokenFile, b, 0644); err == nil {
 			fmt.Printf("Mashery V3 API access token has been successfuly initialized.")
@@ -135,7 +135,7 @@ func initToken() int {
 	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
 
 	initCmd.StringVar(&credsFile, "creds", "", "Path to the credentials file")
-	initCmd.StringVar(&cmdTokenFile, customTokenFileOpt, mashery_v3_go_client.SavedAccessTokenFile(), "Use this file to read/write access token data")
+	initCmd.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.SavedAccessTokenFile(), "Use this file to read/write access token data")
 	initCmd.StringVar(&(cmdCreds.AreaId), "a", "", "Mashery V3 Area ID")
 	initCmd.StringVar(&(cmdCreds.AreaId), "areaId", "", "Mashery V3 Area ID")
 	initCmd.StringVar(&(cmdCreds.ApiKey), "k", "", "Mashery V3 API key")
@@ -154,10 +154,10 @@ func initToken() int {
 		// - User settings file, overridden by
 		// - Credentials file in the working directory, overriden by
 		// - Command line arguments
-		creds := mashery_v3_go_client.DeriveAccessCredentials(credsFile)
+		creds := v3client.DeriveAccessCredentials(credsFile)
 		creds.Inherit(&cmdCreds)
 
-		provider := mashery_v3_go_client.NewClientCredentialsProvider(creds)
+		provider := v3client.NewClientCredentialsProvider(creds)
 
 		if dat, err := provider.TokenData(); err == nil {
 			return saveTokenResponse(dat)

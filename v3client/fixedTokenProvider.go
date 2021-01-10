@@ -1,4 +1,4 @@
-package mashery_v3_go_client
+package v3client
 
 // Implementation of a fixed access token provider
 type FixedTokenProvider struct {

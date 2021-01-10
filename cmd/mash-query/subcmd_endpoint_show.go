@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	mashery_v3_go_client "github.com/aliakseiyanchuk/mashery-v3-go-client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
 
@@ -13,7 +13,7 @@ type ShowServiceEndpointData struct {
 	endpointId string
 }
 
-func showServiceEndpoints(ctx context.Context, cl *mashery_v3_go_client.Client, args interface{}) int {
+func showServiceEndpoints(ctx context.Context, cl *v3client.Client, args interface{}) int {
 	p, _ := args.(ShowServiceEndpointData)
 
 	if p.endpointId == "" {

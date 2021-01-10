@@ -1,8 +1,8 @@
-package mashery_v3_go_client_test
+package v3client_test
 
 import (
 	"encoding/json"
-	mashery_v3_go_client "github.com/aliakseiyanchuk/mashery-v3-go-client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -10,7 +10,7 @@ import (
 
 const savedFileName = "./out/sampleSavedAccessToken.json"
 
-func saveTestFile(inp *mashery_v3_go_client.TimedAccessTokenResponse) bool {
+func saveTestFile(inp *v3client.TimedAccessTokenResponse) bool {
 	if data, err := json.Marshal(inp); err == nil {
 		err = ioutil.WriteFile(savedFileName, data, 0644)
 		return err == nil
@@ -21,9 +21,9 @@ func saveTestFile(inp *mashery_v3_go_client.TimedAccessTokenResponse) bool {
 }
 
 func TestNewFileSystemTokenProvider(t *testing.T) {
-	ref := mashery_v3_go_client.TimedAccessTokenResponse{
+	ref := v3client.TimedAccessTokenResponse{
 		Obtained: time.Now(),
-		AccessTokenResponse: mashery_v3_go_client.AccessTokenResponse{
+		AccessTokenResponse: v3client.AccessTokenResponse{
 			TokenType:    "bearer",
 			ApiKey:       "apiKey",
 			AccessToken:  "accessToken",
@@ -39,7 +39,7 @@ func TestNewFileSystemTokenProvider(t *testing.T) {
 		t.FailNow()
 	}
 
-	if p, err := mashery_v3_go_client.NewFileSystemTokenProviderFrom(savedFileName); err == nil {
+	if p, err := v3client.NewFileSystemTokenProviderFrom(savedFileName); err == nil {
 		token, tokenInvalidError := p.AccessToken()
 		if tokenInvalidError != nil {
 			t.Errorf("The token must be valid")
@@ -53,9 +53,9 @@ func TestNewFileSystemTokenProvider(t *testing.T) {
 }
 
 func TestNewFileSystemTokenProviderWithExpiredToken(t *testing.T) {
-	ref := mashery_v3_go_client.TimedAccessTokenResponse{
+	ref := v3client.TimedAccessTokenResponse{
 		Obtained: time.Unix(time.Now().Unix()-int64(7200), 0),
-		AccessTokenResponse: mashery_v3_go_client.AccessTokenResponse{
+		AccessTokenResponse: v3client.AccessTokenResponse{
 			TokenType:    "bearer",
 			ApiKey:       "apiKey",
 			AccessToken:  "accessToken",
@@ -71,7 +71,7 @@ func TestNewFileSystemTokenProviderWithExpiredToken(t *testing.T) {
 		t.FailNow()
 	}
 
-	if p, err := mashery_v3_go_client.NewFileSystemTokenProviderFrom(savedFileName); err == nil {
+	if p, err := v3client.NewFileSystemTokenProviderFrom(savedFileName); err == nil {
 		_, tokenInvalidError := p.AccessToken()
 		if tokenInvalidError == nil {
 			t.Errorf("Token MUST be declared invalid")

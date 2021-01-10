@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	mashery_v3_go_client "github.com/aliakseiyanchuk/mashery-v3-go-client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
 
-func showPackageData(ctx context.Context, cl *mashery_v3_go_client.Client, rawIds interface{}) int {
+func showPackageData(ctx context.Context, cl *v3client.Client, rawIds interface{}) int {
 	ids, _ := rawIds.([]string)
 
 	for _, id := range ids {

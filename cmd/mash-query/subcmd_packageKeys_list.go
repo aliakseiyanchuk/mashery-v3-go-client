@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	mashery_v3_go_client "github.com/aliakseiyanchuk/mashery-v3-go-client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 )
 
-func listPackageKeys(ctx context.Context, cl *mashery_v3_go_client.Client, rawArg interface{}) int {
+func listPackageKeys(ctx context.Context, cl *v3client.Client, rawArg interface{}) int {
 	if dat, err := cl.ListPackageKeys(ctx); err == nil {
 		fmt.Printf("Found %d packages keys", len(dat))
 		fmt.Println()

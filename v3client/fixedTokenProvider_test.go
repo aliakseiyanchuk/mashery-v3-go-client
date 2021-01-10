@@ -1,12 +1,12 @@
-package mashery_v3_go_client_test
+package v3client_test
 
 import (
-	mashery_v3_go_client "github.com/aliakseiyanchuk/mashery-v3-go-client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"testing"
 )
 
 func TestFixedTokenProvider(t *testing.T) {
-	p := mashery_v3_go_client.NewFixedTokenProvider("ABCD")
+	p := v3client.NewFixedTokenProvider("ABCD")
 	if p == nil {
 		t.Errorf("Fixed token provider must be returned")
 		t.FailNow()
