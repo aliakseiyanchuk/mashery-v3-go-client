@@ -6,7 +6,7 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 )
 
-func listPackageKeys(ctx context.Context, cl *v3client.Client, rawArg interface{}) int {
+func listPackageKeys(ctx context.Context, cl *v3client.HttpTransport, rawArg interface{}) int {
 	if dat, err := cl.ListPackageKeys(ctx); err == nil {
 		fmt.Printf("Found %d packages keys", len(dat))
 		fmt.Println()

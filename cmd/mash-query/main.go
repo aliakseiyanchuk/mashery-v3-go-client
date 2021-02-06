@@ -24,7 +24,7 @@ var jsonEncoder *json.Encoder
 
 var argParsers []func() (bool, error)
 
-var handler func(context.Context, *v3client.Client, interface{}) int = nil
+var handler func(context.Context, *v3client.HttpTransport, interface{}) int = nil
 var handlerArgs interface{}
 
 func argAt(idx int) string {
@@ -77,7 +77,7 @@ func main() {
 		if durErr != nil {
 			dur = 173 * time.Millisecond
 		}
-		cl := v3client.NewClient(v3client.NewFixedTokenProvider(tkn.AccessToken), qps, dur)
+		cl := v3client.NewHttpClient(v3client.NewFixedTokenProvider(tkn.AccessToken), qps, dur)
 
 		exitCode = handler(ctx, &cl, handlerArgs)
 	} else {

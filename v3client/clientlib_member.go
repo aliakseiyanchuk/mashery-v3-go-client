@@ -8,33 +8,23 @@ import (
 	"strings"
 )
 
-var memberFields = []string{
-	"id", "name", "created", "updated", "endpoints", "editorHandle",
-	"revisionNumber", "robotsPolicy", "crossdomainPolicy",
-	"description", "errorSets", "qpsLimitOverall",
-	"rfc3986Encode", "securityProfile", "version",
-}
-
-var memberDeepFields = append(memberFields,
-	"applications", "packageKeys", "roles")
-
-func (c *Client) GetMember(ctx context.Context, id string) (*MasheryMember, error) {
+func (c *HttpTransport) GetMember(ctx context.Context, id string) (*MasheryMember, error) {
 	qs := url.Values{
-		"fields": {strings.Join(memberFields, ",")},
+		"fields": {memberFieldsStr},
 	}
 
-	return c.httpToMember(ctx, id, qs)
+	return c.fetchMember(ctx, id, qs)
 }
 
-func (c *Client) GetFullMember(ctx context.Context, id string) (*MasheryMember, error) {
+func (c *HttpTransport) GetFullMember(ctx context.Context, id string) (*MasheryMember, error) {
 	qs := url.Values{
 		"fields": {strings.Join(memberDeepFields, ",")},
 	}
 
-	return c.httpToMember(ctx, id, qs)
+	return c.fetchMember(ctx, id, qs)
 }
 
-func (c *Client) httpToMember(ctx context.Context, id string, qs url.Values) (*MasheryMember, error) {
+func (c *HttpTransport) fetchMember(ctx context.Context, id string, qs url.Values) (*MasheryMember, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Resource:       fmt.Sprintf("/members/%s", id),
 		Query:          qs,
@@ -51,7 +41,7 @@ func (c *Client) httpToMember(ctx context.Context, id string, qs url.Values) (*M
 }
 
 // Create a new service.
-func (c *Client) CreateMember(ctx context.Context, member MasheryMember) (*MasheryMember, error) {
+func (c *HttpTransport) CreateMember(ctx context.Context, member MasheryMember) (*MasheryMember, error) {
 	rawResp, err := c.createObject(ctx, member, FetchSpec{
 		Resource:       "/members",
 		AppContext:     "members",
@@ -67,7 +57,7 @@ func (c *Client) CreateMember(ctx context.Context, member MasheryMember) (*Mashe
 }
 
 // Create a new service.
-func (c *Client) UpdateMember(ctx context.Context, member MasheryMember) (*MasheryMember, error) {
+func (c *HttpTransport) UpdateMember(ctx context.Context, member MasheryMember) (*MasheryMember, error) {
 	if member.Id == "" {
 		return nil, errors.New("illegal argument: member Id must be set and not nil")
 	}
@@ -86,7 +76,16 @@ func (c *Client) UpdateMember(ctx context.Context, member MasheryMember) (*Mashe
 	}
 }
 
-func (c *Client) ListMembers(ctx context.Context) ([]MasheryMember, error) {
+func (c *HttpTransport) DeleteMember(ctx context.Context, memberId string) error {
+	opContext := FetchSpec{
+		Resource:   fmt.Sprintf("/members/%s", memberId),
+		AppContext: "member",
+	}
+
+	return c.deleteObject(ctx, opContext)
+}
+
+func (c *HttpTransport) ListMembers(ctx context.Context) ([]MasheryMember, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       "/members",

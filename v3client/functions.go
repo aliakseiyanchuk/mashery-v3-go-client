@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -94,4 +95,15 @@ func SavedAccessTokenFile() string {
 		}
 		return filepath.Join(wd, tokenFile)
 	}
+}
+
+// Converts query parameters to V3-required filter string.
+func toV3FilterExpression(params map[string]string) string {
+	filterTokens := make([]string, len(params))
+	idx := 0
+	for k, v := range params {
+		filterTokens[idx] = fmt.Sprintf("%s:%s", k, v)
+		idx++
+	}
+	return strings.Join(filterTokens, ",")
 }

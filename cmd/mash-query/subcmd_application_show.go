@@ -8,12 +8,12 @@ import (
 	"os"
 )
 
-func showAppData(ctx context.Context, cl *v3client.Client, rawIds interface{}) int {
+func showAppData(ctx context.Context, cl *v3client.HttpTransport, rawIds interface{}) int {
 	ids, _ := rawIds.([]string)
 
 	for _, id := range ids {
 		if srv, err := cl.GetFullApplication(ctx, id); err == nil {
-			fmt.Printf("Application %s (id=%d):", srv.Name, id)
+			fmt.Printf("Application %s (id=%s):", srv.Name, id)
 			fmt.Println()
 
 			_ = jsonEncoder.Encode(&srv)
@@ -41,5 +41,5 @@ func showAppDataArgParser() (bool, error) {
 }
 
 func init() {
-	argParsers = append(argParsers, showServiceDataArgParser)
+	argParsers = append(argParsers, showAppDataArgParser)
 }

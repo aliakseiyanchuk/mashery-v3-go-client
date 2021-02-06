@@ -23,7 +23,7 @@ var packageKeyFields = []string{
 var applicationDeepFields = append(applicationFields,
 	"packageKeys")
 
-func (c *Client) GetApplication(ctx context.Context, appId string) (*MasheryApplication, error) {
+func GetApplication(ctx context.Context, appId string, c *HttpTransport) (*MasheryApplication, error) {
 	qs := url.Values{
 		"fields": {strings.Join(applicationFields, ",")},
 	}
@@ -31,7 +31,7 @@ func (c *Client) GetApplication(ctx context.Context, appId string) (*MasheryAppl
 	return c.httpToApplication(ctx, appId, qs)
 }
 
-func (c *Client) GetApplicationPackageKeys(ctx context.Context, appId string) ([]MasheryPackageKey, error) {
+func GetApplicationPackageKeys(ctx context.Context, appId string, c *HttpTransport) ([]MasheryPackageKey, error) {
 	qs := url.Values{
 		"fields": {strings.Join(packageKeyFields, ",")},
 	}
@@ -60,7 +60,17 @@ func (c *Client) GetApplicationPackageKeys(ctx context.Context, appId string) ([
 	}
 }
 
-func (c *Client) GetFullApplication(ctx context.Context, id string) (*MasheryApplication, error) {
+func (c *HttpTransport) CountApplicationPackageKeys(ctx context.Context, appId string) (int64, error) {
+	opCtx := FetchSpec{
+		Pagination: NotRequired,
+		Resource:   fmt.Sprintf("/applications/%s/packageKeys", appId),
+		AppContext: "application package key",
+	}
+
+	return c.count(ctx, opCtx)
+}
+
+func (c *HttpTransport) GetFullApplication(ctx context.Context, id string) (*MasheryApplication, error) {
 	qs := url.Values{
 		"fields": {strings.Join(applicationDeepFields, ",")},
 	}
@@ -68,11 +78,11 @@ func (c *Client) GetFullApplication(ctx context.Context, id string) (*MasheryApp
 	return c.httpToApplication(ctx, id, qs)
 }
 
-func (c *Client) httpToApplication(ctx context.Context, appId string, qs url.Values) (*MasheryApplication, error) {
+func (c *HttpTransport) httpToApplication(ctx context.Context, appId string, qs url.Values) (*MasheryApplication, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Resource:       fmt.Sprintf("/applications/%s", appId),
 		Query:          qs,
-		AppContext:     "member",
+		AppContext:     "application",
 		ResponseParser: ParseMasheryApplication,
 	})
 
@@ -85,7 +95,7 @@ func (c *Client) httpToApplication(ctx context.Context, appId string, qs url.Val
 }
 
 // Create a new service.
-func (c *Client) CreateApplication(ctx context.Context, memberId string, member MasheryApplication) (*MasheryApplication, error) {
+func (c *HttpTransport) CreateApplication(ctx context.Context, memberId string, member MasheryApplication) (*MasheryApplication, error) {
 	rawResp, err := c.createObject(ctx, member, FetchSpec{
 		Resource:       fmt.Sprintf("/members/%s/applications", memberId),
 		AppContext:     "application",
@@ -101,14 +111,14 @@ func (c *Client) CreateApplication(ctx context.Context, memberId string, member 
 }
 
 // Create a new service.
-func (c *Client) UpdateApplication(ctx context.Context, app MasheryApplication) (*MasheryApplication, error) {
+func (c *HttpTransport) UpdateApplication(ctx context.Context, app MasheryApplication) (*MasheryApplication, error) {
 	if app.Id == "" {
 		return nil, errors.New("illegal argument: member Id must be set and not nil")
 	}
 
 	opContext := FetchSpec{
 		Resource:       fmt.Sprintf("/applications/%s", app.Id),
-		AppContext:     "service",
+		AppContext:     "application",
 		ResponseParser: ParseMasheryMember,
 	}
 
@@ -120,17 +130,27 @@ func (c *Client) UpdateApplication(ctx context.Context, app MasheryApplication) 
 	}
 }
 
-func (c *Client) DeleteApplication(ctx context.Context, appId string) error {
+func (c *HttpTransport) DeleteApplication(ctx context.Context, appId string) error {
 	opContext := FetchSpec{
 		Resource:       fmt.Sprintf("/applications/%s", appId),
-		AppContext:     "service",
+		AppContext:     "application",
 		ResponseParser: ParseMasheryMember,
 	}
 
 	return c.deleteObject(ctx, opContext)
 }
 
-func (c *Client) ListApplications(ctx context.Context) ([]MasheryApplication, error) {
+func (c *HttpTransport) CountApplicationsOfMember(ctx context.Context, memberId string) (int64, error) {
+	opCtx := FetchSpec{
+		Pagination: NotRequired,
+		Resource:   fmt.Sprintf("/members/%s/applications", memberId),
+		AppContext: "member's applications",
+	}
+
+	return c.count(ctx, opCtx)
+}
+
+func (c *HttpTransport) ListApplications(ctx context.Context) ([]MasheryApplication, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       "/applications",

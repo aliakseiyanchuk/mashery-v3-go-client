@@ -6,7 +6,7 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 )
 
-func listServices(ctx context.Context, cl *v3client.Client, rawArg interface{}) int {
+func listServices(ctx context.Context, cl *v3client.HttpTransport, rawArg interface{}) int {
 	if dat, err := cl.ListServices(ctx); err == nil {
 		fmt.Printf("Found %d services", len(dat))
 		fmt.Println()

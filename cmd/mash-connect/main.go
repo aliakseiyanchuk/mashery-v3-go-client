@@ -88,11 +88,11 @@ func show() int {
 
 	if tkn, err := v3client.ReadSavedV3TokenData(f); err == nil && tkn != nil {
 		if tkn.Expired() {
-			fmt.Printf("You access token has already expired (on %s)", tkn.ExpiryTime())
+			fmt.Printf("Your access token has already expired (on %s)", tkn.ExpiryTime())
 		} else {
 			minutesLeft := tkn.TimeLeft() / 60
 			if minutesLeft <= 1 {
-				fmt.Printf("You token has 1 minute or less validatity time. Refresh before next operation")
+				fmt.Printf("Your token has 1 minute or less validatity time. Refresh before next operation")
 			} else if minutesLeft < 3 {
 				fmt.Printf("There are %d minutes left in your token. Refreshing is advised.", minutesLeft)
 			} else {

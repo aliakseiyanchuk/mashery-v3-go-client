@@ -7,21 +7,14 @@ import (
 	"net/url"
 )
 
-func (c *Client) GetService(ctx context.Context, id string) (*MasheryService, error) {
-	qs := url.Values{
-		"fields": {
-			"id", "name", "created", "updated", "endpoints", "editorHandle",
-			"revisionNumber", "robotsPolicy", "crossdomainPolicy",
-			"description", "errorSets", "qpsLimitOverall",
-			"rfc3986Encode", "securityProfile", "version",
-		},
-	}
+var serviceAllFieldsQuery = url.Values{
+	"fields": {MasheryServiceFullFieldsStr},
+}
 
-	resource := fmt.Sprintf("/services/%s?fields=%s", id, qs.Encode())
-
+func (c *HttpTransport) GetService(ctx context.Context, id string) (*MasheryService, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
-		Resource:       resource,
-		Query:          qs,
+		Resource:       fmt.Sprintf("/services/%s", id),
+		Query:          serviceAllFieldsQuery,
 		AppContext:     "service",
 		ResponseParser: ParseMasheryService,
 	})
@@ -35,10 +28,13 @@ func (c *Client) GetService(ctx context.Context, id string) (*MasheryService, er
 }
 
 // Create a new service.
-func (c *Client) CreateService(ctx context.Context, service MasheryService) (*MasheryService, error) {
+func (c *HttpTransport) CreateService(ctx context.Context, service MasheryService) (*MasheryService, error) {
 	rawResp, err := c.createObject(ctx, service, FetchSpec{
-		Resource:       "/services",
-		AppContext:     "services",
+		Resource:   "/services",
+		AppContext: "services",
+		Query: url.Values{
+			"fields": {MasheryServiceFullFieldsStr},
+		},
 		ResponseParser: ParseMasheryService,
 	})
 
@@ -51,7 +47,7 @@ func (c *Client) CreateService(ctx context.Context, service MasheryService) (*Ma
 }
 
 // Create a new service.
-func (c *Client) UpdateService(ctx context.Context, service MasheryService) (*MasheryService, error) {
+func (c *HttpTransport) UpdateService(ctx context.Context, service MasheryService) (*MasheryService, error) {
 	if service.Id == "" {
 		return nil, errors.New("illegal argument: service Id must be set and not nil")
 	}
@@ -70,11 +66,31 @@ func (c *Client) UpdateService(ctx context.Context, service MasheryService) (*Ma
 	}
 }
 
-func (c *Client) ListServices(ctx context.Context) ([]MasheryService, error) {
+// Delete a service.
+func (c *HttpTransport) DeleteService(ctx context.Context, serviceId string) error {
+	opContext := FetchSpec{
+		Resource:   fmt.Sprintf("/services/%s", serviceId),
+		AppContext: "service",
+	}
+
+	return c.deleteObject(ctx, opContext)
+}
+
+// List services that are filtered according to the condition that is V3-supported and containing the fields
+// that the requester specifies
+func (c *HttpTransport) ListServicesFiltered(ctx context.Context, params map[string]string, fields []string) ([]MasheryService, error) {
+	return c.listServicesWithQuery(ctx, c.v3FilteringParams(params, fields))
+}
+
+func (c *HttpTransport) ListServices(ctx context.Context) ([]MasheryService, error) {
+	return c.listServicesWithQuery(ctx, nil)
+}
+
+func (c *HttpTransport) listServicesWithQuery(ctx context.Context, qs url.Values) ([]MasheryService, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerItem,
 		Resource:       "/services",
-		Query:          nil,
+		Query:          qs,
 		AppContext:     "all service",
 		ResponseParser: ParseMasheryServiceArray,
 	}
@@ -93,4 +109,19 @@ func (c *Client) ListServices(ctx context.Context) ([]MasheryService, error) {
 
 		return rv, nil
 	}
+}
+
+// Count the number of services that would match this criteria
+func (c *HttpTransport) CountServices(ctx context.Context, params map[string]string) (int64, error) {
+	opCtx := FetchSpec{
+		Pagination: NotRequired,
+		Resource:   "/services",
+		Query: url.Values{
+			"filter": {toV3FilterExpression(params)},
+		},
+		AppContext:     "all service count",
+		ResponseParser: ParseMasheryServiceArray,
+	}
+
+	return c.count(ctx, opCtx)
 }

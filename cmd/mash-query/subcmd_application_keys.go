@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func showAppKeysData(ctx context.Context, cl *v3client.Client, rawIds interface{}) int {
+func showAppKeysData(ctx context.Context, cl *v3client.HttpTransport, rawIds interface{}) int {
 	ids, _ := rawIds.([]string)
 
 	for _, id := range ids {

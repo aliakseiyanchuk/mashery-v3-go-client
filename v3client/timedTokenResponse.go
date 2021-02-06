@@ -19,23 +19,23 @@ func (a AccessTokenResponse) ObtainedNow() *TimedAccessTokenResponse {
 	return &rv
 }
 
-func (t TimedAccessTokenResponse) Expired() bool {
+func (t *TimedAccessTokenResponse) Expired() bool {
 	now := time.Now()
 	secondsDiff := now.Unix() - t.Obtained.Unix()
 
-	if secondsDiff > int64(math.Round(float64(t.ExpiresIn)*0.85)) {
+	if secondsDiff > int64(math.Round(float64(t.ExpiresIn)*0.95)) {
 		return true
 	}
 
 	return false
 }
 
-func (t TimedAccessTokenResponse) ExpiryTime() time.Time {
+func (t *TimedAccessTokenResponse) ExpiryTime() time.Time {
 	return time.Unix(t.Obtained.Unix()+int64(t.ExpiresIn), 0)
 }
 
 // Returns number of seconds that are still left in this access tokens.
-func (t TimedAccessTokenResponse) TimeLeft() int {
+func (t *TimedAccessTokenResponse) TimeLeft() int {
 	diff := t.Obtained.Unix() + int64(t.ExpiresIn) - time.Now().Unix()
 	if diff > 0 {
 		return int(diff)

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -33,7 +34,7 @@ type V3AccessTokenProvider interface {
 	AccessToken() (string, error)
 }
 
-type Client struct {
+type HttpTransport struct {
 	mashEndpoint  string
 	tokenProvider V3AccessTokenProvider
 	avgNetLatency time.Duration
@@ -41,41 +42,58 @@ type Client struct {
 	httpCl        *http.Client
 }
 
-func NewClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Duration) Client {
-	return Client{
+func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Duration) Client {
+	impl := HttpTransport{
 		mashEndpoint:  "https://api.mashery.com/v3/rest",
 		tokenProvider: p,
 		sem:           semaphore.NewWeighted(qps),
 		httpCl:        &http.Client{},
 		avgNetLatency: travelTimeComp,
 	}
+
+	rv := PluggableClient{
+		schema: ClientMethodSchema{
+			GetApplicationContext:     GetApplication,
+			GetApplicationPackageKeys: GetApplicationPackageKeys,
+		},
+		transport: &impl,
+	}
+
+	return &rv
 }
 
-func (c *Client) fetch(ctx context.Context, res string) (*http.Response, error) {
+func (c *HttpTransport) fetch(ctx context.Context, res string) (*http.Response, error) {
 	get := fmt.Sprintf("%s%s", c.mashEndpoint, res)
 
 	req, _ := http.NewRequest("GET", get, nil)
 	return c.httpExec(ctx, req)
 }
 
-func (c *Client) delete(ctx context.Context, res string) (*http.Response, error) {
+func (c *HttpTransport) delete(ctx context.Context, res string) (*http.Response, error) {
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s%s", c.mashEndpoint, res), nil)
 	return c.httpExec(ctx, req)
 }
 
-func (c *Client) post(ctx context.Context, res string, body interface{}) (*http.Response, error) {
+func (c *HttpTransport) post(ctx context.Context, res string, body interface{}) (*http.Response, error) {
 	return c.send(ctx, "POST", res, body)
 }
 
-func (c *Client) put(ctx context.Context, res string, body interface{}) (*http.Response, error) {
-	return c.send(ctx, "POST", res, body)
+func (c *HttpTransport) put(ctx context.Context, res string, body interface{}) (*http.Response, error) {
+	return c.send(ctx, "PUT", res, body)
 }
 
-func (c *Client) send(ctx context.Context, meth string, res string, body interface{}) (*http.Response, error) {
+func (c *HttpTransport) send(ctx context.Context, meth string, res string, body interface{}) (*http.Response, error) {
 	if dat, err := json.Marshal(body); err == nil {
 		req, _ := http.NewRequest(meth, fmt.Sprintf("%s%s", c.mashEndpoint, res), bytes.NewReader(dat))
-		defer req.Body.Close()
-		return c.httpExec(ctx, req)
+
+		// With the client, only JSON is sent up and down.
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Content-Type", "application/json")
+
+		rv, rvErr := c.httpExec(ctx, req)
+		_ = req.Body.Close()
+
+		return rv, rvErr
 	} else {
 		return nil, err
 	}
@@ -92,9 +110,22 @@ func readResponseBody(r *http.Response) ([]byte, error) {
 	}
 }
 
+func (c *HttpTransport) v3FilteringParams(params map[string]string, fields []string) url.Values {
+	qs := url.Values{}
+	if len(params) > 0 {
+		qs["filter"] = []string{toV3FilterExpression(params)}
+	}
+
+	if len(fields) > 0 {
+		qs["fields"] = []string{strings.Join(fields, ",")}
+	}
+
+	return qs
+}
+
 // TODO: Need to define the method for collectAll
 
-func (c *Client) httpExec(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.Response, error) {
 	// TODO: add check for the cancelled context
 
 	var lastErr error
@@ -135,7 +166,7 @@ func (c *Client) httpExec(ctx context.Context, req *http.Request) (*http.Respons
 	return nil, lastErr
 }
 
-func (c *Client) releaseSemaphoreLater() {
+func (c *HttpTransport) releaseSemaphoreLater() {
 	time.Sleep(time.Second + c.avgNetLatency)
 	c.sem.Release(1)
 }
@@ -143,12 +174,6 @@ func (c *Client) releaseSemaphoreLater() {
 type AsyncFetchResult struct {
 	Data *http.Response
 	Err  error
-}
-
-type V3ErrorResponse struct {
-	ErrorCode    string `json:"errorCode"`
-	ErrorMessage string `json:"errorMessage"`
-	Context      string
 }
 
 type WrappedError struct {
@@ -160,20 +185,39 @@ func (w *WrappedError) Error() string {
 	return fmt.Sprintf("%s: %s", w.Context, w.Cause)
 }
 
-func (v *V3ErrorResponse) Error() string {
-	return fmt.Sprintf("code %s: %s during %s", v.ErrorCode, v.ErrorMessage, v.Context)
+func (m *WrappedError) Unwrap() error {
+	return m.Cause
 }
 
-func v3ErrorFromResponse(context string, data []byte) error {
-	var rv V3ErrorResponse
-	if err := json.Unmarshal(data, &rv); err != nil {
+func v3ErrorFromResponse(context string, code int, headers http.Header, data []byte) error {
+	uCtx := fmt.Sprintf("%s->api call", context)
+
+	// Did we receive a generic error?
+	var rv V3GenericErrorResponse
+	if err := json.Unmarshal(data, &rv); err == nil && rv.hasData() {
 		return &WrappedError{
-			Context: fmt.Sprintf("%s->json unmarshal (%s)", context, string(data)),
-			Cause:   err,
+			Context: uCtx,
+			Cause:   &rv,
 		}
-	} else {
-		rv.Context = context
-		return &rv
+	}
+
+	// Did we receive at least one error?
+	var propRv V3PropertyErrorMessages
+	if err := json.Unmarshal(data, &propRv); err == nil && len(propRv.Errors) > 0 {
+		return &WrappedError{
+			Context: uCtx,
+			Cause:   &propRv,
+		}
+	}
+
+	// The error is not really know; so the output would be printed in the output
+	return &WrappedError{
+		Context: uCtx,
+		Cause: &V3UndeterminedError{
+			Code:   code,
+			Header: headers,
+			Body:   data,
+		},
 	}
 }
 
@@ -234,7 +278,7 @@ const (
 )
 
 // Perform a fetch asynchronously, returning the response in the provided channel.
-func (c *Client) asyncFetch(ctx context.Context, opContext FetchSpec, comm chan AsyncFetchResult) {
+func (c *HttpTransport) asyncFetch(ctx context.Context, opContext FetchSpec, comm chan AsyncFetchResult) {
 	rv, err := c.fetch(ctx, opContext.DestResource())
 
 	// Send the communication back.
@@ -244,7 +288,7 @@ func (c *Client) asyncFetch(ctx context.Context, opContext FetchSpec, comm chan 
 	}
 }
 
-func (c *Client) getObject(ctx context.Context, opCtx FetchSpec) (interface{}, error) {
+func (c *HttpTransport) getObject(ctx context.Context, opCtx FetchSpec) (interface{}, error) {
 	if resp, err := c.fetch(ctx, opCtx.DestResource()); err == nil {
 		if dat, err := readResponseBody(resp); err != nil {
 			return nil, &WrappedError{
@@ -265,7 +309,7 @@ func (c *Client) getObject(ctx context.Context, opCtx FetchSpec) (interface{}, e
 			} else if resp.StatusCode == 404 {
 				return nil, nil
 			} else {
-				return nil, v3ErrorFromResponse(fmt.Sprintf("get %s", opCtx.AppContext), dat)
+				return nil, v3ErrorFromResponse(fmt.Sprintf("get %s", opCtx.AppContext), resp.StatusCode, resp.Header, dat)
 			}
 		}
 	} else {
@@ -273,7 +317,7 @@ func (c *Client) getObject(ctx context.Context, opCtx FetchSpec) (interface{}, e
 	}
 }
 
-func (c *Client) deleteObject(ctx context.Context, opCtx FetchSpec) error {
+func (c *HttpTransport) deleteObject(ctx context.Context, opCtx FetchSpec) error {
 	if resp, err := c.delete(ctx, opCtx.Resource); err == nil {
 		if resp.StatusCode == 200 {
 			return nil
@@ -289,8 +333,8 @@ func (c *Client) deleteObject(ctx context.Context, opCtx FetchSpec) error {
 }
 
 // Create a new service.
-func (c *Client) createObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
-	if resp, err := c.post(ctx, opCtx.Resource, objIn); err == nil {
+func (c *HttpTransport) createObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
+	if resp, err := c.post(ctx, opCtx.DestResource(), objIn); err == nil {
 		if dat, err := readResponseBody(resp); err != nil {
 			return nil, &WrappedError{
 				Context: fmt.Sprintf("create %s->read server response", opCtx.AppContext),
@@ -308,7 +352,7 @@ func (c *Client) createObject(ctx context.Context, objIn interface{}, opCtx Fetc
 					return rv, nil
 				}
 			} else {
-				return nil, v3ErrorFromResponse(fmt.Sprintf("create %s", opCtx.AppContext), dat)
+				return nil, v3ErrorFromResponse(fmt.Sprintf("create %s", opCtx.AppContext), resp.StatusCode, resp.Header, dat)
 			}
 		}
 	} else {
@@ -319,9 +363,9 @@ func (c *Client) createObject(ctx context.Context, objIn interface{}, opCtx Fetc
 	}
 }
 
-// Create a new service.
-func (c *Client) updateObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
-	if resp, err := c.put(ctx, opCtx.AppContext, objIn); err == nil {
+// Update existing object
+func (c *HttpTransport) updateObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
+	if resp, err := c.put(ctx, opCtx.DestResource(), objIn); err == nil {
 		if dat, err := readResponseBody(resp); err != nil {
 			return nil, &WrappedError{
 				Context: fmt.Sprintf("update %s->read server response", opCtx.AppContext),
@@ -339,7 +383,7 @@ func (c *Client) updateObject(ctx context.Context, objIn interface{}, opCtx Fetc
 					return &rv, nil
 				}
 			} else {
-				return nil, v3ErrorFromResponse(opCtx.AppContext, dat)
+				return nil, v3ErrorFromResponse(opCtx.AppContext, resp.StatusCode, resp.Header, dat)
 			}
 		}
 	} else {
@@ -350,8 +394,40 @@ func (c *Client) updateObject(ctx context.Context, objIn interface{}, opCtx Fetc
 	}
 }
 
+// Count the number of objects that match the specified criteria
+func (c *HttpTransport) count(ctx context.Context, opCtx FetchSpec) (int64, error) {
+	countSpec := opCtx.WithQuery(url.Values{
+		"limit": {"1"},
+	})
+
+	if cnt, err := c.fetch(ctx, countSpec.DestResource()); err != nil {
+		return -1, &WrappedError{
+			Context: fmt.Sprintf("count %s->fetch count", countSpec.AppContext),
+			Cause:   err,
+		}
+	} else {
+		return extractTotalCount(cnt), nil
+	}
+
+}
+
+// Extract Masherty-supplied total count of elements from this response
+func extractTotalCount(resp *http.Response) int64 {
+	totalCountHdr := resp.Header.Get("X-Total-Count")
+
+	if len(totalCountHdr) > 0 {
+		if totalCountI, err := strconv.ParseInt(totalCountHdr, 10, 0); err != nil {
+			return -1
+		} else {
+			return totalCountI
+		}
+	}
+
+	return 0
+}
+
 // Fetch all Mashery objects, including the handling for the pagination
-func (c *Client) fetchAll(ctx context.Context, opCtx FetchSpec) ([]interface{}, error) {
+func (c *HttpTransport) fetchAll(ctx context.Context, opCtx FetchSpec) ([]interface{}, error) {
 
 	firstPage, err := c.fetch(ctx, opCtx.DestResource())
 	if err != nil {

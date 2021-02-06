@@ -7,19 +7,12 @@ import (
 	"net/url"
 )
 
-func (c *Client) GetPackage(ctx context.Context, id string) (*MasheryPackage, error) {
-	qs := url.Values{
-		"fields": {
-			"id", "name", "created", "updated", "description", "notifyDeveloperPeriod",
-			"notifyDeveloperNearQuota", "notifyDeveloperOverQuota", "notifyDeveloperOverThrottle", "notifyAdminNearQuota",
-			"notifyAdminOverQuota", "notifyAdminOverThrottle", "notifyAdminEmails", "nearQuotaThreshold", "eav", "keyAdapter", "keyLength",
-			"sharedSecretLength", "plans",
-		},
-	}
-
+func (c *HttpTransport) GetPackage(ctx context.Context, id string) (*MasheryPackage, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
-		Resource:       fmt.Sprintf("/packages/%s", id),
-		Query:          qs,
+		Resource: fmt.Sprintf("/packages/%s", id),
+		Query: url.Values{
+			"fields": {MasheryPackageFieldsStr},
+		},
 		AppContext:     "service",
 		ResponseParser: ParseMasheryPackage,
 	})
@@ -33,10 +26,13 @@ func (c *Client) GetPackage(ctx context.Context, id string) (*MasheryPackage, er
 }
 
 // Create a new service.
-func (c *Client) CreatePackage(ctx context.Context, service MasheryService) (*MasheryPackage, error) {
-	rawResp, err := c.createObject(ctx, service, FetchSpec{
-		Resource:       "/packages",
-		AppContext:     "package",
+func (c *HttpTransport) CreatePackage(ctx context.Context, pack MasheryPackage) (*MasheryPackage, error) {
+	rawResp, err := c.createObject(ctx, pack, FetchSpec{
+		Resource:   "/packages",
+		AppContext: "package",
+		Query: url.Values{
+			"fields": {MasheryPackageFieldsStr},
+		},
 		ResponseParser: ParseMasheryPackage,
 	})
 
@@ -49,18 +45,18 @@ func (c *Client) CreatePackage(ctx context.Context, service MasheryService) (*Ma
 }
 
 // Create a new service.
-func (c *Client) UpdatePackage(ctx context.Context, service MasheryPackage) (*MasheryPackage, error) {
-	if service.Id == "" {
+func (c *HttpTransport) UpdatePackage(ctx context.Context, pack MasheryPackage) (*MasheryPackage, error) {
+	if pack.Id == "" {
 		return nil, errors.New("illegal argument: package Id must be set and not nil")
 	}
 
 	opContext := FetchSpec{
-		Resource:       fmt.Sprintf("/packages/%s", service.Id),
+		Resource:       fmt.Sprintf("/packages/%s", pack.Id),
 		AppContext:     "package",
 		ResponseParser: ParseMasheryService,
 	}
 
-	if d, err := c.updateObject(ctx, service, opContext); err == nil {
+	if d, err := c.updateObject(ctx, pack, opContext); err == nil {
 		rv, _ := d.(MasheryPackage)
 		return &rv, nil
 	} else {
@@ -68,7 +64,16 @@ func (c *Client) UpdatePackage(ctx context.Context, service MasheryPackage) (*Ma
 	}
 }
 
-func (c *Client) ListPackages(ctx context.Context) ([]MasheryPackage, error) {
+func (c *HttpTransport) DeletePackage(ctx context.Context, packId string) error {
+	opContext := FetchSpec{
+		Resource:   fmt.Sprintf("/packages/%s", packId),
+		AppContext: "package",
+	}
+
+	return c.deleteObject(ctx, opContext)
+}
+
+func (c *HttpTransport) ListPackages(ctx context.Context) ([]MasheryPackage, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerItem,
 		Resource:       "/packages",

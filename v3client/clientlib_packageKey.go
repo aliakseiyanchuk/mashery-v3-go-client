@@ -5,17 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 )
 
-func (c *Client) GetPackageKey(ctx context.Context, id string) (*MasheryPackageKey, error) {
-	qs := url.Values{
-		"fields": {strings.Join(packageKeyFields, ",")},
-	}
+func (c *HttpTransport) GetPackageKey(ctx context.Context, id string) (*MasheryPackageKey, error) {
 
 	rv, err := c.getObject(ctx, FetchSpec{
-		Resource:       fmt.Sprintf("/packageKeys/%s", id),
-		Query:          qs,
+		Resource: fmt.Sprintf("/packageKeys/%s", id),
+		Query: url.Values{
+			"filter": MasheryPackageKeyFullFields,
+		},
 		AppContext:     "package key",
 		ResponseParser: ParseMasheryPackageKey,
 	})
@@ -29,9 +27,15 @@ func (c *Client) GetPackageKey(ctx context.Context, id string) (*MasheryPackageK
 }
 
 // Create a new service.
-func (c *Client) CreatePackageKey(ctx context.Context, service MasheryPackageKey) (*MasheryPackageKey, error) {
-	rawResp, err := c.createObject(ctx, service, FetchSpec{
-		Resource:       "/packageKeys",
+func (c *HttpTransport) CreatePackageKey(ctx context.Context, appId string, packageKey MasheryPackageKey) (*MasheryPackageKey, error) {
+	if !packageKey.LinksPackageAndPlan() {
+		return nil, &WrappedError{
+			Context: "create package key",
+			Cause:   errors.New("package key must supply associated package and plan"),
+		}
+	}
+	rawResp, err := c.createObject(ctx, packageKey, FetchSpec{
+		Resource:       fmt.Sprintf("/applications/%s/packageKeys", appId),
 		AppContext:     "package key",
 		ResponseParser: ParseMasheryPackageKey,
 	})
@@ -45,7 +49,7 @@ func (c *Client) CreatePackageKey(ctx context.Context, service MasheryPackageKey
 }
 
 // Create a new service.
-func (c *Client) UpdatePackageKey(ctx context.Context, packageKey MasheryPackageKey) (*MasheryPackageKey, error) {
+func (c *HttpTransport) UpdatePackageKey(ctx context.Context, packageKey MasheryPackageKey) (*MasheryPackageKey, error) {
 	if packageKey.Id == "" {
 		return nil, errors.New("illegal argument: package key Id must be set and not nil")
 	}
@@ -64,21 +68,29 @@ func (c *Client) UpdatePackageKey(ctx context.Context, packageKey MasheryPackage
 	}
 }
 
-func (c *Client) DeletePackageKey(ctx context.Context, keyId string) error {
+func (c *HttpTransport) DeletePackageKey(ctx context.Context, keyId string) error {
 	opSpec := FetchSpec{
 		Resource:       fmt.Sprintf("/packageKeys/%s", keyId),
-		AppContext:     "packageKeys",
+		AppContext:     "package key",
 		ResponseParser: nil,
 	}
 
 	return c.deleteObject(ctx, opSpec)
 }
 
-func (c *Client) ListPackageKeys(ctx context.Context) ([]MasheryPackageKey, error) {
+func (c *HttpTransport) ListPackageKeysFiltered(ctx context.Context, params map[string]string, fields []string) ([]MasheryPackageKey, error) {
+	return c.listPackageKeysWithQuery(ctx, c.v3FilteringParams(params, fields))
+}
+
+func (c *HttpTransport) ListPackageKeys(ctx context.Context) ([]MasheryPackageKey, error) {
+	return c.listPackageKeysWithQuery(ctx, nil)
+}
+
+func (c *HttpTransport) listPackageKeysWithQuery(ctx context.Context, qs url.Values) ([]MasheryPackageKey, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       "/packageKeys",
-		Query:          nil,
+		Query:          qs,
 		AppContext:     "all package keys",
 		ResponseParser: ParseMasheryPackageKeyArray,
 	}

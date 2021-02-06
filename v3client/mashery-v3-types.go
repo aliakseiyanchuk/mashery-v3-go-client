@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -24,8 +25,16 @@ type Cache struct {
 	ContentCacheKeyHeaders        []string `json:"contentCacheKeyHeaders"`
 }
 
+func (c *Cache) IsEmpty() bool {
+	if c != nil {
+		return len(c.ContentCacheKeyHeaders) == 0
+	} else {
+		return true
+	}
+}
+
 type Cors struct {
-	AllDomainsEnabled bool `json:"boolean"`
+	AllDomainsEnabled bool `json:"allDomainsEnabled"`
 	MaxAge            int  `json:"maxAge"`
 }
 
@@ -37,38 +46,29 @@ type ScheduledMaintenanceEvent struct {
 	Endpoints     []AddressableV3Object `json:"endpoints"`
 }
 
-type Method struct {
-	Id                 string          `json:"id"`
-	Name               string          `json:"name"`
-	Created            MasheryJSONTime `json:"created"`
-	Updated            MasheryJSONTime `json:"updated"`
-	SampleJsonResponse string          `json:"sampleJsonResponse"`
-	SampleXmlResponse  string          `json:"sampleXmlResponse"`
-}
-
-type ResponseFilter struct {
-	Id               string          `json:"id"`
-	Name             string          `json:"name"`
-	Created          MasheryJSONTime `json:"created"`
-	Updated          MasheryJSONTime `json:"updated"`
-	Notes            string          `json:"notes"`
-	XmlFilterFields  string          `json:"xmlFilterFields"`
-	JsonFilterFields string          `json:"jsonFilterFields"`
-}
-
 type SystemDomainAuthentication struct {
-	Type        string `json:"type"`
-	Username    string `json:"username"`
-	Certificate string `json:"certificate"`
-	Password    string `json:"password"`
+	Type        string  `json:"type"`
+	Username    *string `json:"username,omitempty"`
+	Certificate *string `json:"certificate,omitempty"`
+	Password    *string `json:"password,omitempty"`
 }
 
 type Processor struct {
-	PreProcessEnabled  bool                `json:"preProcessEnabled"`
-	PostProcessEnabled bool                `json:"postProcessEnabled"`
-	PostInputs         map[string](string) `json:"postInputs"`
-	PreInputs          map[string](string) `json:"preInputs"`
-	Adapter            string              `json:"adapter"`
+	PreProcessEnabled  bool              `json:"preProcessEnabled"`
+	PostProcessEnabled bool              `json:"postProcessEnabled"`
+	PostInputs         map[string]string `json:"postInputs"`
+	PreInputs          map[string]string `json:"preInputs"`
+	Adapter            string            `json:"adapter"`
+}
+
+// Checks if the pre-processor structure is empty, i.e. doesn't convey any adapter information.
+func (p *Processor) IsEmpty() bool {
+	if p != nil {
+		return len(p.Adapter) == 0 && !p.PreProcessEnabled && !p.PostProcessEnabled &&
+			len(p.PreInputs) == 0 && len(p.PostInputs) == 0
+	} else {
+		return true
+	}
 }
 
 type Domain struct {
@@ -78,48 +78,48 @@ type Domain struct {
 type MasheryEndpoint struct {
 	AddressableV3Object
 
-	AllowMissingApiKey                         bool                       `json:"allowMissingApiKey"`
-	ApiKeyValueLocationKey                     string                     `json:"apiKeyValueLocationKey"`
-	ApiKeyValueLocations                       []string                   `json:"apiKeyValueLocations"`
-	ApiMethodDetectionKey                      string                     `json:"apiMethodDetectionKey"`
-	ApiMethodDetectionLocations                []string                   `json:"apiMethodDetectionLocations"`
-	Cache                                      *Cache                     `json:"cache,omitempty"`
-	ConnectionTimeoutForSystemDomainRequest    int                        `json:"connectionTimeoutForSystemDomainRequest"`
-	ConnectionTimeoutForSystemDomainResponse   int                        `json:"connectionTimeoutForSystemDomainResponse"`
-	CookiesDuringHttpRedirectsEnabled          bool                       `json:"cookiesDuringHttpRedirectsEnabled"`
-	Cors                                       *Cors                      `json:"cors,omitempty"`
-	CustomRequestAuthenticationAdapter         string                     `json:"customRequestAuthenticationAdapter"`
-	DropApiKeyFromIncomingCall                 bool                       `json:"dropApiKeyFromIncomingCall"`
-	ForceGzipOfBackendCall                     bool                       `json:"forceGzipOfBackendCall"`
-	GzipPassthroughSupportEnabled              bool                       `json:"gzipPassthroughSupportEnabled"`
-	HeadersToExcludeFromIncomingCall           []string                   `json:"headersToExcludeFromIncomingCall"`
-	HighSecurity                               bool                       `json:"highSecurity"`
-	HostPassthroughIncludedInBackendCallHeader bool                       `json:"hostPassthroughIncludedInBackendCallHeader"`
-	InboundSslRequired                         bool                       `json:"inboundSslRequired"`
-	JsonpCallbackParameter                     string                     `json:"jsonpCallbackParameter"`
-	JsonpCallbackParameterValue                string                     `json:"jsonpCallbackParameterValue"`
-	ScheduledMaintenanceEvent                  ScheduledMaintenanceEvent  `json:"scheduledMaintenanceEvent"`
-	ForwardedHeaders                           []string                   `json:"forwardedHeaders"`
-	ReturnedHeaders                            []string                   `json:"returnedHeaders"`
-	Methods                                    []Method                   `json:"methods"`
-	NumberOfHttpRedirectsToFollow              int                        `json:"numberOfHttpRedirectsToFollow"`
-	OutboundRequestTargetPath                  string                     `json:"outboundRequestTargetPath"`
-	OutboundRequestTargetQueryParameters       string                     `json:"outboundRequestTargetQueryParameters"`
-	OutboundTransportProtocol                  string                     `json:"outboundTransportProtocol"`
-	Processor                                  Processor                  `json:"processor"`
-	PublicDomains                              []Domain                   `json:"publicDomains"`
-	RequestAuthenticationType                  string                     `json:"requestAuthenticationType"`
-	RequestPathAlias                           string                     `json:"requestPathAlias"`
-	RequestProtocol                            string                     `json:"requestProtocol"`
-	OauthGrantTypes                            []string                   `json:"oauthGrantTypes"`
-	StringsToTrimFromApiKey                    string                     `json:"stringsToTrimFromApiKey"`
-	SupportedHttpMethods                       []string                   `json:"supportedHttpMethods"`
-	SystemDomainAuthentication                 SystemDomainAuthentication `json:"systemDomainAuthentication"`
-	SystemDomains                              []Domain                   `json:"systemDomains"`
-	TrafficManagerDomain                       string                     `json:"trafficManagerDomain"`
-	UseSystemDomainCredentials                 bool                       `json:"useSystemDomainCredentials"`
-	SystemDomainCredentialKey                  string                     `json:"systemDomainCredentialKey"`
-	SystemDomainCredentialSecret               string                     `json:"systemDomainCredentialSecret"`
+	AllowMissingApiKey                         bool                        `json:"allowMissingApiKey"`
+	ApiKeyValueLocationKey                     string                      `json:"apiKeyValueLocationKey"`
+	ApiKeyValueLocations                       []string                    `json:"apiKeyValueLocations"`
+	ApiMethodDetectionKey                      string                      `json:"apiMethodDetectionKey"`
+	ApiMethodDetectionLocations                []string                    `json:"apiMethodDetectionLocations"`
+	Cache                                      *Cache                      `json:"cache,omitempty"`
+	ConnectionTimeoutForSystemDomainRequest    int                         `json:"connectionTimeoutForSystemDomainRequest"`
+	ConnectionTimeoutForSystemDomainResponse   int                         `json:"connectionTimeoutForSystemDomainResponse"`
+	CookiesDuringHttpRedirectsEnabled          bool                        `json:"cookiesDuringHttpRedirectsEnabled"`
+	Cors                                       *Cors                       `json:"cors,omitempty"`
+	CustomRequestAuthenticationAdapter         *string                     `json:"customRequestAuthenticationAdapter,omitempty"`
+	DropApiKeyFromIncomingCall                 bool                        `json:"dropApiKeyFromIncomingCall"`
+	ForceGzipOfBackendCall                     bool                        `json:"forceGzipOfBackendCall"`
+	GzipPassthroughSupportEnabled              bool                        `json:"gzipPassthroughSupportEnabled"`
+	HeadersToExcludeFromIncomingCall           []string                    `json:"headersToExcludeFromIncomingCall,omitempty"`
+	HighSecurity                               bool                        `json:"highSecurity"`
+	HostPassthroughIncludedInBackendCallHeader bool                        `json:"hostPassthroughIncludedInBackendCallHeader"`
+	InboundSslRequired                         bool                        `json:"inboundSslRequired"`
+	JsonpCallbackParameter                     string                      `json:"jsonpCallbackParameter"`
+	JsonpCallbackParameterValue                string                      `json:"jsonpCallbackParameterValue"`
+	ScheduledMaintenanceEvent                  *ScheduledMaintenanceEvent  `json:"scheduledMaintenanceEvent"`
+	ForwardedHeaders                           []string                    `json:"forwardedHeaders,omitempty"`
+	ReturnedHeaders                            []string                    `json:"returnedHeaders,omitempty"`
+	Methods                                    *[]MasheryMethod            `json:"methods,omitempty"`
+	NumberOfHttpRedirectsToFollow              int                         `json:"numberOfHttpRedirectsToFollow"`
+	OutboundRequestTargetPath                  string                      `json:"outboundRequestTargetPath"`
+	OutboundRequestTargetQueryParameters       string                      `json:"outboundRequestTargetQueryParameters"`
+	OutboundTransportProtocol                  string                      `json:"outboundTransportProtocol"`
+	Processor                                  *Processor                  `json:"processor"`
+	PublicDomains                              []Domain                    `json:"publicDomains"`
+	RequestAuthenticationType                  string                      `json:"requestAuthenticationType"`
+	RequestPathAlias                           string                      `json:"requestPathAlias"`
+	RequestProtocol                            string                      `json:"requestProtocol"`
+	OAuthGrantTypes                            []string                    `json:"oauthGrantTypes"`
+	StringsToTrimFromApiKey                    string                      `json:"stringsToTrimFromApiKey"`
+	SupportedHttpMethods                       []string                    `json:"supportedHttpMethods"`
+	SystemDomainAuthentication                 *SystemDomainAuthentication `json:"systemDomainAuthentication"`
+	SystemDomains                              []Domain                    `json:"systemDomains"`
+	TrafficManagerDomain                       string                      `json:"trafficManagerDomain"`
+	UseSystemDomainCredentials                 bool                        `json:"useSystemDomainCredentials"`
+	SystemDomainCredentialKey                  *string                     `json:"systemDomainCredentialKey"`
+	SystemDomainCredentialSecret               *string                     `json:"systemDomainCredentialSecret"`
 }
 
 type MasheryOAuth struct {
@@ -136,7 +136,7 @@ type MasheryOAuth struct {
 	ForceOauthRedirectUrl       bool     `json:"forceOauthRedirectUrl"`
 	ForceSslRedirectUrlEnabled  bool     `json:"forceSslRedirectUrlEnabled"`
 	GrantTypes                  []string `json:"grantTypes"`
-	MACAlgorithm                string   `json:"macAlgorithm"`
+	MACAlgorithm                string   `json:"macAlgorithm,omitempty"`
 	QPSLimitCeiling             int64    `json:"qpsLimitCeiling"`
 	RateLimitCeiling            int64    `json:"rateLimitCeiling"`
 	RefreshTokenTtl             int64    `json:"refreshTokenTtl"`
@@ -165,11 +165,16 @@ type MasheryErrorSet struct {
 
 type MasheryJSONTime time.Time
 
+// Id referenced data structure, used internally.
+type IdReferenced struct {
+	IdRef string `json:"id"`
+}
+
 type AddressableV3Object struct {
-	Id      string          `json:"id"`
-	Name    string          `json:"name"`
-	Created MasheryJSONTime `json:"created"`
-	Updated MasheryJSONTime `json:"updated"`
+	Id      string           `json:"id,omitempty"`
+	Name    string           `json:"name,omitempty"`
+	Created *MasheryJSONTime `json:"created,omitempty"`
+	Updated *MasheryJSONTime `json:"updated,omitempty"`
 }
 
 func (t *MasheryJSONTime) UnmarshalJSON(b []byte) error {
@@ -184,7 +189,7 @@ func (t *MasheryJSONTime) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	return errors.New(fmt.Sprint("unknown Mashery JSON date: '%s'", s))
+	return errors.New(fmt.Sprintf("unknown Mashery JSON date: '%s'", s))
 }
 
 func (t *MasheryJSONTime) MarshalJSON() ([]byte, error) {
@@ -192,22 +197,30 @@ func (t *MasheryJSONTime) MarshalJSON() ([]byte, error) {
 }
 
 func (t *MasheryJSONTime) ToString() string {
-	return time.Time(*t).Format("January 02, 2006 15:04")
+	if t == nil {
+		return "null-time"
+	}
+
+	return time.Time(*t).Format(time.RFC3339)
 }
 
 type MasheryService struct {
 	AddressableV3Object
-	Endpoints         []MasheryEndpoint      `json:"endpoints"`
-	EditorHandle      string                 `json:"editorHandle"`
-	RevisionNumber    int                    `json:"revisionNumber"`
-	RobotsPolicy      string                 `json:"robotsPolicy"`
-	CrossdomainPolicy string                 `json:"crossdomainPolicy"`
-	Description       string                 `json:"description"`
-	ErrorSets         []MasheryErrorSet      `json:"errorSets"`
-	QpsLimitOverall   int64                  `json:"qpsLimitOverall"`
-	RFC3986Encode     bool                   `json:"rfc3986Encode"`
-	SecurityProfile   MasherySecurityProfile `json:"securityProfile"`
-	Version           string                 `json:"version"`
+	Endpoints         []MasheryEndpoint       `json:"endpoints,omitempty"`
+	EditorHandle      string                  `json:"editorHandle,omitempty"`
+	RevisionNumber    int                     `json:"revisionNumber,omitempty"`
+	RobotsPolicy      string                  `json:"robotsPolicy,omitempty"`
+	CrossdomainPolicy string                  `json:"crossdomainPolicy,omitempty"`
+	Description       string                  `json:"description,omitempty"`
+	ErrorSets         *[]MasheryErrorSet      `json:"errorSets,omitempty"`
+	QpsLimitOverall   *int64                  `json:"qpsLimitOverall,omitempty"`
+	RFC3986Encode     bool                    `json:"rfc3986Encode,omitempty"`
+	SecurityProfile   *MasherySecurityProfile `json:"securityProfile,omitempty"`
+	Version           string                  `json:"version,omitempty"`
+}
+
+type MasheryServiceCache struct {
+	CacheTtl int `json:"cacheTtl"`
 }
 
 // -----------------------------------------------------------------------------
@@ -217,26 +230,28 @@ type EAV map[string]string
 
 type MasheryPlan struct {
 	AddressableV3Object
-	Description                       string           `json:"description"`
-	Eav                               EAV              `json:"eav"`
-	SelfServiceKeyProvisioningEnabled bool             `json:"selfServiceKeyProvisioningEnabled"`
-	AdminKeyProvisioningEnabled       bool             `json:"adminKeyProvisioningEnabled"`
-	Notes                             string           `json:"notes"`
-	MaxNumKeysAllowed                 int              `json:"maxNumKeysAllowed"`
-	NumKeysBeforeReview               int              `json:"numKeysBeforeReview"`
-	QpsLimitCeiling                   int64            `json:"qpsLimitCeiling"`
-	QpsLimitExempt                    bool             `json:"qpsLimitExempt"`
-	QpsLimitKeyOverrideAllowed        bool             `json:"qpsLimitKeyOverrideAllowed"`
-	RateLimitCeiling                  int64            `json:"rateLimitCeiling"`
-	RateLimitExempt                   bool             `json:"rateLimitExempt"`
-	RateLimitKeyOverrideAllowed       bool             `json:"rateLimitKeyOverrideAllowed"`
-	RateLimitPeriod                   string           `json:"rateLimitPeriod"`
-	ResponseFilterOverrideAllowed     bool             `json:"responseFilterOverrideAllowed"`
-	Status                            string           `json:"status"`
-	EmailTemplateSetId                int64            `json:"emailTemplateSetId"`
-	Services                          []MasheryService `json:"services"`
+	Description                       string `json:"description,omitempty"`
+	Eav                               *EAV   `json:"eav,omitempty"`
+	SelfServiceKeyProvisioningEnabled bool   `json:"selfServiceKeyProvisioningEnabled"`
+	AdminKeyProvisioningEnabled       bool   `json:"adminKeyProvisioningEnabled"`
+	Notes                             string `json:"notes,omitempty"`
+	MaxNumKeysAllowed                 int    `json:"maxNumKeysAllowed"`
+	NumKeysBeforeReview               int    `json:"numKeysBeforeReview"`
+	QpsLimitCeiling                   *int64 `json:"qpsLimitCeiling,omitempty"`
+	QpsLimitExempt                    bool   `json:"qpsLimitExempt"`
+	QpsLimitKeyOverrideAllowed        bool   `json:"qpsLimitKeyOverrideAllowed"`
+	RateLimitCeiling                  *int64 `json:"rateLimitCeiling,omitempty"`
+	RateLimitExempt                   bool   `json:"rateLimitExempt"`
+	RateLimitKeyOverrideAllowed       bool   `json:"rateLimitKeyOverrideAllowed"`
+	RateLimitPeriod                   string `json:"rateLimitPeriod,omitempty"`
+	ResponseFilterOverrideAllowed     bool   `json:"responseFilterOverrideAllowed"`
+	Status                            string `json:"status,omitempty"`
+	// Mashery's documentation erroneously quotes this field
+	// as int. It is actually UUID of the email template set Id.
+	EmailTemplateSetId string            `json:"emailTemplateSetId,omitempty"`
+	Services           *[]MasheryService `json:"services,omitempty"`
 
-	// Identity of the contxt object
+	// Identity of the context object
 	ParentPackageId string
 }
 
@@ -248,26 +263,23 @@ type PlanFilter struct {
 }
 
 type MasheryPackage struct {
-	Id                          string          `json:"id"`
-	Created                     MasheryJSONTime `json:"created"`
-	Updated                     MasheryJSONTime `json:"updated"`
-	Name                        string          `json:"name"`
-	Description                 string          `json:"description"`
-	NotifyDeveloperPeriod       string          `json:"notifyDeveloperPeriod"`
-	NotifyDeveloperNearQuota    bool            `json:"notifyDeveloperNearQuota"`
-	NotifyDeveloperOverQuota    bool            `json:"notifyDeveloperOverQuota"`
-	NotifyDeveloperOverThrottle bool            `json:"notifyDeveloperOverThrottle"`
-	NotifyAdminPeriod           string          `json:"notifyAdminPeriod"`
-	NotifyAdminNearQuota        bool            `json:"notifyAdminNearQuota"`
-	NotifyAdminOverQuota        bool            `json:"notifyAdminOverQuota"`
-	NotifyAdminOverThrottle     bool            `json:"notifyAdminOverThrottle"`
-	NotifyAdminEmails           string          `json:"notifyAdminEmails"`
-	NearQuotaThreshold          int             `json:"nearQuotaThreshold"`
-	Eav                         EAV             `json:"eav"`
-	KeyAdapter                  string          `json:"keyAdapter"`
-	KeyLength                   int             `json:"keyLength"`
-	SharedSecretLength          int             `json:"sharedSecretLength"`
-	Plans                       []MasheryPlan   `json:"plans"`
+	AddressableV3Object
+	Description                 string        `json:"description,omitempty"`
+	NotifyDeveloperPeriod       string        `json:"notifyDeveloperPeriod,omitempty"`
+	NotifyDeveloperNearQuota    bool          `json:"notifyDeveloperNearQuota"`
+	NotifyDeveloperOverQuota    bool          `json:"notifyDeveloperOverQuota"`
+	NotifyDeveloperOverThrottle bool          `json:"notifyDeveloperOverThrottle"`
+	NotifyAdminPeriod           string        `json:"notifyAdminPeriod,omitempty"`
+	NotifyAdminNearQuota        bool          `json:"notifyAdminNearQuota"`
+	NotifyAdminOverQuota        bool          `json:"notifyAdminOverQuota"`
+	NotifyAdminOverThrottle     bool          `json:"notifyAdminOverThrottle"`
+	NotifyAdminEmails           string        `json:"notifyAdminEmails,omitempty"`
+	NearQuotaThreshold          *int          `json:"nearQuotaThreshold,omitempty"`
+	Eav                         EAV           `json:"eav,omitempty"`
+	KeyAdapter                  string        `json:"keyAdapter,omitempty"`
+	KeyLength                   *int          `json:"keyLength,omitempty"`
+	SharedSecretLength          *int          `json:"sharedSecretLength,omitempty"`
+	Plans                       []MasheryPlan `json:"plans,omitempty"`
 }
 
 // ---------------------------------------------------------------------------------
@@ -281,42 +293,51 @@ type Limit struct {
 
 type MasheryPackageKey struct {
 	AddressableV3Object
-	Apikey           string          `json:"apikey"`
-	Secret           string          `json:"secret"`
-	RateLimitCeiling int64           `json:"rateLimitCeiling"`
+	Apikey           *string         `json:"apikey"`
+	Secret           *string         `json:"secret"`
+	RateLimitCeiling *int64          `json:"rateLimitCeiling"`
 	RateLimitExempt  bool            `json:"rateLimitExempt"`
-	QpsLimitCeiling  int64           `json:"qpsLimitCeiling"`
+	QpsLimitCeiling  *int64          `json:"qpsLimitCeiling"`
 	QpsLimitExempt   bool            `json:"qpsLimitExempt"`
 	Status           string          `json:"status"`
-	Limits           []Limit         `json:"limits"`
+	Limits           *[]Limit        `json:"limits"`
 	Package          *MasheryPackage `json:"package"`
 	Plan             *MasheryPlan    `json:"plan"`
+}
+
+func (mpk *MasheryPackageKey) LinksPackageAndPlan() bool {
+	return mpk.Package != nil && mpk.Package.Id != "" &&
+		mpk.Plan != nil && mpk.Plan.Id != ""
 }
 
 type MasheryApplication struct {
 	AddressableV3Object
 
-	Username          string              `json:"username"`
-	Description       string              `json:"description"`
-	Type              string              `json:"type"`
-	Commercial        bool                `json:"commercial"`
-	Ads               bool                `json:"ads"`
-	AdsSystem         string              `json:"adsSystem"`
-	UsageModel        string              `json:"usageModel"`
-	Tags              string              `json:"tags"`
-	Notes             string              `json:"notes"`
-	HowDidYouHear     string              `json:"howDidYouHear"`
-	PreferredProtocol string              `json:"preferredProtocol"`
-	PreferredOutput   string              `json:"preferredOutput"`
-	ExternalId        string              `json:"externalId"`
-	Uri               string              `json:"uri"`
-	PauthRedirectUri  string              `json:"oauthRedirectUri"`
-	PackageKeys       []MasheryPackageKey `json:"packageKeys"`
+	Username          string               `json:"username"`
+	Description       string               `json:"description,omitempty"`
+	Type              string               `json:"type,omitempty"`
+	Commercial        bool                 `json:"commercial"`
+	Ads               bool                 `json:"ads"`
+	AdsSystem         string               `json:"adsSystem,omitempty"`
+	UsageModel        string               `json:"usageModel,omitempty"`
+	Tags              string               `json:"tags,omitempty"`
+	Notes             string               `json:"notes,omitempty"`
+	HowDidYouHear     string               `json:"howDidYouHear,omitempty"`
+	PreferredProtocol string               `json:"preferredProtocol,omitempty"`
+	PreferredOutput   string               `json:"preferredOutput,omitempty"`
+	ExternalId        string               `json:"externalId,omitempty"`
+	Uri               string               `json:"uri,omitempty"`
+	OAuthRedirectUri  string               `json:"oauthRedirectUri,omitempty"`
+	PackageKeys       *[]MasheryPackageKey `json:"packageKeys,omitempty"`
+	Eav               *EAV                 `json:"eav,omitempty"`
 }
 
 type MasheryRole struct {
 	AddressableV3Object
-	// TODO: Map Group object.
+	Description string `json:"description,omitempty"`
+	Predefined  bool   `json:"isPredefined"`
+	OrgRole     bool   `json:"isOrgrole"`
+	Assignable  bool   `json:"isAssignable"`
 }
 
 type MasheryMember struct {
@@ -324,27 +345,123 @@ type MasheryMember struct {
 
 	Username     string                `json:"username"`
 	Email        string                `json:"email"`
-	DisplayName  string                `json:"displayName"`
-	Uri          string                `json:"uri"`
-	Blog         string                `json:"blog"`
-	Im           string                `json:"im"`
-	Imsvc        string                `json:"imsvc"`
-	Phone        string                `json:"phone"`
-	Company      string                `json:"company"`
-	Address1     string                `json:"address1"`
-	Address2     string                `json:"address2"`
-	Locality     string                `json:"locality"`
-	Region       string                `json:"region"`
-	PostalCode   string                `json:"postalCode"`
-	CountryCode  string                `json:"countryCode"`
-	FirstName    string                `json:"firstName"`
-	LastName     string                `json:"lastName"`
-	AreaStatus   string                `json:"areaStatus"`
-	ExternalId   string                `json:"externalId"`
-	PasswdNew    string                `json:"passwdNew"`
+	DisplayName  string                `json:"displayName,omitempty"`
+	Uri          string                `json:"uri,omitempty"`
+	Blog         string                `json:"blog,omitempty"`
+	Im           string                `json:"im,omitempty"`
+	Imsvc        string                `json:"imsvc,omitempty"`
+	Phone        string                `json:"phone,omitempty"`
+	Company      string                `json:"company,omitempty"`
+	Address1     string                `json:"address1,omitempty"`
+	Address2     string                `json:"address2,omitempty"`
+	Locality     string                `json:"locality,omitempty"`
+	Region       string                `json:"region,omitempty"`
+	PostalCode   string                `json:"postalCode,omitempty"`
+	CountryCode  string                `json:"countryCode,omitempty"`
+	FirstName    string                `json:"firstName,omitempty"`
+	LastName     string                `json:"lastName,omitempty"`
+	AreaStatus   string                `json:"areaStatus,omitempty"`
+	ExternalId   string                `json:"externalId,omitempty"`
+	PasswdNew    *string               `json:"passwdNew,omitempty"`
 	Applications *[]MasheryApplication `json:"applications,omitempty"`
-	PackageKeys  *[]MasheryPackageKey  `json:"packageKeys"`
-	Roles        *[]MasheryRole        `json:"roles"`
+	PackageKeys  *[]MasheryPackageKey  `json:"packageKeys,omitempty"`
+	Roles        *[]MasheryRole        `json:"roles,omitempty"`
+}
+
+// -------------------------------------------------------------------
+// Synthetic path identifier
+//
+// Service-related
+
+type MasheryServiceEndpoint struct {
+	ServiceId  string
+	EndpointId string
+}
+type MasheryServiceMethod struct {
+	MasheryServiceEndpoint
+	MethodId string
+}
+type MasheryServiceMethodFilter struct {
+	MasheryServiceMethod
+	FilterId string
+}
+
+// Package-plan related
+type MasheryPlanService struct {
+	PackageId string
+	PlanId    string
+	ServiceId string
+}
+
+type MasheryPlanServiceEndpoint struct {
+	MasheryPlanService
+	EndpointId string
+}
+
+type MasheryPlanServiceEndpointMethod struct {
+	MasheryPlanServiceEndpoint
+	MethodId string
+}
+
+type MasheryPlanServiceEndpointMethodFilter struct {
+	MasheryPlanServiceEndpointMethod
+	FilterId string
+}
+
+// Mashery email template set
+type MasheryEmailTemplateSet struct {
+	AddressableV3Object
+	Type           string                  `json:"type,omitempty"`
+	EmailTemplates *[]MasheryEmailTemplate `json:"emailTemplates,omitempty"`
+}
+
+// Mashery email template
+type MasheryEmailTemplate struct {
+	AddressableV3Object
+	Type    string `json:"type"`
+	From    string `json:"from"`
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
+}
+
+// -----------------------------------------------------------------------------
+// Mashery Methods
+
+type MasheryMethod struct {
+	AddressableV3Object
+	SampleJsonResponse string `json:"sampleJsonResponse,omitempty"`
+	SampleXmlResponse  string `json:"sampleXmlResponse,omitempty"`
+}
+
+func ParseMasheryMethod(inp []byte) (interface{}, int, error) {
+	var rv MasheryMethod
+	err := json.Unmarshal(inp, &rv)
+	return rv, 1, err
+}
+
+func ParseMasheryMethodArray(inp []byte) (interface{}, int, error) {
+	var rv []MasheryMethod
+	err := json.Unmarshal(inp, &rv)
+	return rv, len(rv), err
+}
+
+type MasheryResponseFilter struct {
+	AddressableV3Object
+	Notes            string `json:"notes"`
+	XmlFilterFields  string `json:"xmlFilterFields,omitempty"`
+	JsonFilterFields string `json:"jsonFilterFields,omitempty"`
+}
+
+func ParseMasheryResponseFilterArray(inp []byte) (interface{}, int, error) {
+	var rv []MasheryResponseFilter
+	err := json.Unmarshal(inp, &rv)
+	return rv, len(rv), err
+}
+
+func ParseMasheryResponseFilter(inp []byte) (interface{}, int, error) {
+	var rv MasheryResponseFilter
+	err := json.Unmarshal(inp, &rv)
+	return rv, 1, err
 }
 
 // -----------------------------------------------------------------------------
@@ -368,11 +485,85 @@ func AddressableEndpoints(inp []MasheryEndpoint) []AddressableV3Object {
 	return rv
 }
 
+// ----------------------------------------------
+// Errors
+
+type V3GenericErrorResponse struct {
+	ErrorCode    string `json:"errorCode"`
+	ErrorMessage string `json:"errorMessage"`
+}
+
+func (e *V3GenericErrorResponse) hasData() bool {
+	return len(e.ErrorCode) > 0 || len(e.ErrorMessage) > 0
+}
+
+func (e *V3GenericErrorResponse) Error() string {
+	return fmt.Sprintf("%s (Mashery V3 code %s)", e.ErrorMessage, e.ErrorCode)
+}
+
+type V3PropertyErrorMessage struct {
+	Property string `json:"property"`
+	Message  string `json:"message"`
+}
+
+type V3PropertyErrorMessages struct {
+	Errors []V3PropertyErrorMessage `json:"errors"`
+}
+
+func (e *V3PropertyErrorMessages) Error() string {
+	if len(e.Errors) == 0 {
+		return "no errors returned in the error response"
+	}
+
+	sb := strings.Builder{}
+	for _, e := range e.Errors {
+		sb.WriteString("error in property ")
+		sb.WriteString(e.Property)
+		sb.WriteString(": ")
+		sb.WriteString(e.Message)
+		sb.WriteString(";")
+	}
+
+	return sb.String()
+}
+
+type V3UndeterminedError struct {
+	Code   int
+	Header http.Header
+	Body   []byte
+}
+
+func (e *V3UndeterminedError) Error() string {
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("server responded with code %d; ", e.Code))
+
+	for k, v := range e.Header {
+		sb.WriteString(fmt.Sprintf("%s::%s", k, strings.Join(v, ",")))
+	}
+
+	if len(e.Body) > 0 {
+		sb.WriteString("Body:")
+		sb.WriteString(string(e.Body))
+	} else {
+		sb.WriteString("(Empty body)")
+	}
+
+	return sb.String()
+}
+
 // --------------------------------------------
 // Factory routines
 
-func MasheryServiceFactory() interface{} {
-	return MasheryService{}
+func ParseMasheryAddressableObject(dat []byte) (interface{}, int, error) {
+	var rv AddressableV3Object
+	err := json.Unmarshal(dat, &rv)
+	return rv, 1, err
+}
+
+func ParseMasheryAddressableObjectsArray(dat []byte) (interface{}, int, error) {
+	var rv []AddressableV3Object
+	err := json.Unmarshal(dat, &rv)
+	return rv, len(rv), err
 }
 
 func ParseMasheryEndpoint(dat []byte) (interface{}, int, error) {
@@ -390,6 +581,19 @@ func ParseMasheryEndpointArray(dat []byte) (interface{}, int, error) {
 func ParseMasheryService(dat []byte) (interface{}, int, error) {
 	var rv MasheryService
 	err := json.Unmarshal(dat, &rv)
+	return rv, 1, err
+}
+
+func ParseMasheryServiceCache(dat []byte) (interface{}, int, error) {
+	var rv MasheryServiceCache
+	err := json.Unmarshal(dat, &rv)
+	return rv, 1, err
+}
+
+func ParseMasheryServiceSecurityProfileOAuth(dat []byte) (interface{}, int, error) {
+	var rv MasheryOAuth
+	err := json.Unmarshal(dat, &rv)
+
 	return rv, 1, err
 }
 
@@ -458,6 +662,26 @@ func ParseMasheryMemberArray(dat []byte) (interface{}, int, error) {
 	return rv, len(rv), err
 }
 
-func MasheryEndpointFactory() MasheryEndpoint {
-	return MasheryEndpoint{}
+func ParseMasheryRoleArray(dat []byte) (interface{}, int, error) {
+	var rv []MasheryRole
+	err := json.Unmarshal(dat, &rv)
+	return rv, len(rv), err
+}
+
+func ParseMasheryRole(dat []byte) (interface{}, int, error) {
+	var rv MasheryRole
+	err := json.Unmarshal(dat, &rv)
+	return rv, 1, err
+}
+
+func ParseMasheryEmailTemplateSetArray(dat []byte) (interface{}, int, error) {
+	var rv []MasheryEmailTemplateSet
+	err := json.Unmarshal(dat, &rv)
+	return rv, len(rv), err
+}
+
+func ParseMasheryEmailTemplateSet(dat []byte) (interface{}, int, error) {
+	var rv MasheryEmailTemplateSet
+	err := json.Unmarshal(dat, &rv)
+	return rv, 1, err
 }

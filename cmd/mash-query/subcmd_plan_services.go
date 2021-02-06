@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func showPackagePlansServices(ctx context.Context, cl *v3client.Client, args interface{}) int {
+func showPackagePlansServices(ctx context.Context, cl *v3client.HttpTransport, args interface{}) int {
 	p, _ := args.(ShowPlanData)
 
 	if srv, gerr := cl.ListPlanServices(ctx, p.packageId, p.planId); gerr == nil {
