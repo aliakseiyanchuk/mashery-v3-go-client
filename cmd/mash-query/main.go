@@ -24,7 +24,7 @@ var jsonEncoder *json.Encoder
 
 var argParsers []func() (bool, error)
 
-var handler func(context.Context, *v3client.HttpTransport, interface{}) int = nil
+var handler func(context.Context, v3client.Client, interface{}) int = nil
 var handlerArgs interface{}
 
 func argAt(idx int) string {
@@ -79,7 +79,7 @@ func main() {
 		}
 		cl := v3client.NewHttpClient(v3client.NewFixedTokenProvider(tkn.AccessToken), qps, dur)
 
-		exitCode = handler(ctx, &cl, handlerArgs)
+		exitCode = handler(ctx, cl, handlerArgs)
 	} else {
 		fmt.Println("Could not load token file:")
 		fmt.Println(err)

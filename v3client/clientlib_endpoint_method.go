@@ -8,7 +8,7 @@ import (
 )
 
 // List methods associated with this endpoint, having only implicit fields returned.
-func (c *HttpTransport) ListEndpointMethods(ctx context.Context, serviceId, endpointId string) ([]MasheryMethod, error) {
+func ListEndpointMethods(ctx context.Context, serviceId, endpointId string, c *HttpTransport) ([]MasheryMethod, error) {
 	spec := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),
@@ -34,7 +34,7 @@ func (c *HttpTransport) ListEndpointMethods(ctx context.Context, serviceId, endp
 }
 
 // List endpoints methods with their extended information.
-func (c *HttpTransport) ListEndpointMethodsWithFullInfo(ctx context.Context, serviceId, endpointId string) ([]MasheryMethod, error) {
+func ListEndpointMethodsWithFullInfo(ctx context.Context, serviceId, endpointId string, c *HttpTransport) ([]MasheryMethod, error) {
 	spec := FetchSpec{
 		Pagination: PerPage,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),
@@ -62,7 +62,7 @@ func (c *HttpTransport) ListEndpointMethodsWithFullInfo(ctx context.Context, ser
 }
 
 // Create a new service.
-func (c *HttpTransport) CreateEndpointMethod(ctx context.Context, serviceId, endpointId string, methoUpsert MasheryMethod) (*MasheryMethod, error) {
+func CreateEndpointMethod(ctx context.Context, serviceId, endpointId string, methoUpsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
 	rawResp, err := c.createObject(ctx, methoUpsert, FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),
 		AppContext: "endpoint method",
@@ -81,7 +81,7 @@ func (c *HttpTransport) CreateEndpointMethod(ctx context.Context, serviceId, end
 }
 
 // Update mashery endpoint method using the specified upsertable.
-func (c *HttpTransport) UpdateEndpointMethod(ctx context.Context, serviceId, endpointId string, methUpsert MasheryMethod) (*MasheryMethod, error) {
+func UpdateEndpointMethod(ctx context.Context, serviceId, endpointId string, methUpsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
 	if methUpsert.Id == "" {
 		return nil, errors.New("illegal argument: endpoint Id must be set and not nil")
 	}
@@ -103,7 +103,7 @@ func (c *HttpTransport) UpdateEndpointMethod(ctx context.Context, serviceId, end
 	}
 }
 
-func (c *HttpTransport) GetEndpointMethod(ctx context.Context, serviceId, endpointId, methodId string) (*MasheryMethod, error) {
+func GetEndpointMethod(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) (*MasheryMethod, error) {
 	fetchSpec := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s", serviceId, endpointId, methodId),
@@ -125,7 +125,7 @@ func (c *HttpTransport) GetEndpointMethod(ctx context.Context, serviceId, endpoi
 	}
 }
 
-func (c *HttpTransport) DeleteEndpointMethod(ctx context.Context, serviceId, endpointId, methodId string) error {
+func DeleteEndpointMethod(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) error {
 	return c.deleteObject(ctx, FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s", serviceId, endpointId, methodId),
 		AppContext: "endpoint method",
@@ -133,7 +133,7 @@ func (c *HttpTransport) DeleteEndpointMethod(ctx context.Context, serviceId, end
 }
 
 // Count the number of services that would match this criteria
-func (c *HttpTransport) CountEndpointsMethodsOf(ctx context.Context, serviceId, endpointId string) (int64, error) {
+func CountEndpointsMethodsOf(ctx context.Context, serviceId, endpointId string, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),

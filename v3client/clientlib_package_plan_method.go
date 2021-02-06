@@ -16,7 +16,7 @@ func packagePlanEndpointMethod(id MasheryPlanServiceEndpointMethod) string {
 	return fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s/methods/%s", id.PackageId, id.PlanId, id.ServiceId, id.EndpointId, id.MethodId)
 }
 
-func (c *HttpTransport) ListPackagePlanMethods(ctx context.Context, id MasheryPlanServiceEndpoint) ([]MasheryMethod, error) {
+func ListPackagePlanMethods(ctx context.Context, id MasheryPlanServiceEndpoint, c *HttpTransport) ([]MasheryMethod, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerItem,
 		Resource:       packagePlanEndpointMethodsRoot(id),
@@ -42,7 +42,7 @@ func (c *HttpTransport) ListPackagePlanMethods(ctx context.Context, id MasheryPl
 }
 
 // Retrieve the information about a pacakge plan method.
-func (c *HttpTransport) GetPackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpointMethod) (*MasheryMethod, error) {
+func GetPackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpointMethod, c *HttpTransport) (*MasheryMethod, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Pagination: PerItem,
 		Resource:   packagePlanEndpointMethod(id),
@@ -62,7 +62,7 @@ func (c *HttpTransport) GetPackagePlanMethod(ctx context.Context, id MasheryPlan
 }
 
 // Create a new service cache
-func (c *HttpTransport) CreatePackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpoint, upsert MasheryMethod) (*MasheryMethod, error) {
+func CreatePackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpoint, upsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
 	rawResp, err := c.createObject(ctx, upsert, FetchSpec{
 		Pagination: NotRequired,
 		Resource:   packagePlanEndpointMethodsRoot(id),
@@ -82,7 +82,7 @@ func (c *HttpTransport) CreatePackagePlanMethod(ctx context.Context, id MasheryP
 }
 
 // Create a new service.
-func (c *HttpTransport) DeletePackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpointMethod) error {
+func DeletePackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpointMethod, c *HttpTransport) error {
 	return c.deleteObject(ctx, FetchSpec{
 		Pagination: NotRequired,
 		Resource:   packagePlanEndpointMethod(id),

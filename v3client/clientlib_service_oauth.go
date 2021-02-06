@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (c *HttpTransport) GetServiceOAuthSecurityProfile(ctx context.Context, id string) (*MasheryOAuth, error) {
+func GetServiceOAuthSecurityProfile(ctx context.Context, id string, c *HttpTransport) (*MasheryOAuth, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", id),
 		Query:          nil,
@@ -22,7 +22,7 @@ func (c *HttpTransport) GetServiceOAuthSecurityProfile(ctx context.Context, id s
 }
 
 // Create a new service.
-func (c *HttpTransport) CreateServiceOAuthSecurityProfile(ctx context.Context, id string, service MasheryOAuth) (*MasheryOAuth, error) {
+func CreateServiceOAuthSecurityProfile(ctx context.Context, id string, service MasheryOAuth, c *HttpTransport) (*MasheryOAuth, error) {
 	rawResp, err := c.createObject(ctx, service, FetchSpec{
 		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", id),
 		AppContext:     "service security profile oauth",
@@ -38,7 +38,7 @@ func (c *HttpTransport) CreateServiceOAuthSecurityProfile(ctx context.Context, i
 }
 
 // Create a new service.
-func (c *HttpTransport) UpdateServiceOAuthSecurityProfile(ctx context.Context, id string, service MasheryOAuth) (*MasheryOAuth, error) {
+func UpdateServiceOAuthSecurityProfile(ctx context.Context, id string, service MasheryOAuth, c *HttpTransport) (*MasheryOAuth, error) {
 	opContext := FetchSpec{
 		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", id),
 		AppContext:     "service security profile oauth",
@@ -54,7 +54,7 @@ func (c *HttpTransport) UpdateServiceOAuthSecurityProfile(ctx context.Context, i
 }
 
 // Create a new service.
-func (c *HttpTransport) DeleteServiceOAuthSecurityProfile(ctx context.Context, id string) error {
+func DeleteServiceOAuthSecurityProfile(ctx context.Context, id string, c *HttpTransport) error {
 	opContext := FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/securityProfile/oauth", id),
 		AppContext: "service security profile oauth",

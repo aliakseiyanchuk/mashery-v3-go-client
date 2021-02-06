@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-func (c *HttpTransport) ListEndpoints(ctx context.Context, serviceId string) ([]AddressableV3Object, error) {
+func ListEndpoints(ctx context.Context, serviceId string, c *HttpTransport) ([]AddressableV3Object, error) {
 	spec := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       fmt.Sprintf("/services/%s/endpoints", serviceId),
@@ -33,7 +33,7 @@ func (c *HttpTransport) ListEndpoints(ctx context.Context, serviceId string) ([]
 }
 
 // List endpoints with their extended information.
-func (c *HttpTransport) ListEndpointsWithFullInfo(ctx context.Context, serviceId string) ([]MasheryEndpoint, error) {
+func ListEndpointsWithFullInfo(ctx context.Context, serviceId string, c *HttpTransport) ([]MasheryEndpoint, error) {
 	spec := FetchSpec{
 		Pagination: PerPage,
 		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId),
@@ -61,7 +61,7 @@ func (c *HttpTransport) ListEndpointsWithFullInfo(ctx context.Context, serviceId
 }
 
 // Create a new service.
-func (c *HttpTransport) CreateEndpoint(ctx context.Context, serviceId string, endp MasheryEndpoint) (*MasheryEndpoint, error) {
+func CreateEndpoint(ctx context.Context, serviceId string, endp MasheryEndpoint, c *HttpTransport) (*MasheryEndpoint, error) {
 	rawResp, err := c.createObject(ctx, endp, FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId),
 		AppContext: "endpoint",
@@ -80,7 +80,7 @@ func (c *HttpTransport) CreateEndpoint(ctx context.Context, serviceId string, en
 }
 
 // Create a new service.
-func (c *HttpTransport) UpdateEndpoint(ctx context.Context, serviceId string, endp MasheryEndpoint) (*MasheryEndpoint, error) {
+func UpdateEndpoint(ctx context.Context, serviceId string, endp MasheryEndpoint, c *HttpTransport) (*MasheryEndpoint, error) {
 	if endp.Id == "" {
 		return nil, errors.New("illegal argument: endpoint Id must be set and not nil")
 	}
@@ -102,7 +102,7 @@ func (c *HttpTransport) UpdateEndpoint(ctx context.Context, serviceId string, en
 	}
 }
 
-func (c *HttpTransport) GetEndpoint(ctx context.Context, serviceId string, endpointId string) (*MasheryEndpoint, error) {
+func GetEndpoint(ctx context.Context, serviceId string, endpointId string, c *HttpTransport) (*MasheryEndpoint, error) {
 	fetchSpec := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s", serviceId, endpointId),
@@ -124,7 +124,7 @@ func (c *HttpTransport) GetEndpoint(ctx context.Context, serviceId string, endpo
 	}
 }
 
-func (c *HttpTransport) DeleteEndpoint(ctx context.Context, serviceId, endpointId string) error {
+func DeleteEndpoint(ctx context.Context, serviceId, endpointId string, c *HttpTransport) error {
 	return c.deleteObject(ctx, FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s", serviceId, endpointId),
 		AppContext: "endpoint",
@@ -132,7 +132,7 @@ func (c *HttpTransport) DeleteEndpoint(ctx context.Context, serviceId, endpointI
 }
 
 // Count the number of services that would match this criteria
-func (c *HttpTransport) CountEndpointsOf(ctx context.Context, serviceId string) (int64, error) {
+func CountEndpointsOf(ctx context.Context, serviceId string, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId),

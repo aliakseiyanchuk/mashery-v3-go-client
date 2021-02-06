@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-func (c *HttpTransport) CreatePlanService(ctx context.Context, planService MasheryPlanService) (*AddressableV3Object, error) {
+func CreatePlanService(ctx context.Context, planService MasheryPlanService, c *HttpTransport) (*AddressableV3Object, error) {
 	ref := IdReferenced{IdRef: planService.ServiceId}
 	rv, err := c.createObject(ctx, ref, FetchSpec{
 		Pagination:     NotRequired,
@@ -25,14 +25,14 @@ func (c *HttpTransport) CreatePlanService(ctx context.Context, planService Mashe
 	}
 }
 
-func (c *HttpTransport) DeletePlanService(ctx context.Context, planService MasheryPlanService) error {
+func DeletePlanService(ctx context.Context, planService MasheryPlanService, c *HttpTransport) error {
 	return c.deleteObject(ctx, FetchSpec{
 		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services/%s", planService.PackageId, planService.PlanId, planService.ServiceId),
 		AppContext: "plan service",
 	})
 }
 
-func (c *HttpTransport) CreatePlanEndpoint(ctx context.Context, planEndp MasheryPlanServiceEndpoint) (*AddressableV3Object, error) {
+func CreatePlanEndpoint(ctx context.Context, planEndp MasheryPlanServiceEndpoint, c *HttpTransport) (*AddressableV3Object, error) {
 	ref := IdReferenced{IdRef: planEndp.EndpointId}
 	rv, err := c.createObject(ctx, ref, FetchSpec{
 		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId),
@@ -48,14 +48,14 @@ func (c *HttpTransport) CreatePlanEndpoint(ctx context.Context, planEndp Mashery
 	}
 }
 
-func (c *HttpTransport) DeletePlanEndpoint(ctx context.Context, planEndp MasheryPlanServiceEndpoint) error {
+func DeletePlanEndpoint(ctx context.Context, planEndp MasheryPlanServiceEndpoint, c *HttpTransport) error {
 	return c.deleteObject(ctx, FetchSpec{
 		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId, planEndp.EndpointId),
 		AppContext: "plan endpoint",
 	})
 }
 
-func (c *HttpTransport) ListPlanEndpoints(ctx context.Context, planService MasheryPlanService) ([]AddressableV3Object, error) {
+func ListPlanEndpoints(ctx context.Context, planService MasheryPlanService, c *HttpTransport) ([]AddressableV3Object, error) {
 	rv, err := c.fetchAll(ctx, FetchSpec{
 		Pagination:     PerItem,
 		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints", planService.PackageId, planService.PlanId, planService.ServiceId),
@@ -76,7 +76,7 @@ func (c *HttpTransport) ListPlanEndpoints(ctx context.Context, planService Mashe
 	}
 }
 
-func (c *HttpTransport) CountPlanEndpoints(ctx context.Context, planService MasheryPlanService) (int64, error) {
+func CountPlanEndpoints(ctx context.Context, planService MasheryPlanService, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints", planService.PackageId, planService.PlanId, planService.ServiceId),
@@ -86,7 +86,7 @@ func (c *HttpTransport) CountPlanEndpoints(ctx context.Context, planService Mash
 	return c.count(ctx, opCtx)
 }
 
-func (c *HttpTransport) CountPlanService(ctx context.Context, packageId, planId string) (int64, error) {
+func CountPlanService(ctx context.Context, packageId, planId string, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services", packageId, planId),
@@ -96,7 +96,7 @@ func (c *HttpTransport) CountPlanService(ctx context.Context, packageId, planId 
 	return c.count(ctx, opCtx)
 }
 
-func (c *HttpTransport) GetPlan(ctx context.Context, packageId string, planId string) (*MasheryPlan, error) {
+func GetPlan(ctx context.Context, packageId string, planId string, c *HttpTransport) (*MasheryPlan, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Resource: fmt.Sprintf("/packages/%s/plans/%s", packageId, planId),
 		Query: url.Values{
@@ -117,7 +117,7 @@ func (c *HttpTransport) GetPlan(ctx context.Context, packageId string, planId st
 }
 
 // Create a new service.
-func (c *HttpTransport) CreatePlan(ctx context.Context, packageId string, plan MasheryPlan) (*MasheryPlan, error) {
+func CreatePlan(ctx context.Context, packageId string, plan MasheryPlan, c *HttpTransport) (*MasheryPlan, error) {
 	rawResp, err := c.createObject(ctx, plan, FetchSpec{
 		Resource:   fmt.Sprintf("/packages/%s/plans", packageId),
 		AppContext: "plan",
@@ -137,7 +137,7 @@ func (c *HttpTransport) CreatePlan(ctx context.Context, packageId string, plan M
 }
 
 // Create a new service.
-func (c *HttpTransport) UpdatePlan(ctx context.Context, plan MasheryPlan) (*MasheryPlan, error) {
+func UpdatePlan(ctx context.Context, plan MasheryPlan, c *HttpTransport) (*MasheryPlan, error) {
 	if plan.Id == "" || plan.ParentPackageId == "" {
 		return nil, errors.New("illegal argument: package Id and plan id must be set and not nil")
 	}
@@ -160,7 +160,7 @@ func (c *HttpTransport) UpdatePlan(ctx context.Context, plan MasheryPlan) (*Mash
 	}
 }
 
-func (c *HttpTransport) DeletePlan(ctx context.Context, packageId, planId string) error {
+func DeletePlan(ctx context.Context, packageId, planId string, c *HttpTransport) error {
 	opContext := FetchSpec{
 		Resource:   fmt.Sprintf("/packages/%s/plans/%s", packageId, planId),
 		AppContext: "plan",
@@ -169,7 +169,7 @@ func (c *HttpTransport) DeletePlan(ctx context.Context, packageId, planId string
 	return c.deleteObject(ctx, opContext)
 }
 
-func (c *HttpTransport) CountPlans(ctx context.Context, packageId string) (int64, error) {
+func CountPlans(ctx context.Context, packageId string, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   fmt.Sprintf("/packages/%s/plans", packageId),
@@ -179,7 +179,7 @@ func (c *HttpTransport) CountPlans(ctx context.Context, packageId string) (int64
 	return c.count(ctx, opCtx)
 }
 
-func (c *HttpTransport) ListPlans(ctx context.Context, packageId string) ([]MasheryPlan, error) {
+func ListPlans(ctx context.Context, packageId string, c *HttpTransport) ([]MasheryPlan, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       fmt.Sprintf("/packages/%s/plans", packageId),
@@ -209,7 +209,7 @@ func (c *HttpTransport) ListPlans(ctx context.Context, packageId string) ([]Mash
 	}
 }
 
-func (c *HttpTransport) ListPlanServices(ctx context.Context, packageId string, planId string) ([]MasheryService, error) {
+func ListPlanServices(ctx context.Context, packageId string, planId string, c *HttpTransport) ([]MasheryService, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services", packageId, planId),

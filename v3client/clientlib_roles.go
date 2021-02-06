@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-func (c *HttpTransport) GetRole(ctx context.Context, id string) (*MasheryRole, error) {
+func GetRole(ctx context.Context, id string, c *HttpTransport) (*MasheryRole, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Resource:       fmt.Sprintf("/roles/%s", id),
 		Query:          nil,
@@ -22,15 +22,15 @@ func (c *HttpTransport) GetRole(ctx context.Context, id string) (*MasheryRole, e
 	}
 }
 
-func (c *HttpTransport) ListRoles(ctx context.Context) ([]MasheryRole, error) {
-	return c.listRoles(ctx, nil)
+func ListRoles(ctx context.Context, c *HttpTransport) ([]MasheryRole, error) {
+	return listRoles(ctx, nil, c)
 }
 
-func (c *HttpTransport) ListRolesFiltered(ctx context.Context, params map[string]string, fields []string) ([]MasheryRole, error) {
-	return c.listRoles(ctx, c.v3FilteringParams(params, fields))
+func ListRolesFiltered(ctx context.Context, params map[string]string, fields []string, c *HttpTransport) ([]MasheryRole, error) {
+	return listRoles(ctx, c.v3FilteringParams(params, fields), c)
 }
 
-func (c *HttpTransport) listRoles(ctx context.Context, qs url.Values) ([]MasheryRole, error) {
+func listRoles(ctx context.Context, qs url.Values, c *HttpTransport) ([]MasheryRole, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       "/roles",

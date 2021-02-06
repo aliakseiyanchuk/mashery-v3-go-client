@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-func (c *HttpTransport) GetEmailTemplateSet(ctx context.Context, id string) (*MasheryEmailTemplateSet, error) {
+func GetEmailTemplateSet(ctx context.Context, id string, c *HttpTransport) (*MasheryEmailTemplateSet, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Resource: fmt.Sprintf("/emailTemplateSets/%s", id),
 		Query: url.Values{
@@ -24,15 +24,15 @@ func (c *HttpTransport) GetEmailTemplateSet(ctx context.Context, id string) (*Ma
 	}
 }
 
-func (c *HttpTransport) ListEmailTemplateSets(ctx context.Context) ([]MasheryEmailTemplateSet, error) {
-	return c.listEmailTemplateSet(ctx, nil)
+func ListEmailTemplateSets(ctx context.Context, c *HttpTransport) ([]MasheryEmailTemplateSet, error) {
+	return listEmailTemplateSet(ctx, nil, c)
 }
 
-func (c *HttpTransport) ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string, fields []string) ([]MasheryEmailTemplateSet, error) {
-	return c.listEmailTemplateSet(ctx, c.v3FilteringParams(params, fields))
+func ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string, fields []string, c *HttpTransport) ([]MasheryEmailTemplateSet, error) {
+	return listEmailTemplateSet(ctx, c.v3FilteringParams(params, fields), c)
 }
 
-func (c *HttpTransport) listEmailTemplateSet(ctx context.Context, qs url.Values) ([]MasheryEmailTemplateSet, error) {
+func listEmailTemplateSet(ctx context.Context, qs url.Values, c *HttpTransport) ([]MasheryEmailTemplateSet, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       "/emailTemplateSets",

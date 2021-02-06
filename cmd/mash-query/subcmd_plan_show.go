@@ -13,7 +13,7 @@ type ShowPlanData struct {
 	planId    string
 }
 
-func showPackagePlans(ctx context.Context, cl *v3client.HttpTransport, args interface{}) int {
+func showPackagePlans(ctx context.Context, cl v3client.Client, args interface{}) int {
 	p, _ := args.(ShowPlanData)
 
 	if p.planId == "" {

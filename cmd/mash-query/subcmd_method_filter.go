@@ -14,7 +14,7 @@ type ShowEndpointMethodData struct {
 	filterId string
 }
 
-func showMethodFilter(ctx context.Context, cl *v3client.HttpTransport, args interface{}) int {
+func showMethodFilter(ctx context.Context, cl v3client.Client, args interface{}) int {
 	p, _ := args.(ShowEndpointMethodData)
 
 	if srv, gerr := cl.GetEndpointMethodFilter(ctx, p.serviceId, p.endpointId, p.methodId, p.filterId); gerr == nil {
@@ -28,7 +28,7 @@ func showMethodFilter(ctx context.Context, cl *v3client.HttpTransport, args inte
 	}
 }
 
-func listMethodFilters(ctx context.Context, cl *v3client.HttpTransport, args interface{}) int {
+func listMethodFilters(ctx context.Context, cl v3client.Client, args interface{}) int {
 	p, _ := args.(ShowEndpointMethodData)
 
 	if srv, gerr := cl.ListEndpointMethodFiltersWithFullInfo(ctx, p.serviceId, p.endpointId, p.methodId); gerr == nil {

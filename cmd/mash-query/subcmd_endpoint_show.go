@@ -13,7 +13,7 @@ type ShowServiceEndpointData struct {
 	endpointId string
 }
 
-func showServiceEndpoints(ctx context.Context, cl *v3client.HttpTransport, args interface{}) int {
+func showServiceEndpoints(ctx context.Context, cl v3client.Client, args interface{}) int {
 	p, _ := args.(ShowServiceEndpointData)
 
 	if p.endpointId == "" {

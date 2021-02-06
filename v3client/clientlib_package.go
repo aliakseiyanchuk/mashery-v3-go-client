@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-func (c *HttpTransport) GetPackage(ctx context.Context, id string) (*MasheryPackage, error) {
+func GetPackage(ctx context.Context, id string, c *HttpTransport) (*MasheryPackage, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Resource: fmt.Sprintf("/packages/%s", id),
 		Query: url.Values{
@@ -26,7 +26,7 @@ func (c *HttpTransport) GetPackage(ctx context.Context, id string) (*MasheryPack
 }
 
 // Create a new service.
-func (c *HttpTransport) CreatePackage(ctx context.Context, pack MasheryPackage) (*MasheryPackage, error) {
+func CreatePackage(ctx context.Context, pack MasheryPackage, c *HttpTransport) (*MasheryPackage, error) {
 	rawResp, err := c.createObject(ctx, pack, FetchSpec{
 		Resource:   "/packages",
 		AppContext: "package",
@@ -45,7 +45,7 @@ func (c *HttpTransport) CreatePackage(ctx context.Context, pack MasheryPackage) 
 }
 
 // Create a new service.
-func (c *HttpTransport) UpdatePackage(ctx context.Context, pack MasheryPackage) (*MasheryPackage, error) {
+func UpdatePackage(ctx context.Context, pack MasheryPackage, c *HttpTransport) (*MasheryPackage, error) {
 	if pack.Id == "" {
 		return nil, errors.New("illegal argument: package Id must be set and not nil")
 	}
@@ -64,7 +64,7 @@ func (c *HttpTransport) UpdatePackage(ctx context.Context, pack MasheryPackage) 
 	}
 }
 
-func (c *HttpTransport) DeletePackage(ctx context.Context, packId string) error {
+func DeletePackage(ctx context.Context, packId string, c *HttpTransport) error {
 	opContext := FetchSpec{
 		Resource:   fmt.Sprintf("/packages/%s", packId),
 		AppContext: "package",
@@ -73,7 +73,7 @@ func (c *HttpTransport) DeletePackage(ctx context.Context, packId string) error 
 	return c.deleteObject(ctx, opContext)
 }
 
-func (c *HttpTransport) ListPackages(ctx context.Context) ([]MasheryPackage, error) {
+func ListPackages(ctx context.Context, c *HttpTransport) ([]MasheryPackage, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerItem,
 		Resource:       "/packages",

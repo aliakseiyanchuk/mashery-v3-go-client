@@ -42,6 +42,12 @@ type HttpTransport struct {
 	httpCl        *http.Client
 }
 
+func NewCustomClient(schema *ClientMethodSchema) Client {
+	return &PluggableClient{
+		schema: schema,
+	}
+}
+
 func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Duration) Client {
 	impl := HttpTransport{
 		mashEndpoint:  "https://api.mashery.com/v3/rest",
@@ -52,9 +58,125 @@ func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Durat
 	}
 
 	rv := PluggableClient{
-		schema: ClientMethodSchema{
-			GetApplicationContext:     GetApplication,
-			GetApplicationPackageKeys: GetApplicationPackageKeys,
+		schema: &ClientMethodSchema{
+			// Application method schema
+			GetApplicationContext:       GetApplication,
+			GetApplicationPackageKeys:   GetApplicationPackageKeys,
+			CountApplicationPackageKeys: CountApplicationPackageKeys,
+			GetFullApplication:          GetFullApplication,
+			CreateApplication:           CreateApplication,
+			UpdateApplication:           UpdateApplication,
+			DeleteApplication:           DeleteApplication,
+			CountApplicationsOfMember:   CountApplicationsOfMember,
+			ListApplications:            ListApplications,
+
+			// Email sets
+			GetEmailTemplateSet:           GetEmailTemplateSet,
+			ListEmailTemplateSets:         ListEmailTemplateSets,
+			ListEmailTemplateSetsFiltered: ListEmailTemplateSetsFiltered,
+
+			// Endpoints
+			ListEndpoints:             ListEndpoints,
+			ListEndpointsWithFullInfo: ListEndpointsWithFullInfo,
+			CreateEndpoint:            CreateEndpoint,
+			UpdateEndpoint:            UpdateEndpoint,
+			GetEndpoint:               GetEndpoint,
+			DeleteEndpoint:            DeleteEndpoint,
+			CountEndpointsOf:          CountEndpointsOf,
+
+			// Endpoint methods
+			ListEndpointMethods:             ListEndpointMethods,
+			ListEndpointMethodsWithFullInfo: ListEndpointMethodsWithFullInfo,
+			CreateEndpointMethod:            CreateEndpointMethod,
+			UpdateEndpointMethod:            UpdateEndpointMethod,
+			GetEndpointMethod:               GetEndpointMethod,
+			DeleteEndpointMethod:            DeleteEndpointMethod,
+			CountEndpointsMethodsOf:         CountEndpointsMethodsOf,
+
+			// Endpoint method filters
+			ListEndpointMethodFilters:             ListEndpointMethodFilters,
+			ListEndpointMethodFiltersWithFullInfo: ListEndpointMethodFiltersWithFullInfo,
+			CreateEndpointMethodFilter:            CreateEndpointMethodFilter,
+			UpdateEndpointMethodFilter:            UpdateEndpointMethodFilter,
+			GetEndpointMethodFilter:               GetEndpointMethodFilter,
+			DeleteEndpointMethodFilter:            DeleteEndpointMethodFilter,
+			CountEndpointsMethodsFiltersOf:        CountEndpointsMethodsFiltersOf,
+
+			// Member
+			GetMember:     GetMember,
+			GetFullMember: GetFullMember,
+			CreateMember:  CreateMember,
+			UpdateMember:  UpdateMember,
+			DeleteMember:  DeleteMember,
+			ListMembers:   ListMembers,
+
+			// Packages
+			GetPackage:    GetPackage,
+			CreatePackage: CreatePackage,
+			UpdatePackage: UpdatePackage,
+			DeletePackage: DeletePackage,
+			ListPackages:  ListPackages,
+
+			// Package plans
+			CreatePlanService:  CreatePlanService,
+			DeletePlanService:  DeletePlanService,
+			CreatePlanEndpoint: CreatePlanEndpoint,
+			DeletePlanEndpoint: DeletePlanEndpoint,
+			ListPlanEndpoints:  ListPlanEndpoints,
+
+			CountPlanEndpoints: CountPlanEndpoints,
+			CountPlanService:   CountPlanService,
+			GetPlan:            GetPlan,
+			CreatePlan:         CreatePlan,
+			UpdatePlan:         UpdatePlan,
+			DeletePlan:         DeletePlan,
+			CountPlans:         CountPlans,
+			ListPlans:          ListPlans,
+			ListPlanServices:   ListPlanServices,
+
+			// Plan methods
+			ListPackagePlanMethods:  ListPackagePlanMethods,
+			GetPackagePlanMethod:    GetPackagePlanMethod,
+			CreatePackagePlanMethod: CreatePackagePlanMethod,
+			DeletePackagePlanMethod: DeletePackagePlanMethod,
+
+			// Plan method filter
+			GetPackagePlanMethodFilter:    GetPackagePlanMethodFilter,
+			CreatePackagePlanMethodFilter: CreatePackagePlanMethodFilter,
+			DeletePackagePlanMethodFilter: DeletePackagePlanMethodFilter,
+
+			// Package key
+			GetPackageKey:           GetPackageKey,
+			CreatePackageKey:        CreatePackageKey,
+			UpdatePackageKey:        UpdatePackageKey,
+			DeletePackageKey:        DeletePackageKey,
+			ListPackageKeysFiltered: ListPackageKeysFiltered,
+			ListPackageKeys:         ListPackageKeys,
+
+			// Roles
+			GetRole:   GetRole,
+			ListRoles: ListRoles,
+
+			// Service
+			GetService:           GetService,
+			CreateService:        CreateService,
+			UpdateService:        UpdateService,
+			DeleteService:        DeleteService,
+			ListServicesFiltered: ListServicesFiltered,
+			ListServices:         ListServices,
+			CountServices:        CountServices,
+
+			// Service cache,
+			GetServiceCache:    GetServiceCache,
+			CreateServiceCache: CreateServiceCache,
+			UpdateServiceCache: UpdateServiceCache,
+			DeleteServiceCache: DeleteServiceCache,
+
+			// Service OAuth
+			GetServiceOAuthSecurityProfile:    GetServiceOAuthSecurityProfile,
+			CreateServiceOAuthSecurityProfile: CreateServiceOAuthSecurityProfile,
+			UpdateServiceOAuthSecurityProfile: UpdateServiceOAuthSecurityProfile,
+			DeleteServiceOAuthSecurityProfile: DeleteServiceOAuthSecurityProfile,
 		},
 		transport: &impl,
 	}

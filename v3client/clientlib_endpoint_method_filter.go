@@ -8,7 +8,7 @@ import (
 )
 
 // List filters associated with this endpoint method, having only implicit fields returned.
-func (c *HttpTransport) ListEndpointMethodFilters(ctx context.Context, serviceId, endpointId, methodId string) ([]MasheryResponseFilter, error) {
+func ListEndpointMethodFilters(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) ([]MasheryResponseFilter, error) {
 	spec := FetchSpec{
 		Pagination:     PerPage,
 		Resource:       fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
@@ -33,7 +33,7 @@ func (c *HttpTransport) ListEndpointMethodFilters(ctx context.Context, serviceId
 }
 
 // List endpoints methods filters with their extended information.
-func (c *HttpTransport) ListEndpointMethodFiltersWithFullInfo(ctx context.Context, serviceId, endpointId, methodId string) ([]MasheryResponseFilter, error) {
+func ListEndpointMethodFiltersWithFullInfo(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) ([]MasheryResponseFilter, error) {
 	spec := FetchSpec{
 		Pagination: PerPage,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
@@ -61,7 +61,7 @@ func (c *HttpTransport) ListEndpointMethodFiltersWithFullInfo(ctx context.Contex
 }
 
 // Create a new service.
-func (c *HttpTransport) CreateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, filterUpsert MasheryResponseFilter) (*MasheryResponseFilter, error) {
+func CreateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, filterUpsert MasheryResponseFilter, c *HttpTransport) (*MasheryResponseFilter, error) {
 	rawResp, err := c.createObject(ctx, filterUpsert, FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
 		AppContext: "endpoint method filters",
@@ -80,7 +80,7 @@ func (c *HttpTransport) CreateEndpointMethodFilter(ctx context.Context, serviceI
 }
 
 // Update mashery endpoint method using the specified upsertable.
-func (c *HttpTransport) UpdateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, methUpsert MasheryResponseFilter) (*MasheryResponseFilter, error) {
+func UpdateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, methUpsert MasheryResponseFilter, c *HttpTransport) (*MasheryResponseFilter, error) {
 	if methUpsert.Id == "" {
 		return nil, errors.New("illegal argument: response filter must be set and not nil")
 	}
@@ -102,7 +102,7 @@ func (c *HttpTransport) UpdateEndpointMethodFilter(ctx context.Context, serviceI
 	}
 }
 
-func (c *HttpTransport) GetEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId, filterId string) (*MasheryResponseFilter, error) {
+func GetEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId, filterId string, c *HttpTransport) (*MasheryResponseFilter, error) {
 	fetchSpec := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters/%s", serviceId, endpointId, methodId, filterId),
@@ -124,7 +124,7 @@ func (c *HttpTransport) GetEndpointMethodFilter(ctx context.Context, serviceId, 
 	}
 }
 
-func (c *HttpTransport) DeleteEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId, filterId string) error {
+func DeleteEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId, filterId string, c *HttpTransport) error {
 	return c.deleteObject(ctx, FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters/%s", serviceId, endpointId, methodId, filterId),
 		AppContext: "endpoint method filters",
@@ -132,10 +132,10 @@ func (c *HttpTransport) DeleteEndpointMethodFilter(ctx context.Context, serviceI
 }
 
 // Count the number of services that would match this criteria
-func (c *HttpTransport) CountEndpointsMethodsFiltersOf(ctx context.Context, serviceId, endpointId, methodId string) (int64, error) {
+func CountEndpointsMethodsFiltersOf(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,
-		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId),
+		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
 		AppContext: "endpoint method filters",
 	}
 

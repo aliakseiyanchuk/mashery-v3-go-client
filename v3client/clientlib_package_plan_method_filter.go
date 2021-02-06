@@ -13,7 +13,7 @@ func packagePlanEndpointMethodFilter(id MasheryPlanServiceEndpointMethod) string
 }
 
 // Retrieve the information about a pacakge plan method.
-func (c *HttpTransport) GetPackagePlanMethodFilter(ctx context.Context, id MasheryPlanServiceEndpointMethod) (*MasheryResponseFilter, error) {
+func GetPackagePlanMethodFilter(ctx context.Context, id MasheryPlanServiceEndpointMethod, c *HttpTransport) (*MasheryResponseFilter, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Pagination: PerItem,
 		Resource:   packagePlanEndpointMethodFilter(id),
@@ -33,7 +33,7 @@ func (c *HttpTransport) GetPackagePlanMethodFilter(ctx context.Context, id Mashe
 }
 
 // Create a new service cache
-func (c *HttpTransport) CreatePackagePlanMethodFilter(ctx context.Context, id MasheryPlanServiceEndpointMethod, ref MasheryServiceMethodFilter) (*MasheryResponseFilter, error) {
+func CreatePackagePlanMethodFilter(ctx context.Context, id MasheryPlanServiceEndpointMethod, ref MasheryServiceMethodFilter, c *HttpTransport) (*MasheryResponseFilter, error) {
 	upsert := IdReferenced{IdRef: ref.MethodId}
 
 	rawResp, err := c.createObject(ctx, upsert, FetchSpec{
@@ -55,7 +55,7 @@ func (c *HttpTransport) CreatePackagePlanMethodFilter(ctx context.Context, id Ma
 }
 
 // Create a new service.
-func (c *HttpTransport) DeletePackagePlanMethodFilter(ctx context.Context, id MasheryPlanServiceEndpointMethod) error {
+func DeletePackagePlanMethodFilter(ctx context.Context, id MasheryPlanServiceEndpointMethod, c *HttpTransport) error {
 	return c.deleteObject(ctx, FetchSpec{
 		Pagination: NotRequired,
 		Resource:   packagePlanEndpointMethodFilter(id),

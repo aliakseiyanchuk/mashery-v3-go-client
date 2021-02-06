@@ -11,7 +11,7 @@ var serviceAllFieldsQuery = url.Values{
 	"fields": {MasheryServiceFullFieldsStr},
 }
 
-func (c *HttpTransport) GetService(ctx context.Context, id string) (*MasheryService, error) {
+func GetService(ctx context.Context, id string, c *HttpTransport) (*MasheryService, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Resource:       fmt.Sprintf("/services/%s", id),
 		Query:          serviceAllFieldsQuery,
@@ -28,7 +28,7 @@ func (c *HttpTransport) GetService(ctx context.Context, id string) (*MasheryServ
 }
 
 // Create a new service.
-func (c *HttpTransport) CreateService(ctx context.Context, service MasheryService) (*MasheryService, error) {
+func CreateService(ctx context.Context, service MasheryService, c *HttpTransport) (*MasheryService, error) {
 	rawResp, err := c.createObject(ctx, service, FetchSpec{
 		Resource:   "/services",
 		AppContext: "services",
@@ -47,7 +47,7 @@ func (c *HttpTransport) CreateService(ctx context.Context, service MasheryServic
 }
 
 // Create a new service.
-func (c *HttpTransport) UpdateService(ctx context.Context, service MasheryService) (*MasheryService, error) {
+func UpdateService(ctx context.Context, service MasheryService, c *HttpTransport) (*MasheryService, error) {
 	if service.Id == "" {
 		return nil, errors.New("illegal argument: service Id must be set and not nil")
 	}
@@ -67,7 +67,7 @@ func (c *HttpTransport) UpdateService(ctx context.Context, service MasheryServic
 }
 
 // Delete a service.
-func (c *HttpTransport) DeleteService(ctx context.Context, serviceId string) error {
+func DeleteService(ctx context.Context, serviceId string, c *HttpTransport) error {
 	opContext := FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s", serviceId),
 		AppContext: "service",
@@ -78,15 +78,15 @@ func (c *HttpTransport) DeleteService(ctx context.Context, serviceId string) err
 
 // List services that are filtered according to the condition that is V3-supported and containing the fields
 // that the requester specifies
-func (c *HttpTransport) ListServicesFiltered(ctx context.Context, params map[string]string, fields []string) ([]MasheryService, error) {
-	return c.listServicesWithQuery(ctx, c.v3FilteringParams(params, fields))
+func ListServicesFiltered(ctx context.Context, params map[string]string, fields []string, c *HttpTransport) ([]MasheryService, error) {
+	return listServicesWithQuery(ctx, c.v3FilteringParams(params, fields), c)
 }
 
-func (c *HttpTransport) ListServices(ctx context.Context) ([]MasheryService, error) {
-	return c.listServicesWithQuery(ctx, nil)
+func ListServices(ctx context.Context, c *HttpTransport) ([]MasheryService, error) {
+	return listServicesWithQuery(ctx, nil, c)
 }
 
-func (c *HttpTransport) listServicesWithQuery(ctx context.Context, qs url.Values) ([]MasheryService, error) {
+func listServicesWithQuery(ctx context.Context, qs url.Values, c *HttpTransport) ([]MasheryService, error) {
 	opCtx := FetchSpec{
 		Pagination:     PerItem,
 		Resource:       "/services",
@@ -112,7 +112,7 @@ func (c *HttpTransport) listServicesWithQuery(ctx context.Context, qs url.Values
 }
 
 // Count the number of services that would match this criteria
-func (c *HttpTransport) CountServices(ctx context.Context, params map[string]string) (int64, error) {
+func CountServices(ctx context.Context, params map[string]string, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,
 		Resource:   "/services",
