@@ -25,9 +25,11 @@ func listServices(ctx context.Context, cl v3client.Client, rawArg interface{}) i
 }
 
 func listServiceArgParser() (bool, error) {
-	if argAt(0) == "service" && argAt(1) == "list" {
-		handler = listServices
-		return true, nil
+	if argAt(0) == "service" {
+		if argAt(1) == "list" {
+			handler = listServices
+			return true, nil
+		}
 	}
 
 	return false, nil

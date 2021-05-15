@@ -17,6 +17,21 @@ func showServiceData(ctx context.Context, cl v3client.Client, rawIds interface{}
 			fmt.Println()
 
 			_ = jsonEncoder.Encode(&srv)
+
+			errorSets, _ := cl.ListErrorSets(ctx, srv.Id, v3client.EmptyQuery)
+			fmt.Printf("Service contains %d error sets\n", len(errorSets))
+			for v, idx := range errorSets {
+				fmt.Printf("%d. %s type=%s, jsonp: %t, jsonpType=%s (id=%s)", v+1, idx.Name, idx.Type, idx.JSONP, idx.JSONPType, idx.Id)
+
+				if es, err := cl.GetErrorSet(ctx, srv.Id, idx.Id); err != nil {
+					fmt.Printf("Can't retrieve error set: %s", err)
+				} else {
+					for idx, v := range *es.ErrorMessages {
+						fmt.Printf("%d. %s\n", idx+1, v.Id)
+					}
+				}
+			}
+
 		} else {
 			fmt.Printf("ERROR: Failed to retrieve service %s: %s", id, err)
 		}

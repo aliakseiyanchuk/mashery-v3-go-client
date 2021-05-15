@@ -27,7 +27,7 @@ func GetService(ctx context.Context, id string, c *HttpTransport) (*MasheryServi
 	}
 }
 
-// Create a new service.
+// CreateService Create a new service.
 func CreateService(ctx context.Context, service MasheryService, c *HttpTransport) (*MasheryService, error) {
 	rawResp, err := c.createObject(ctx, service, FetchSpec{
 		Resource:   "/services",
@@ -76,7 +76,7 @@ func DeleteService(ctx context.Context, serviceId string, c *HttpTransport) erro
 	return c.deleteObject(ctx, opContext)
 }
 
-// List services that are filtered according to the condition that is V3-supported and containing the fields
+// ListServicesFiltered List services that are filtered according to the condition that is V3-supported and containing the fields
 // that the requester specifies
 func ListServicesFiltered(ctx context.Context, params map[string]string, fields []string, c *HttpTransport) ([]MasheryService, error) {
 	return listServicesWithQuery(ctx, c.v3FilteringParams(params, fields), c)

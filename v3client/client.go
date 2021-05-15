@@ -4,10 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 )
 
 type Client interface {
-	// Applications
+	GetPublicDomains(ctx context.Context) ([]string, error)
+	GetSystemDomains(ctx context.Context) ([]string, error)
+
+	// GetApplication Retrieve the details of the application
 	GetApplication(ctx context.Context, appId string) (*MasheryApplication, error)
 	GetApplicationPackageKeys(ctx context.Context, appId string) ([]MasheryPackageKey, error)
 	CountApplicationPackageKeys(ctx context.Context, appId string) (int64, error)
@@ -104,8 +108,9 @@ type Client interface {
 	// Roles
 	GetRole(ctx context.Context, id string) (*MasheryRole, error)
 	ListRoles(ctx context.Context) ([]MasheryRole, error)
+	ListRolesFiltered(ctx context.Context, params map[string]string, fields []string) ([]MasheryRole, error)
 
-	// Service
+	// GetService retrieves service based on the service identifier
 	GetService(ctx context.Context, id string) (*MasheryService, error)
 	CreateService(ctx context.Context, service MasheryService) (*MasheryService, error)
 	UpdateService(ctx context.Context, service MasheryService) (*MasheryService, error)
@@ -113,6 +118,13 @@ type Client interface {
 	ListServicesFiltered(ctx context.Context, params map[string]string, fields []string) ([]MasheryService, error)
 	ListServices(ctx context.Context) ([]MasheryService, error)
 	CountServices(ctx context.Context, params map[string]string) (int64, error)
+
+	ListErrorSets(ctx context.Context, serviceId string, qs url.Values) ([]MasheryErrorSet, error)
+	GetErrorSet(ctx context.Context, serviceId, setId string) (*MasheryErrorSet, error)
+	CreateErrorSet(ctx context.Context, serviceId string, set MasheryErrorSet) (*MasheryErrorSet, error)
+	UpdateErrorSet(ctx context.Context, serviceId string, setData MasheryErrorSet) (*MasheryErrorSet, error)
+	DeleteErrorSet(ctx context.Context, serviceId, setId string) error
+	UpdateErrorSetMessage(ctx context.Context, serviceId string, setId string, msg MasheryErrorMessage) (*MasheryErrorMessage, error)
 
 	// Service cache
 	GetServiceCache(ctx context.Context, id string) (*MasheryServiceCache, error)
@@ -132,6 +144,20 @@ type PluggableClient struct {
 	transport *HttpTransport
 }
 
+// FixedSchemeClient Fixed method scheme client that will not allow changing schema after it was created.
+type FixedSchemeClient struct {
+	PluggableClient
+}
+
+func (fsc *FixedSchemeClient) AssumeSchema(_ *ClientMethodSchema) {
+	panic("This client cannot change method schema after it was created")
+}
+
+// Allows a pluggable client to assume a schema. This method should be mainly used in the test contexts.
+func (pc *PluggableClient) AssumeSchema(sch *ClientMethodSchema) {
+	pc.schema = sch
+}
+
 func (c *PluggableClient) notImplemented(meth string) error {
 	return errors.New(fmt.Sprintf("No implementation method was supplied for method %s", meth))
 }
@@ -141,6 +167,10 @@ func (c *PluggableClient) notImplemented(meth string) error {
 // -----------------------------------------------------------------------------------------------------------------
 
 type ClientMethodSchema struct {
+	// Public and System Domains
+	GetPublicDomains func(ctx context.Context, transport *HttpTransport) ([]string, error)
+	GetSystemDomains func(ctx context.Context, transport *HttpTransport) ([]string, error)
+
 	// Applications
 	GetApplicationContext       func(ctx context.Context, appId string, transport *HttpTransport) (*MasheryApplication, error)
 	GetApplicationPackageKeys   func(ctx context.Context, appId string, transport *HttpTransport) ([]MasheryPackageKey, error)
@@ -236,8 +266,9 @@ type ClientMethodSchema struct {
 	ListPackageKeys         func(ctx context.Context, c *HttpTransport) ([]MasheryPackageKey, error)
 
 	// Roles
-	GetRole   func(ctx context.Context, id string, c *HttpTransport) (*MasheryRole, error)
-	ListRoles func(ctx context.Context, c *HttpTransport) ([]MasheryRole, error)
+	GetRole           func(ctx context.Context, id string, c *HttpTransport) (*MasheryRole, error)
+	ListRoles         func(ctx context.Context, c *HttpTransport) ([]MasheryRole, error)
+	ListRolesFiltered func(ctx context.Context, params map[string]string, fields []string, c *HttpTransport) ([]MasheryRole, error)
 
 	// Services
 	GetService           func(ctx context.Context, id string, c *HttpTransport) (*MasheryService, error)
@@ -247,6 +278,13 @@ type ClientMethodSchema struct {
 	ListServicesFiltered func(ctx context.Context, params map[string]string, fields []string, c *HttpTransport) ([]MasheryService, error)
 	ListServices         func(ctx context.Context, c *HttpTransport) ([]MasheryService, error)
 	CountServices        func(ctx context.Context, params map[string]string, c *HttpTransport) (int64, error)
+
+	ListErrorSets         func(ctx context.Context, serviceId string, qs url.Values, c *HttpTransport) ([]MasheryErrorSet, error)
+	GetErrorSet           func(ctx context.Context, serviceId, setId string, c *HttpTransport) (*MasheryErrorSet, error)
+	CreateErrorSet        func(ctx context.Context, serviceId string, set MasheryErrorSet, c *HttpTransport) (*MasheryErrorSet, error)
+	UpdateErrorSet        func(ctx context.Context, serviceId string, setData MasheryErrorSet, c *HttpTransport) (*MasheryErrorSet, error)
+	DeleteErrorSet        func(ctx context.Context, serviceId, setId string, c *HttpTransport) error
+	UpdateErrorSetMessage func(ctx context.Context, serviceId string, setId string, msg MasheryErrorMessage, c *HttpTransport) (*MasheryErrorMessage, error)
 
 	// Service cache
 	GetServiceCache    func(ctx context.Context, id string, c *HttpTransport) (*MasheryServiceCache, error)
@@ -259,6 +297,70 @@ type ClientMethodSchema struct {
 	CreateServiceOAuthSecurityProfile func(ctx context.Context, id string, service MasheryOAuth, c *HttpTransport) (*MasheryOAuth, error)
 	UpdateServiceOAuthSecurityProfile func(ctx context.Context, id string, service MasheryOAuth, c *HttpTransport) (*MasheryOAuth, error)
 	DeleteServiceOAuthSecurityProfile func(ctx context.Context, id string, c *HttpTransport) error
+}
+
+func (c *PluggableClient) ListErrorSets(ctx context.Context, serviceId string, qs url.Values) ([]MasheryErrorSet, error) {
+	if c.schema.ListErrorSets != nil {
+		return c.schema.ListErrorSets(ctx, serviceId, qs, c.transport)
+	} else {
+		return []MasheryErrorSet{}, c.notImplemented("ListErrorSets")
+	}
+}
+
+func (c *PluggableClient) GetErrorSet(ctx context.Context, serviceId, setId string) (*MasheryErrorSet, error) {
+	if c.schema.GetErrorSet != nil {
+		return c.schema.GetErrorSet(ctx, serviceId, setId, c.transport)
+	} else {
+		return nil, c.notImplemented("GetErrorSet")
+	}
+}
+
+func (c *PluggableClient) CreateErrorSet(ctx context.Context, serviceId string, set MasheryErrorSet) (*MasheryErrorSet, error) {
+	if c.schema.CreateErrorSet != nil {
+		return c.schema.CreateErrorSet(ctx, serviceId, set, c.transport)
+	} else {
+		return nil, c.notImplemented("CreateErrorSet")
+	}
+}
+
+func (c *PluggableClient) UpdateErrorSet(ctx context.Context, serviceId string, setData MasheryErrorSet) (*MasheryErrorSet, error) {
+	if c.schema.UpdateErrorSet != nil {
+		return c.schema.UpdateErrorSet(ctx, serviceId, setData, c.transport)
+	} else {
+		return nil, c.notImplemented("UpdateErrorSet")
+	}
+}
+
+func (c *PluggableClient) DeleteErrorSet(ctx context.Context, serviceId, setId string) error {
+	if c.schema.DeleteErrorSet != nil {
+		return c.schema.DeleteErrorSet(ctx, serviceId, setId, c.transport)
+	} else {
+		return c.notImplemented("DeleteErrorSet")
+	}
+}
+
+func (c *PluggableClient) UpdateErrorSetMessage(ctx context.Context, serviceId string, setId string, msg MasheryErrorMessage) (*MasheryErrorMessage, error) {
+	if c.schema.UpdateErrorSetMessage != nil {
+		return c.schema.UpdateErrorSetMessage(ctx, serviceId, setId, msg, c.transport)
+	} else {
+		return nil, c.notImplemented("UpdateErrorSetMessage")
+	}
+}
+
+func (c *PluggableClient) GetPublicDomains(ctx context.Context) ([]string, error) {
+	if c.schema.GetPublicDomains != nil {
+		return c.schema.GetPublicDomains(ctx, c.transport)
+	} else {
+		return []string{}, c.notImplemented("GetPublicDomains")
+	}
+}
+
+func (c *PluggableClient) GetSystemDomains(ctx context.Context) ([]string, error) {
+	if c.schema.GetSystemDomains != nil {
+		return c.schema.GetSystemDomains(ctx, c.transport)
+	} else {
+		return []string{}, c.notImplemented("GetSystemDomains")
+	}
 }
 
 func (c *PluggableClient) GetApplication(ctx context.Context, appId string) (*MasheryApplication, error) {
@@ -874,6 +976,14 @@ func (c *PluggableClient) ListRoles(ctx context.Context) ([]MasheryRole, error) 
 		return c.schema.ListRoles(ctx, c.transport)
 	} else {
 		return []MasheryRole{}, c.notImplemented("ListRoles")
+	}
+}
+
+func (c *PluggableClient) ListRolesFiltered(ctx context.Context, params map[string]string, fields []string) ([]MasheryRole, error) {
+	if c.schema.ListRolesFiltered != nil {
+		return c.schema.ListRolesFiltered(ctx, params, fields, c.transport)
+	} else {
+		return []MasheryRole{}, c.notImplemented("ListRolesFiltered")
 	}
 }
 

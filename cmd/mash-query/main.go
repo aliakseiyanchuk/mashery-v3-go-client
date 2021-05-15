@@ -40,10 +40,21 @@ func init() {
 	jsonEncoder.SetIndent("", "  ")
 }
 
+func tokenProvider() (v3client.V3AccessTokenProvider, error) {
+	if envProp := os.Getenv(v3client.MasheryTokenSystemProperty); len(envProp) > 0 {
+		return v3client.NewFixedTokenProvider(envProp), nil
+	}
+
+	fsProvider := v3client.NewFileSystemTokenProviderFrom(cmdTokenFile)
+	_, err := fsProvider.AccessToken()
+
+	return fsProvider, err
+}
+
 func main() {
 	fmt.Println("----------------------------------")
 
-	flag.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.SavedAccessTokenFile(), "Use locally saved token file")
+	flag.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.DefaultSavedAccessTokenFilePath(), "Use locally saved token file")
 	flag.Int64Var(&qps, qpsOps, 2, "Observe specified queries-per-second while querying")
 	flag.StringVar(&travelTimeComp, customNetTTLOpt, "173ms", "Consider specified network travel time")
 	flag.Parse()
@@ -68,23 +79,20 @@ func main() {
 	}
 
 	// Arguments have been parsed correctly.
-	var exitCode = 0
-
-	if tkn, err := v3client.ReadSavedV3TokenData(cmdTokenFile); err == nil && tkn != nil {
+	if tknProvider, err := tokenProvider(); err != nil {
+		fmt.Printf("Access token provider is not ready: %s", err)
+		fmt.Println()
+		os.Exit(1)
+	} else {
 		ctx := context.TODO()
 
 		dur, durErr := time.ParseDuration(travelTimeComp)
 		if durErr != nil {
 			dur = 173 * time.Millisecond
 		}
-		cl := v3client.NewHttpClient(v3client.NewFixedTokenProvider(tkn.AccessToken), qps, dur)
+		cl := v3client.NewHttpClient(tknProvider, qps, dur)
 
-		exitCode = handler(ctx, cl, handlerArgs)
-	} else {
-		fmt.Println("Could not load token file:")
-		fmt.Println(err)
-		os.Exit(1)
+		exitCode := handler(ctx, cl, handlerArgs)
+		os.Exit(exitCode)
 	}
-
-	os.Exit(exitCode)
 }

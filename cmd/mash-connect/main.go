@@ -1,43 +1,43 @@
 package main
 
 import (
-	"encoding/json"
+	"bufio"
 	"flag"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
-	"io/ioutil"
 	"os"
 )
 
 const customTokenFileOpt = "token-file"
-const accessTokenVariableOpt = "env-var"
+const windowsOpt = "win"
 
 // Command line utility to log into the Mashery.
-var credsFile string
+var credentialsFile string
 var cmdTokenFile string
-var cmdCreds v3client.MasheryV3Credentials
 
 func refresh() int {
-	refreshCmd := flag.NewFlagSet("refresh", flag.ExitOnError)
-	refreshCmd.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.SavedAccessTokenFile(), "Use this file to read/write access token data")
-	refreshCmd.StringVar(&credsFile, "creds", "", "Path to the credentials file")
-	refreshCmd.StringVar(&(cmdCreds.ApiKey), "k", "", "Mashery V3 API key")
-	refreshCmd.StringVar(&(cmdCreds.ApiKey), "apiKey", "", "Mashery V3 API key")
-	refreshCmd.StringVar(&(cmdCreds.Secret), "s", "", "Mashery V3 API key secret")
-	refreshCmd.StringVar(&(cmdCreds.Secret), "secret", "", "Mashery V3 API key secret")
 
-	_ = refreshCmd.Parse(os.Args[:2])
+	_ = tokenCommandLine("refresh").Parse(os.Args[:2])
 
 	if tkn, err := v3client.ReadSavedV3TokenData(cmdTokenFile); err == nil && tkn != nil {
-		creds := v3client.DeriveAccessCredentials(credsFile)
-		creds.Inherit(&cmdCreds)
+		runtimeCredentials := v3client.DeriveAccessCredentials(credentialsFile, credentialsPassword(), nil)
+		if !runtimeCredentials.FullySpecified() {
+			fmt.Println("Insufficient input runtimeCredentials")
+			return 1
+		}
 
-		ccProvider := v3client.NewClientCredentialsProvider(creds)
-		ccProvider.Response = tkn
+		ccProvider := v3client.NewOAuthHelper()
 
 		fmt.Println("Trying to refresh Mashery V3 access token...")
-		if err := ccProvider.Refresh(); err == nil {
-			return saveTokenResponse(ccProvider.Response)
+		if resp, err := ccProvider.ExchangeRefreshToken(&runtimeCredentials, tkn.RefreshToken); err == nil {
+			if err = v3client.PersistV3TokenResponse(resp, cmdTokenFile); err != nil {
+				fmt.Printf("Token was not refreshed: %s", err)
+				fmt.Println()
+				return 3
+			} else {
+				fmt.Println("Token has been successfully refreshed")
+				return 0
+			}
 		} else {
 			fmt.Printf("Refresh failed: %s", err)
 			return 2
@@ -54,13 +54,26 @@ func refresh() int {
 }
 
 func export() int {
-	exportCmd := flag.NewFlagSet("export", flag.ExitOnError)
-	exportCmd.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.SavedAccessTokenFile(), "Use specified custom file")
+	var asWin32 = false
 
-	_ = exportCmd.Parse(os.Args[:2])
+	exportCmd := flag.NewFlagSet("export", flag.ExitOnError)
+	exportCmd.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.DefaultSavedAccessTokenFilePath(), "Use specified custom file")
+	exportCmd.BoolVar(&asWin32, windowsOpt, false, "Export settings for batch file")
+
+	_ = exportCmd.Parse(os.Args[2:])
+
+	exportVar := "V3_ACCESS_TOKEN"
+	if len(exportCmd.Args()) > 0 {
+		exportVar = exportCmd.Args()[0]
+	}
 
 	if tkn, err := v3client.ReadSavedV3TokenData(cmdTokenFile); err == nil && tkn != nil {
-		fmt.Print(tkn.AccessToken)
+		if asWin32 {
+			fmt.Println("@echo off")
+			fmt.Printf("SET %s=%s", exportVar, tkn.AccessToken)
+		} else {
+			fmt.Printf("export %s='%s'", exportVar, tkn.AccessToken)
+		}
 		return 0
 	} else {
 		fmt.Println("Could not read saved V3 token data")
@@ -83,7 +96,7 @@ func show() int {
 	if len(cmdTokenFile) > 0 {
 		f = cmdTokenFile
 	} else {
-		f = v3client.SavedAccessTokenFile()
+		f = v3client.DefaultSavedAccessTokenFilePath()
 	}
 
 	if tkn, err := v3client.ReadSavedV3TokenData(f); err == nil && tkn != nil {
@@ -113,54 +126,119 @@ func show() int {
 	}
 }
 
-func saveTokenResponse(dat *v3client.TimedAccessTokenResponse) int {
-	if b, err := json.Marshal(dat); err == nil {
-		if err = ioutil.WriteFile(cmdTokenFile, b, 0644); err == nil {
-			fmt.Printf("Mashery V3 API access token has been successfuly initialized.")
-			fmt.Println()
+func keepTokenAlive() int {
+	if err := tokenCommandLine("keep-alive").Parse(os.Args[2:]); err == nil {
+		runtimeCredentials := v3client.DeriveAccessCredentials(credentialsFile, credentialsPassword(), nil)
+		if !runtimeCredentials.FullySpecified() {
+			fmt.Println("Insufficient input credentials")
+			return 1
+		}
 
-			fmt.Printf("Access token will expire in %d minutes (on %s)", dat.ExpiresIn/60, dat.ExpiryTime())
-			return 0
-		} else {
-			fmt.Printf("ERROR: Could not save credentials to %s (%s)", cmdTokenFile, err)
+		provider := v3client.NewClientCredentialsProvider(runtimeCredentials)
+
+		if initTkn, err := provider.TokenData(); err != nil || initTkn == nil {
+			if err != nil {
+				fmt.Printf("Could not retrive initial access token: %s", err)
+			} else {
+				fmt.Println("Nil token and no error were returned.")
+			}
+			fmt.Println()
 			return 2
+		} else {
+			if err = v3client.PersistV3TokenResponse(initTkn, cmdTokenFile); err != nil {
+				fmt.Printf("Could not save initial token: %s", err)
+				fmt.Println()
+				return 3
+			}
+
+			exitChan := make(chan int)
+
+			provider.OnPostRefresh(func() {
+				if provider.Response == nil || provider.Response.Expired() {
+					fmt.Printf("Refresh token failed, and current token has expired: %s", err)
+					fmt.Println()
+					exitChan <- 1
+				} else if err := v3client.PersistV3TokenResponse(provider.Response, cmdTokenFile); err != nil {
+					fmt.Printf("Could not save updated refresh token: %s", err)
+					fmt.Println()
+					exitChan <- 1
+				}
+			})
+
+			provider.EnsureRefresh()
+			fmt.Println("Initial token retrieved; will keep token alive until interrupted.")
+			fmt.Println("------------------------------------------------------------------")
+
+			// In case refresh has failed, let's make a provision to
+			exitCode := <-exitChan
+
+			fmt.Println("--------------------------------------------------")
+			fmt.Println("Keep-alive stopped; perhaps due to the error above")
+
+			return exitCode
 		}
 	} else {
-		fmt.Printf("Failed to unmarshal response: %s (%s)", dat, err)
-		return 2
+		fmt.Printf("Could not parse command line arguments: %s", err)
+		return 1
+	}
+}
+
+func tokenCommandLine(name string) *flag.FlagSet {
+	initCmd := flag.NewFlagSet(name, flag.ExitOnError)
+
+	initCmd.StringVar(&credentialsFile, "credentials", v3client.DefaultCredentialsFile(), "Path to the credentials file")
+	initCmd.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.DefaultSavedAccessTokenFilePath(), "Use this file to read/write access token data")
+
+	return initCmd
+}
+
+// credentialsPassword derive the credentials password.
+func credentialsPassword() string {
+	if env := os.Getenv("MASH_CREDS_AES"); len(env) > 0 {
+		return env
+	} else {
+		reader := bufio.NewReader(os.Stdin)
+		line, _ := reader.ReadString('\n')
+
+		return line
+	}
+
+}
+
+func encryptCredentials() int {
+	initCmd := flag.NewFlagSet("encrypt", flag.ExitOnError)
+	initCmd.StringVar(&credentialsFile, "credentials", v3client.DefaultCredentialsFile(), "Path to the credentials file")
+
+	if err := initCmd.Parse(os.Args[2:]); err != nil {
+		return 1
+	}
+
+	if err := v3client.EncryptInPlace(credentialsFile, credentialsPassword()); err != nil {
+		fmt.Printf("Could not encrype file %s: %s", credentialsFile, err)
+		return 1
+	} else {
+		return 0
 	}
 }
 
 func initToken() int {
-	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
+	if err := tokenCommandLine("init").Parse(os.Args[2:]); err == nil {
 
-	initCmd.StringVar(&credsFile, "creds", "", "Path to the credentials file")
-	initCmd.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.SavedAccessTokenFile(), "Use this file to read/write access token data")
-	initCmd.StringVar(&(cmdCreds.AreaId), "a", "", "Mashery V3 Area ID")
-	initCmd.StringVar(&(cmdCreds.AreaId), "areaId", "", "Mashery V3 Area ID")
-	initCmd.StringVar(&(cmdCreds.ApiKey), "k", "", "Mashery V3 API key")
-	initCmd.StringVar(&(cmdCreds.ApiKey), "apiKey", "", "Mashery V3 API key")
-	initCmd.StringVar(&(cmdCreds.Secret), "s", "", "Mashery V3 API key secret")
-	initCmd.StringVar(&(cmdCreds.Secret), "secret", "", "Mashery V3 API key secret")
-	initCmd.StringVar(&(cmdCreds.Username), "u", "", "Mashery V3 user name")
-	initCmd.StringVar(&(cmdCreds.Username), "username", "", "Mashery V3 user name")
-	initCmd.StringVar(&(cmdCreds.Password), "p", "", "Mashery V3 password")
-	initCmd.StringVar(&(cmdCreds.Password), "password", "", "Mashery V3 password")
+		runtimeCredentials := v3client.DeriveAccessCredentials(credentialsFile, credentialsPassword(), nil)
+		if !runtimeCredentials.FullySpecified() {
+			fmt.Println("Insufficient input credentials")
+			return 1
+		}
 
-	if err := initCmd.Parse(os.Args[2:]); err == nil {
-		// Derive credentials from all applicable sources, including the command line
-		// The sequence of derivation is:
-		// - Environment variables, overridden by
-		// - User settings file, overridden by
-		// - Credentials file in the working directory, overriden by
-		// - Command line arguments
-		creds := v3client.DeriveAccessCredentials(credsFile)
-		creds.Inherit(&cmdCreds)
+		provider := v3client.NewOAuthHelper()
 
-		provider := v3client.NewClientCredentialsProvider(creds)
-
-		if dat, err := provider.TokenData(); err == nil {
-			return saveTokenResponse(dat)
+		if dat, err := provider.RetrieveAccessTokenFor(&runtimeCredentials); err == nil {
+			if err = v3client.PersistV3TokenResponse(dat, cmdTokenFile); err != nil {
+				fmt.Printf("Failed to save response: %s", err)
+				return 2
+			} else {
+				return 0
+			}
 		} else {
 			fmt.Printf("Error: Token data was not retrieved: %s", err)
 			return 1
@@ -176,8 +254,14 @@ func main() {
 
 	switch os.Args[1] {
 
+	case "encrypt":
+		exitCode = encryptCredentials()
+		break
 	case "init":
 		exitCode = initToken()
+		break
+	case "keep-alive":
+		exitCode = keepTokenAlive()
 		break
 	case "show":
 		exitCode = show()

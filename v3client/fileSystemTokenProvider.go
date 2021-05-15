@@ -1,51 +1,67 @@
 package v3client
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"os"
+	"time"
 )
 
+// FileSystemTokenProvider
+// An access token provider that  serve access token that has been pre-saved and persisted. The file will be periodically
+// checked for the modification. The provider will retain the most recent successfully read response.
 type FileSystemTokenProvider struct {
-	Response TimedAccessTokenResponse
+	path               string
+	Response           *TimedAccessTokenResponse
+	lastFSCheck        time.Time
+	sourceLastModified time.Time
+	syncInterval       time.Duration
 }
 
-func (f FileSystemTokenProvider) AccessToken() (string, error) {
-	if f.Response.Expired() {
-		return "", errors.New("Token has expired")
-	} else {
-		return f.Response.AccessToken, nil
+func (f *FileSystemTokenProvider) AccessToken() (string, error) {
+	f.checkFileSync()
+
+	if f.Response == nil {
+		return "", errors.New("no saved token data found")
+	} else if f.Response.Expired() {
+		return "", errors.New("saved token has already expired")
 	}
+
+	return f.Response.AccessToken, nil
 }
 
-func NewFileSystemTokenProvider() (V3AccessTokenProvider, error) {
-	return NewFileSystemTokenProviderFrom(SavedAccessTokenFile())
-}
+func (f *FileSystemTokenProvider) checkFileSync() {
+	now := time.Now()
+	if now.Sub(f.lastFSCheck) > f.syncInterval {
+		if info, err := os.Stat(f.path); (err == nil || os.IsNotExist(err)) &&
+			!info.IsDir() &&
+			f.sourceLastModified.Before(info.ModTime()) {
 
-func NewFileSystemTokenProviderFrom(path string) (V3AccessTokenProvider, error) {
-	var retErr error = nil
-	var retVal V3AccessTokenProvider = nil
-
-	if _, err := os.Stat(path); err == nil || os.IsExist(err) {
-		rv := FileSystemTokenProvider{}
-		if data, err := ioutil.ReadFile(path); err == nil {
-			if err = json.Unmarshal(data, &(rv.Response)); err == nil {
-				retVal = &rv
-			} else {
-				retErr = errors.New(fmt.Sprintf("data of file %s could not be unmarshalled (%s)", path, err))
+			if resp, err := ReadSavedV3TokenData(f.path); err == nil {
+				f.Response = resp
 			}
-		} else {
-			retErr = errors.New(fmt.Sprintf("File %s could not be read", path))
+
+			f.sourceLastModified = info.ModTime()
 		}
-	} else {
-		retErr = errors.New("saved token file does not exist")
 	}
 
-	if retErr != nil {
-		return nil, retErr
-	} else {
-		return retVal, nil
+	f.lastFSCheck = now
+}
+
+func (f *FileSystemTokenProvider) Close() {
+	// Do nothing
+}
+
+func NewFileSystemTokenProvider() V3AccessTokenProvider {
+	return NewFileSystemTokenProviderFrom(DefaultSavedAccessTokenFilePath())
+}
+
+func NewFileSystemTokenProviderFrom(path string) V3AccessTokenProvider {
+	syncInterval, _ := time.ParseDuration("1m")
+
+	return &FileSystemTokenProvider{
+		path:               path,
+		lastFSCheck:        time.Unix(0, 0),
+		sourceLastModified: time.Unix(0, 0),
+		syncInterval:       syncInterval,
 	}
 }

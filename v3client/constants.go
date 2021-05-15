@@ -1,12 +1,27 @@
 package v3client
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
+
+const (
+	MasheryTokenSystemProperty = "MasheryV3AccessToken"
+	MasheryTokenEndpoint       = "https://api.mashery.com/v3/token"
+)
+
+var EmptyQuery url.Values = map[string][]string{}
 
 // Usual mashery service fields without endpoints
 var MasheryServiceFields = []string{
 	"id", "name", "created", "updated", "editorHandle", "revisionNumber", "robotsPolicy",
 	"crossdomainPolicy", "description", "errorSets", "qpsLimitOverall", "rfc3986Encode",
 	"securityProfile", "version",
+}
+
+// MasheryErrorSetFields all fields of Mashery error set
+var MasheryErrorSetFields = []string{
+	"id", "name", "type", "jsonp", "jsonpType", "errorMessages",
 }
 
 var MasheryEndpointFields = []string{

@@ -1,12 +1,15 @@
 package v3client
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -36,39 +39,85 @@ func ReadSavedV3TokenData(fp string) (*TimedAccessTokenResponse, error) {
 	rv := TimedAccessTokenResponse{}
 	err = json.Unmarshal(dat, &rv)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("File %f is not valid json: %s", fp, err))
+		return nil, errors.New(fmt.Sprintf("File %s is not valid json: %s", fp, err))
 	}
 
 	return &rv, nil
 }
 
-func readUserHomeCredentials(m *MasheryV3Credentials) {
+func DefaultCredentialsFile() string {
 	if u, err := os.UserHomeDir(); err == nil {
-		userSetFile := filepath.Join(u, userSettingsFile)
-		tryReadCredentialSettingsFromYamlFile(m, userSetFile)
+		return filepath.Join(u, userSettingsFile)
+	} else {
+		return userSettingsFile
 	}
 }
 
-func readCurrentProcessCredentials(m *MasheryV3Credentials) {
-	if u, err := os.Getwd(); err == nil {
-		userSetFile := filepath.Join(u, userSettingsFile)
-		tryReadCredentialSettingsFromYamlFile(m, userSetFile)
+func EncryptInPlace(path string, pass string) error {
+	if len(pass) != 32 {
+		return errors.New("password should be 32 characters")
+	}
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return &WrappedError{Context: "reading", Cause: err}
+	}
+
+	if cphr, err := aes.NewCipher([]byte(pass)); err != nil {
+		return &WrappedError{Context: "obtaining cipher", Cause: err}
+	} else if gcm, err := cipher.NewGCM(cphr); err != nil {
+		return &WrappedError{Context: "failed to initialize counter", Cause: err}
+	} else {
+		nonce := make([]byte, gcm.NonceSize())
+		if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+			return &WrappedError{Context: "cannot initialize nonce", Cause: err}
+		} else {
+			return ioutil.WriteFile(path, gcm.Seal(nonce, nonce, data, nil), 0777)
+		}
 	}
 }
 
-func tryReadCredentialSettingsFromYamlFile(m *MasheryV3Credentials, file string) {
+func ReadCiphertext(fileName string, pass string) ([]byte, error) {
+	if len(pass) != 32 {
+		return []byte{}, errors.New("password must be exactly 32 characters")
+	}
+
+	if ciphertext, err := ioutil.ReadFile(fileName); err != nil {
+		return []byte{}, &WrappedError{Context: "reading source file", Cause: err}
+	} else if chr, err := aes.NewCipher([]byte(pass)); err != nil {
+		return []byte{}, &WrappedError{Context: "initializing cipher", Cause: err}
+	} else if gcmDecrypt, err := cipher.NewGCM(chr); err != nil {
+		return []byte{}, &WrappedError{Context: "initializing counter", Cause: err}
+	} else {
+		nonceSize := gcmDecrypt.NonceSize()
+		nonce, encryptedMessage := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
+		dat, err := gcmDecrypt.Open(nil, nonce, encryptedMessage, nil)
+		return dat, err
+	}
+}
+
+func tryReadCredentialSettingsFromYamlFile(m *MasheryV3Credentials, file, pass string) {
 	if _, err := os.Stat(file); err == nil || os.IsExist(err) {
-		if dat, err := ioutil.ReadFile(file); err == nil {
+		if dat, err := ReadCiphertext(file, pass); err == nil {
 			var fsCreds MasheryV3Credentials
 			if err = yaml.Unmarshal(dat, &fsCreds); err == nil {
 				m.Inherit(&fsCreds)
 			}
+		} else {
+			fmt.Println(err)
 		}
 	}
 	// else: the settings file doesn't exist.
 }
 
-func DeriveAccessCredentials(custFile string) MasheryV3Credentials {
+// DeriveAccessCredentials derives credentials from all applicable sources, including the command line
+// The sequence of derivation is:
+// - Environment variables, overridden by
+// - User settings file, overridden by
+// - Credentials file in the working directory, overriden by
+// - Command line arguments
+func DeriveAccessCredentials(customFile, filePass string, fallbackCreds *MasheryV3Credentials) MasheryV3Credentials {
 	creds := MasheryV3Credentials{
 		AreaId:   os.Getenv(AreaIdEnv),
 		ApiKey:   os.Getenv(ApiKeyEnv),
@@ -77,24 +126,13 @@ func DeriveAccessCredentials(custFile string) MasheryV3Credentials {
 		Password: os.Getenv(UserPassEnv),
 	}
 
-	readUserHomeCredentials(&creds)
-	readCurrentProcessCredentials(&creds)
-	tryReadCredentialSettingsFromYamlFile(&creds, custFile)
+	tryReadCredentialSettingsFromYamlFile(&creds, customFile, filePass)
+
+	if fallbackCreds != nil {
+		creds.Inherit(fallbackCreds)
+	}
 
 	return creds
-}
-
-func SavedAccessTokenFile() string {
-	u, e := user.Current()
-	if e == nil {
-		return filepath.Join(u.HomeDir, tokenFile)
-	} else {
-		wd, e := os.Getwd()
-		if e != nil {
-			panic("Process with no user and working directory? How can it be")
-		}
-		return filepath.Join(wd, tokenFile)
-	}
 }
 
 // Converts query parameters to V3-required filter string.

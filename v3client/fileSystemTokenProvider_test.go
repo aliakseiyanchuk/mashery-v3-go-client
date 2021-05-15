@@ -39,16 +39,13 @@ func TestNewFileSystemTokenProvider(t *testing.T) {
 		t.FailNow()
 	}
 
-	if p, err := v3client.NewFileSystemTokenProviderFrom(savedFileName); err == nil {
-		token, tokenInvalidError := p.AccessToken()
-		if tokenInvalidError != nil {
-			t.Errorf("The token must be valid")
-		}
-		if token != "accessToken" {
-			t.Errorf("Unexpected access token value: %s", token)
-		}
-	} else {
-		t.Errorf("File system provider produced an error: %s", err)
+	p := v3client.NewFileSystemTokenProviderFrom(savedFileName)
+	token, tokenInvalidError := p.AccessToken()
+	if tokenInvalidError != nil {
+		t.Errorf("The token must be valid")
+	}
+	if token != "accessToken" {
+		t.Errorf("Unexpected access token value: %s", token)
 	}
 }
 
@@ -71,12 +68,10 @@ func TestNewFileSystemTokenProviderWithExpiredToken(t *testing.T) {
 		t.FailNow()
 	}
 
-	if p, err := v3client.NewFileSystemTokenProviderFrom(savedFileName); err == nil {
-		_, tokenInvalidError := p.AccessToken()
-		if tokenInvalidError == nil {
-			t.Errorf("Token MUST be declared invalid")
-		}
-	} else {
-		t.Errorf("File system provider produced an error: %s", err)
+	p := v3client.NewFileSystemTokenProviderFrom(savedFileName)
+	_, tokenInvalidError := p.AccessToken()
+	if tokenInvalidError == nil {
+		t.Errorf("Token MUST be declared invalid")
 	}
+
 }

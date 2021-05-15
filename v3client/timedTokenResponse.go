@@ -8,6 +8,7 @@ import (
 // Timed access token response, suitable for storing in a log file.
 type TimedAccessTokenResponse struct {
 	Obtained time.Time `json:"obtained"`
+	QPS      int       `json:"qps"`
 	AccessTokenResponse
 }
 

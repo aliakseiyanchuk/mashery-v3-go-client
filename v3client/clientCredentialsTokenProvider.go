@@ -1,12 +1,8 @@
 package v3client
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 )
 
@@ -27,136 +23,137 @@ func (m *MasheryV3Credentials) FullySpecified() bool {
 		len(m.Password) > 0
 }
 
+//------------------------------------------------------------------------
+// Abstract credentials provider
+
 type ClientCredentialsProvider struct {
-	creds MasheryV3Credentials
+	V3OAuthHelper
 
-	TokenEndpoint string
-	Response      *TimedAccessTokenResponse
+	Response            *TimedAccessTokenResponse
+	tokenFile           string
+	credentials         MasheryV3Credentials
+	comm                chan int
+	asyncRefreshRunning bool
 
-	client *http.Client
+	postRefreshAction func()
 }
 
-func NewClientCredentialsProvider(creds MasheryV3Credentials) *ClientCredentialsProvider {
-	return NewLiveCredentialsProviderUsing(creds, "https://api.mashery.com/v3/token")
+func NewClientCredentialsProvider(credentials MasheryV3Credentials) *ClientCredentialsProvider {
+	return NewLiveCredentialsProviderUsing(credentials, MasheryTokenEndpoint)
 }
 
-func NewLiveCredentialsProviderUsing(creds MasheryV3Credentials, endp string) *ClientCredentialsProvider {
+func NewLiveCredentialsProviderUsing(credentials MasheryV3Credentials, endpoint string) *ClientCredentialsProvider {
 	retVal := ClientCredentialsProvider{
-		creds:         creds,
-		TokenEndpoint: endp,
-		client:        &http.Client{},
+		V3OAuthHelper: V3OAuthHelper{
+			TokenEndpoint: endpoint,
+			client:        &http.Client{},
+		},
+
+		credentials: credentials,
+		comm:        make(chan int),
 	}
 
 	return &retVal
 }
 
-func (c *MasheryV3Credentials) Inherit(other *MasheryV3Credentials) {
+func (m *MasheryV3Credentials) Inherit(other *MasheryV3Credentials) {
 	if len(other.AreaId) > 0 {
-		c.AreaId = other.AreaId
+		m.AreaId = other.AreaId
 	}
 	if len(other.ApiKey) > 0 {
-		c.ApiKey = other.ApiKey
+		m.ApiKey = other.ApiKey
 
 		// Max QPS wil be inherited only if the key is supplied.
 		if other.MaxQPS > 0 {
-			c.MaxQPS = other.MaxQPS
+			m.MaxQPS = other.MaxQPS
 		}
 	}
 
 	if len(other.Secret) > 0 {
-		c.Secret = other.Secret
+		m.Secret = other.Secret
 	}
 
 	if len(other.Username) > 0 {
-		c.Username = other.Username
+		m.Username = other.Username
 	}
 
 	if len(other.Password) > 0 {
-		c.Password = other.Password
+		m.Password = other.Password
+	}
+}
+
+func (lcp *ClientCredentialsProvider) OnPostRefresh(f func()) {
+	lcp.postRefreshAction = f
+}
+
+func (lcp *ClientCredentialsProvider) EnsureRefresh() {
+	if !lcp.asyncRefreshRunning {
+		go lcp.doEnsureRefresh()
+		lcp.asyncRefreshRunning = true
+	}
+}
+
+func (lcp *ClientCredentialsProvider) Close() {
+	// Send the command to the refresh thread if it is running
+	if lcp.asyncRefreshRunning {
+		lcp.comm <- 1
+	}
+}
+
+func (lcp *ClientCredentialsProvider) doEnsureRefresh() {
+	for lcp.Response != nil {
+		waitDur := lcp.Response.ExpiryTime().Sub(time.Now())
+		waitDur -= time.Minute * 5
+
+		select {
+		case <-lcp.comm:
+			lcp.asyncRefreshRunning = false
+			return
+		case <-time.After(waitDur):
+			err := lcp.Refresh()
+			if err != nil {
+				lcp.asyncRefreshRunning = false
+				return
+			}
+		}
+
+		if lcp.postRefreshAction != nil {
+			lcp.postRefreshAction()
+		}
 	}
 }
 
 func (lcp *ClientCredentialsProvider) Refresh() error {
-	if lcp.Response != nil {
-		data := url.Values{
-			"grant_type":    {"refresh_token"},
-			"refresh_token": {lcp.Response.RefreshToken},
-		}
-
-		return lcp.postForToken(data)
-	} else {
-		return errors.New("cannot refresh without having a previous response")
-	}
-}
-
-func (lcp *ClientCredentialsProvider) doRetrieve() error {
-	if lcp.Response == nil || lcp.Response.Expired() {
-
-		data := url.Values{
-			"grant_type": {"password"},
-			"username":   {lcp.creds.Username},
-			"password":   {lcp.creds.Password},
-			"scope":      {lcp.creds.AreaId},
-		}
-
-		return lcp.postForToken(data)
-	}
-
 	if lcp.Response == nil {
-		return errors.New("Login failed to establish a response")
-	} else {
-		return nil
-	}
-}
-
-func (lcp *ClientCredentialsProvider) postForToken(data url.Values) error {
-
-	req, _ := http.NewRequest("POST", lcp.TokenEndpoint, strings.NewReader(data.Encode()))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(lcp.creds.ApiKey, lcp.creds.Secret)
-
-	defer req.Body.Close()
-	resp, err := lcp.client.Do(req)
-	if err != nil {
-		return errors.New("Failed to retrieve response from the server")
-	}
-	if resp.StatusCode != 200 {
-		return errors.New("Server returned unexpected error code")
+		return errors.New("cannot refresh without having a previous response")
+	} else if lcp.Response.Expired() {
+		return errors.New("refresh token has already expired")
 	}
 
-	defer resp.Body.Close()
-	bodyText, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return errors.New("Failed to read response body")
-	}
+	resp, err := lcp.ExchangeRefreshToken(&lcp.credentials, lcp.Response.RefreshToken)
+	lcp.Response = resp
 
-	procResp := TimedAccessTokenResponse{
-		Obtained: time.Now(),
-	}
-	err = json.Unmarshal(bodyText, &procResp)
-	if err != nil {
-		return errors.New("Could not unmarshal access token response")
-	}
-
-	lcp.Response = &procResp
-
-	return nil
-}
-
-func (lcp *ClientCredentialsProvider) AccessToken() (string, error) {
-	err := lcp.doRetrieve()
-	if err != nil {
-		return "", err
-	} else {
-		return lcp.Response.AccessToken, nil
-	}
+	return err
 }
 
 func (lcp *ClientCredentialsProvider) TokenData() (*TimedAccessTokenResponse, error) {
-	err := lcp.doRetrieve()
-	if err != nil {
-		return nil, err
-	} else {
+	if lcp.Response != nil && !lcp.Response.Expired() {
 		return lcp.Response, nil
+	} else {
+		resp, err := lcp.RetrieveAccessTokenFor(&lcp.credentials)
+		lcp.Response = resp
+
+		return resp, err
 	}
+}
+
+func (lcp *ClientCredentialsProvider) AccessToken() (string, error) {
+	if dat, err := lcp.TokenData(); err != nil {
+		return "", err
+	} else if dat == nil {
+		return "", errors.New("empty token data returned while trying to provide access token")
+	} else {
+		return dat.AccessToken, nil
+	}
+
 }

@@ -17,7 +17,7 @@ import (
 
 const tokenFile string = ".mashery-logon"
 
-// Access token provider that supplies the access token, depending on the strategy.
+// V3AccessTokenProvider Access token provider that supplies the access token, depending on the strategy.
 // There are three strategies:
 // - FixedTokenProvider yields a fixed token. This method is useful for short deployments where an access
 // token is obtained by an outside process and would be stored e.g. in-memory.
@@ -30,8 +30,10 @@ const tokenFile string = ".mashery-logon"
 //
 // The calling code has to pick an appropriate provider depending on the context.
 type V3AccessTokenProvider interface {
-	// Yields an access token to be used in the next API call to Mashery
+	// AccessToken Yields an access token to be used in the next API call to Mashery
 	AccessToken() (string, error)
+
+	Close()
 }
 
 type HttpTransport struct {
@@ -43,9 +45,13 @@ type HttpTransport struct {
 }
 
 func NewCustomClient(schema *ClientMethodSchema) Client {
-	return &PluggableClient{
-		schema: schema,
+	rv := FixedSchemeClient{
+		PluggableClient{
+			schema:    schema,
+			transport: nil,
+		},
 	}
+	return &rv
 }
 
 func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Duration) Client {
@@ -57,128 +63,140 @@ func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Durat
 		avgNetLatency: travelTimeComp,
 	}
 
-	rv := PluggableClient{
-		schema: &ClientMethodSchema{
-			// Application method schema
-			GetApplicationContext:       GetApplication,
-			GetApplicationPackageKeys:   GetApplicationPackageKeys,
-			CountApplicationPackageKeys: CountApplicationPackageKeys,
-			GetFullApplication:          GetFullApplication,
-			CreateApplication:           CreateApplication,
-			UpdateApplication:           UpdateApplication,
-			DeleteApplication:           DeleteApplication,
-			CountApplicationsOfMember:   CountApplicationsOfMember,
-			ListApplications:            ListApplications,
+	rv := FixedSchemeClient{
+		PluggableClient{
+			schema: &ClientMethodSchema{
+				GetPublicDomains: ListPublicDomains,
+				GetSystemDomains: ListSystemDomains,
 
-			// Email sets
-			GetEmailTemplateSet:           GetEmailTemplateSet,
-			ListEmailTemplateSets:         ListEmailTemplateSets,
-			ListEmailTemplateSetsFiltered: ListEmailTemplateSetsFiltered,
+				// Application method schema
+				GetApplicationContext:       GetApplication,
+				GetApplicationPackageKeys:   GetApplicationPackageKeys,
+				CountApplicationPackageKeys: CountApplicationPackageKeys,
+				GetFullApplication:          GetFullApplication,
+				CreateApplication:           CreateApplication,
+				UpdateApplication:           UpdateApplication,
+				DeleteApplication:           DeleteApplication,
+				CountApplicationsOfMember:   CountApplicationsOfMember,
+				ListApplications:            ListApplications,
 
-			// Endpoints
-			ListEndpoints:             ListEndpoints,
-			ListEndpointsWithFullInfo: ListEndpointsWithFullInfo,
-			CreateEndpoint:            CreateEndpoint,
-			UpdateEndpoint:            UpdateEndpoint,
-			GetEndpoint:               GetEndpoint,
-			DeleteEndpoint:            DeleteEndpoint,
-			CountEndpointsOf:          CountEndpointsOf,
+				// Email sets
+				GetEmailTemplateSet:           GetEmailTemplateSet,
+				ListEmailTemplateSets:         ListEmailTemplateSets,
+				ListEmailTemplateSetsFiltered: ListEmailTemplateSetsFiltered,
 
-			// Endpoint methods
-			ListEndpointMethods:             ListEndpointMethods,
-			ListEndpointMethodsWithFullInfo: ListEndpointMethodsWithFullInfo,
-			CreateEndpointMethod:            CreateEndpointMethod,
-			UpdateEndpointMethod:            UpdateEndpointMethod,
-			GetEndpointMethod:               GetEndpointMethod,
-			DeleteEndpointMethod:            DeleteEndpointMethod,
-			CountEndpointsMethodsOf:         CountEndpointsMethodsOf,
+				// Endpoints
+				ListEndpoints:             ListEndpoints,
+				ListEndpointsWithFullInfo: ListEndpointsWithFullInfo,
+				CreateEndpoint:            CreateEndpoint,
+				UpdateEndpoint:            UpdateEndpoint,
+				GetEndpoint:               GetEndpoint,
+				DeleteEndpoint:            DeleteEndpoint,
+				CountEndpointsOf:          CountEndpointsOf,
 
-			// Endpoint method filters
-			ListEndpointMethodFilters:             ListEndpointMethodFilters,
-			ListEndpointMethodFiltersWithFullInfo: ListEndpointMethodFiltersWithFullInfo,
-			CreateEndpointMethodFilter:            CreateEndpointMethodFilter,
-			UpdateEndpointMethodFilter:            UpdateEndpointMethodFilter,
-			GetEndpointMethodFilter:               GetEndpointMethodFilter,
-			DeleteEndpointMethodFilter:            DeleteEndpointMethodFilter,
-			CountEndpointsMethodsFiltersOf:        CountEndpointsMethodsFiltersOf,
+				// Endpoint methods
+				ListEndpointMethods:             ListEndpointMethods,
+				ListEndpointMethodsWithFullInfo: ListEndpointMethodsWithFullInfo,
+				CreateEndpointMethod:            CreateEndpointMethod,
+				UpdateEndpointMethod:            UpdateEndpointMethod,
+				GetEndpointMethod:               GetEndpointMethod,
+				DeleteEndpointMethod:            DeleteEndpointMethod,
+				CountEndpointsMethodsOf:         CountEndpointsMethodsOf,
 
-			// Member
-			GetMember:     GetMember,
-			GetFullMember: GetFullMember,
-			CreateMember:  CreateMember,
-			UpdateMember:  UpdateMember,
-			DeleteMember:  DeleteMember,
-			ListMembers:   ListMembers,
+				// Endpoint method filters
+				ListEndpointMethodFilters:             ListEndpointMethodFilters,
+				ListEndpointMethodFiltersWithFullInfo: ListEndpointMethodFiltersWithFullInfo,
+				CreateEndpointMethodFilter:            CreateEndpointMethodFilter,
+				UpdateEndpointMethodFilter:            UpdateEndpointMethodFilter,
+				GetEndpointMethodFilter:               GetEndpointMethodFilter,
+				DeleteEndpointMethodFilter:            DeleteEndpointMethodFilter,
+				CountEndpointsMethodsFiltersOf:        CountEndpointsMethodsFiltersOf,
 
-			// Packages
-			GetPackage:    GetPackage,
-			CreatePackage: CreatePackage,
-			UpdatePackage: UpdatePackage,
-			DeletePackage: DeletePackage,
-			ListPackages:  ListPackages,
+				// Member
+				GetMember:     GetMember,
+				GetFullMember: GetFullMember,
+				CreateMember:  CreateMember,
+				UpdateMember:  UpdateMember,
+				DeleteMember:  DeleteMember,
+				ListMembers:   ListMembers,
 
-			// Package plans
-			CreatePlanService:  CreatePlanService,
-			DeletePlanService:  DeletePlanService,
-			CreatePlanEndpoint: CreatePlanEndpoint,
-			DeletePlanEndpoint: DeletePlanEndpoint,
-			ListPlanEndpoints:  ListPlanEndpoints,
+				// Packages
+				GetPackage:    GetPackage,
+				CreatePackage: CreatePackage,
+				UpdatePackage: UpdatePackage,
+				DeletePackage: DeletePackage,
+				ListPackages:  ListPackages,
 
-			CountPlanEndpoints: CountPlanEndpoints,
-			CountPlanService:   CountPlanService,
-			GetPlan:            GetPlan,
-			CreatePlan:         CreatePlan,
-			UpdatePlan:         UpdatePlan,
-			DeletePlan:         DeletePlan,
-			CountPlans:         CountPlans,
-			ListPlans:          ListPlans,
-			ListPlanServices:   ListPlanServices,
+				// Package plans
+				CreatePlanService:  CreatePlanService,
+				DeletePlanService:  DeletePlanService,
+				CreatePlanEndpoint: CreatePlanEndpoint,
+				DeletePlanEndpoint: DeletePlanEndpoint,
+				ListPlanEndpoints:  ListPlanEndpoints,
 
-			// Plan methods
-			ListPackagePlanMethods:  ListPackagePlanMethods,
-			GetPackagePlanMethod:    GetPackagePlanMethod,
-			CreatePackagePlanMethod: CreatePackagePlanMethod,
-			DeletePackagePlanMethod: DeletePackagePlanMethod,
+				CountPlanEndpoints: CountPlanEndpoints,
+				CountPlanService:   CountPlanService,
+				GetPlan:            GetPlan,
+				CreatePlan:         CreatePlan,
+				UpdatePlan:         UpdatePlan,
+				DeletePlan:         DeletePlan,
+				CountPlans:         CountPlans,
+				ListPlans:          ListPlans,
+				ListPlanServices:   ListPlanServices,
 
-			// Plan method filter
-			GetPackagePlanMethodFilter:    GetPackagePlanMethodFilter,
-			CreatePackagePlanMethodFilter: CreatePackagePlanMethodFilter,
-			DeletePackagePlanMethodFilter: DeletePackagePlanMethodFilter,
+				// Plan methods
+				ListPackagePlanMethods:  ListPackagePlanMethods,
+				GetPackagePlanMethod:    GetPackagePlanMethod,
+				CreatePackagePlanMethod: CreatePackagePlanMethod,
+				DeletePackagePlanMethod: DeletePackagePlanMethod,
 
-			// Package key
-			GetPackageKey:           GetPackageKey,
-			CreatePackageKey:        CreatePackageKey,
-			UpdatePackageKey:        UpdatePackageKey,
-			DeletePackageKey:        DeletePackageKey,
-			ListPackageKeysFiltered: ListPackageKeysFiltered,
-			ListPackageKeys:         ListPackageKeys,
+				// Plan method filter
+				GetPackagePlanMethodFilter:    GetPackagePlanMethodFilter,
+				CreatePackagePlanMethodFilter: CreatePackagePlanMethodFilter,
+				DeletePackagePlanMethodFilter: DeletePackagePlanMethodFilter,
 
-			// Roles
-			GetRole:   GetRole,
-			ListRoles: ListRoles,
+				// Package key
+				GetPackageKey:           GetPackageKey,
+				CreatePackageKey:        CreatePackageKey,
+				UpdatePackageKey:        UpdatePackageKey,
+				DeletePackageKey:        DeletePackageKey,
+				ListPackageKeysFiltered: ListPackageKeysFiltered,
+				ListPackageKeys:         ListPackageKeys,
 
-			// Service
-			GetService:           GetService,
-			CreateService:        CreateService,
-			UpdateService:        UpdateService,
-			DeleteService:        DeleteService,
-			ListServicesFiltered: ListServicesFiltered,
-			ListServices:         ListServices,
-			CountServices:        CountServices,
+				// Roles
+				GetRole:   GetRole,
+				ListRoles: ListRoles,
 
-			// Service cache,
-			GetServiceCache:    GetServiceCache,
-			CreateServiceCache: CreateServiceCache,
-			UpdateServiceCache: UpdateServiceCache,
-			DeleteServiceCache: DeleteServiceCache,
+				// Service
+				GetService:           GetService,
+				CreateService:        CreateService,
+				UpdateService:        UpdateService,
+				DeleteService:        DeleteService,
+				ListServicesFiltered: ListServicesFiltered,
+				ListServices:         ListServices,
+				CountServices:        CountServices,
 
-			// Service OAuth
-			GetServiceOAuthSecurityProfile:    GetServiceOAuthSecurityProfile,
-			CreateServiceOAuthSecurityProfile: CreateServiceOAuthSecurityProfile,
-			UpdateServiceOAuthSecurityProfile: UpdateServiceOAuthSecurityProfile,
-			DeleteServiceOAuthSecurityProfile: DeleteServiceOAuthSecurityProfile,
+				ListErrorSets:         ListErrorSets,
+				GetErrorSet:           GetErrorSet,
+				CreateErrorSet:        CreateErrorSet,
+				UpdateErrorSet:        UpdateErrorSet,
+				DeleteErrorSet:        DeleteErrorSet,
+				UpdateErrorSetMessage: UpdateErrorSetMessage,
+
+				// Service cache,
+				GetServiceCache:    GetServiceCache,
+				CreateServiceCache: CreateServiceCache,
+				UpdateServiceCache: UpdateServiceCache,
+				DeleteServiceCache: DeleteServiceCache,
+
+				// Service OAuth
+				GetServiceOAuthSecurityProfile:    GetServiceOAuthSecurityProfile,
+				CreateServiceOAuthSecurityProfile: CreateServiceOAuthSecurityProfile,
+				UpdateServiceOAuthSecurityProfile: UpdateServiceOAuthSecurityProfile,
+				DeleteServiceOAuthSecurityProfile: DeleteServiceOAuthSecurityProfile,
+			},
+			transport: &impl,
 		},
-		transport: &impl,
 	}
 
 	return &rv
@@ -187,8 +205,11 @@ func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Durat
 func (c *HttpTransport) fetch(ctx context.Context, res string) (*http.Response, error) {
 	get := fmt.Sprintf("%s%s", c.mashEndpoint, res)
 
-	req, _ := http.NewRequest("GET", get, nil)
-	return c.httpExec(ctx, req)
+	if req, err := http.NewRequest("GET", get, nil); err != nil {
+		return nil, err
+	} else {
+		return c.httpExec(ctx, req)
+	}
 }
 
 func (c *HttpTransport) delete(ctx context.Context, res string) (*http.Response, error) {

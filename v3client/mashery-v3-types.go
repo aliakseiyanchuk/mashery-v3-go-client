@@ -20,6 +20,10 @@ type AccessTokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
+type DomainAddress struct {
+	Address string `json:"address"`
+}
+
 type Cache struct {
 	ClientSurrogateControlEnabled bool     `json:"clientSurrogateControlEnabled"`
 	ContentCacheKeyHeaders        []string `json:"contentCacheKeyHeaders"`
@@ -150,17 +154,17 @@ type MasherySecurityProfile struct {
 type MasheryErrorMessage struct {
 	Id           string `json:"id"`
 	Code         int    `json:"code"`
-	Status       int    `json:"status"`
+	Status       string `json:"status"`
 	DetailHeader string `json:"detailHeader"`
 	ResponseBody string `json:"responseBody"`
 }
 
 type MasheryErrorSet struct {
-	Name          string                `json:"name"`
-	Type          string                `json:"type"`
-	JSONP         bool                  `json:"jsonp"`
-	JSONPType     string                `json:"jsonpType"`
-	ErrorMessages []MasheryErrorMessage `json:"errorMessages"`
+	AddressableV3Object
+	Type          string                 `json:"type,omitempty"`
+	JSONP         bool                   `json:"jsonp"`
+	JSONPType     string                 `json:"jsonpType,omitempty"`
+	ErrorMessages *[]MasheryErrorMessage `json:"errorMessages,omitempty"`
 }
 
 type MasheryJSONTime time.Time
@@ -206,6 +210,7 @@ func (t *MasheryJSONTime) ToString() string {
 
 type MasheryService struct {
 	AddressableV3Object
+	Cache             *MasheryServiceCache    `json:"cache,omitempty"`
 	Endpoints         []MasheryEndpoint       `json:"endpoints,omitempty"`
 	EditorHandle      string                  `json:"editorHandle,omitempty"`
 	RevisionNumber    int                     `json:"revisionNumber,omitempty"`
@@ -217,6 +222,7 @@ type MasheryService struct {
 	RFC3986Encode     bool                    `json:"rfc3986Encode,omitempty"`
 	SecurityProfile   *MasherySecurityProfile `json:"securityProfile,omitempty"`
 	Version           string                  `json:"version,omitempty"`
+	Roles             *[]MasheryRole          `json:"roles,omitempty"`
 }
 
 type MasheryServiceCache struct {
@@ -408,14 +414,14 @@ type MasheryPlanServiceEndpointMethodFilter struct {
 	FilterId string
 }
 
-// Mashery email template set
+// MasheryEmailTemplateSet Mashery email template set
 type MasheryEmailTemplateSet struct {
 	AddressableV3Object
 	Type           string                  `json:"type,omitempty"`
 	EmailTemplates *[]MasheryEmailTemplate `json:"emailTemplates,omitempty"`
 }
 
-// Mashery email template
+// MasheryEmailTemplate Mashery email template
 type MasheryEmailTemplate struct {
 	AddressableV3Object
 	Type    string `json:"type"`
@@ -602,6 +608,25 @@ func ParseMasheryServiceArray(dat []byte) (interface{}, int, error) {
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
+
+func ParseServiceErrorSetArray(dat []byte) (interface{}, int, error) {
+	var rv []MasheryErrorSet
+	err := json.Unmarshal(dat, &rv)
+	return rv, len(rv), err
+}
+
+func ParseErrorSet(dat []byte) (interface{}, int, error) {
+	var rv MasheryErrorSet
+	err := json.Unmarshal(dat, &rv)
+	return rv, 1, err
+}
+
+func ParseErrorSetMessage(dat []byte) (interface{}, int, error) {
+	var rv MasheryErrorMessage
+	err := json.Unmarshal(dat, &rv)
+	return rv, 1, err
+}
+
 func ParseMasheryPackage(dat []byte) (interface{}, int, error) {
 	var rv MasheryPackage
 	err := json.Unmarshal(dat, &rv)
@@ -684,4 +709,10 @@ func ParseMasheryEmailTemplateSet(dat []byte) (interface{}, int, error) {
 	var rv MasheryEmailTemplateSet
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
+}
+
+func ParseMasheryDomainAddressArray(dat []byte) (interface{}, int, error) {
+	var rv []DomainAddress
+	err := json.Unmarshal(dat, &rv)
+	return rv, len(rv), err
 }
