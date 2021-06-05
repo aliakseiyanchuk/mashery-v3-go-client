@@ -126,6 +126,9 @@ type Client interface {
 	DeleteErrorSet(ctx context.Context, serviceId, setId string) error
 	UpdateErrorSetMessage(ctx context.Context, serviceId string, setId string, msg MasheryErrorMessage) (*MasheryErrorMessage, error)
 
+	GetServiceRoles(ctx context.Context, serviceId string) ([]MasheryRolePermission, error)
+	SetServiceRoles(ctx context.Context, id string, roles []MasheryRolePermission) error
+
 	// Service cache
 	GetServiceCache(ctx context.Context, id string) (*MasheryServiceCache, error)
 	CreateServiceCache(ctx context.Context, id string, service MasheryServiceCache) (*MasheryServiceCache, error)
@@ -286,6 +289,9 @@ type ClientMethodSchema struct {
 	DeleteErrorSet        func(ctx context.Context, serviceId, setId string, c *HttpTransport) error
 	UpdateErrorSetMessage func(ctx context.Context, serviceId string, setId string, msg MasheryErrorMessage, c *HttpTransport) (*MasheryErrorMessage, error)
 
+	GetServiceRoles func(ctx context.Context, serviceId string, c *HttpTransport) ([]MasheryRolePermission, error)
+	SetServiceRoles func(ctx context.Context, id string, roles []MasheryRolePermission, c *HttpTransport) error
+
 	// Service cache
 	GetServiceCache    func(ctx context.Context, id string, c *HttpTransport) (*MasheryServiceCache, error)
 	CreateServiceCache func(ctx context.Context, id string, service MasheryServiceCache, c *HttpTransport) (*MasheryServiceCache, error)
@@ -344,6 +350,22 @@ func (c *PluggableClient) UpdateErrorSetMessage(ctx context.Context, serviceId s
 		return c.schema.UpdateErrorSetMessage(ctx, serviceId, setId, msg, c.transport)
 	} else {
 		return nil, c.notImplemented("UpdateErrorSetMessage")
+	}
+}
+
+func (c *PluggableClient) GetServiceRoles(ctx context.Context, serviceId string) ([]MasheryRolePermission, error) {
+	if c.schema.GetServiceRoles != nil {
+		return c.schema.GetServiceRoles(ctx, serviceId, c.transport)
+	} else {
+		return []MasheryRolePermission{}, c.notImplemented("GetServiceRoles")
+	}
+}
+
+func (c *PluggableClient) SetServiceRoles(ctx context.Context, serviceId string, perms []MasheryRolePermission) error {
+	if c.schema.SetServiceRoles != nil {
+		return c.schema.SetServiceRoles(ctx, serviceId, perms, c.transport)
+	} else {
+		return c.notImplemented("SetServiceRoles")
 	}
 }
 

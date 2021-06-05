@@ -16,7 +16,7 @@ var EmptyQuery url.Values = map[string][]string{}
 var MasheryServiceFields = []string{
 	"id", "name", "created", "updated", "editorHandle", "revisionNumber", "robotsPolicy",
 	"crossdomainPolicy", "description", "errorSets", "qpsLimitOverall", "rfc3986Encode",
-	"securityProfile", "version",
+	"securityProfile", "version", "cache",
 }
 
 // MasheryErrorSetFields all fields of Mashery error set

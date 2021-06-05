@@ -15,3 +15,5 @@
 # vendor/
 /.idea/
 /out/*.json
+/vendor/
+/bin/

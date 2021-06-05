@@ -46,7 +46,7 @@ func CreateService(ctx context.Context, service MasheryService, c *HttpTransport
 	}
 }
 
-// Create a new service.
+// UpdateService updates a Mashery service
 func UpdateService(ctx context.Context, service MasheryService, c *HttpTransport) (*MasheryService, error) {
 	if service.Id == "" {
 		return nil, errors.New("illegal argument: service Id must be set and not nil")

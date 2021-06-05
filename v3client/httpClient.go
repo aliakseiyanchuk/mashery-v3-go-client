@@ -164,8 +164,9 @@ func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Durat
 				ListPackageKeys:         ListPackageKeys,
 
 				// Roles
-				GetRole:   GetRole,
-				ListRoles: ListRoles,
+				GetRole:           GetRole,
+				ListRoles:         ListRoles,
+				ListRolesFiltered: ListRolesFiltered,
 
 				// Service
 				GetService:           GetService,
@@ -182,6 +183,9 @@ func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Durat
 				UpdateErrorSet:        UpdateErrorSet,
 				DeleteErrorSet:        DeleteErrorSet,
 				UpdateErrorSetMessage: UpdateErrorSetMessage,
+
+				GetServiceRoles: GetServiceRoles,
+				SetServiceRoles: SetServiceRoles,
 
 				// Service cache,
 				GetServiceCache:    GetServiceCache,

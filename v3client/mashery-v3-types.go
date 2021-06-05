@@ -58,11 +58,11 @@ type SystemDomainAuthentication struct {
 }
 
 type Processor struct {
-	PreProcessEnabled  bool              `json:"preProcessEnabled"`
-	PostProcessEnabled bool              `json:"postProcessEnabled"`
-	PostInputs         map[string]string `json:"postInputs"`
-	PreInputs          map[string]string `json:"preInputs"`
-	Adapter            string            `json:"adapter"`
+	PreProcessEnabled  bool     `json:"preProcessEnabled"`
+	PostProcessEnabled bool     `json:"postProcessEnabled"`
+	PostInputs         []string `json:"postInputs"`
+	PreInputs          []string `json:"preInputs"`
+	Adapter            string   `json:"adapter"`
 }
 
 // Checks if the pre-processor structure is empty, i.e. doesn't convey any adapter information.
@@ -341,9 +341,14 @@ type MasheryApplication struct {
 type MasheryRole struct {
 	AddressableV3Object
 	Description string `json:"description,omitempty"`
-	Predefined  bool   `json:"isPredefined"`
-	OrgRole     bool   `json:"isOrgrole"`
-	Assignable  bool   `json:"isAssignable"`
+	Predefined  bool   `json:"isPredefined,omitempty"`
+	OrgRole     bool   `json:"isOrgrole,omitempty"`
+	Assignable  bool   `json:"isAssignable,omitempty"`
+}
+
+type MasheryRolePermission struct {
+	MasheryRole
+	Action string `json:"action"`
 }
 
 type MasheryMember struct {
@@ -584,6 +589,10 @@ func ParseMasheryEndpointArray(dat []byte) (interface{}, int, error) {
 	return rv, len(rv), err
 }
 
+func nilParser(dat []byte) (interface{}, int, error) {
+	return nil, 0, nil
+}
+
 func ParseMasheryService(dat []byte) (interface{}, int, error) {
 	var rv MasheryService
 	err := json.Unmarshal(dat, &rv)
@@ -695,6 +704,18 @@ func ParseMasheryRoleArray(dat []byte) (interface{}, int, error) {
 
 func ParseMasheryRole(dat []byte) (interface{}, int, error) {
 	var rv MasheryRole
+	err := json.Unmarshal(dat, &rv)
+	return rv, 1, err
+}
+
+func ParseMasheryRolePermissionArray(dat []byte) (interface{}, int, error) {
+	var rv []MasheryRolePermission
+	err := json.Unmarshal(dat, &rv)
+	return rv, len(rv), err
+}
+
+func ParseMasheryRolePermission(dat []byte) (interface{}, int, error) {
+	var rv MasheryRolePermission
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
