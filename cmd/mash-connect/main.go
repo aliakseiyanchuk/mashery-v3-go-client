@@ -196,13 +196,25 @@ func tokenCommandLine(name string) *flag.FlagSet {
 func credentialsPassword() string {
 	if env := os.Getenv("MASH_CREDS_AES"); len(env) > 0 {
 		return env
-	} else {
-		reader := bufio.NewReader(os.Stdin)
-		line, _ := reader.ReadString('\n')
-
-		return line
 	}
 
+	// If the password is being pipes via the standard input, the standard input
+	// will be preferred over human input.
+	fi, err := os.Stdin.Stat()
+
+	if err == nil && fi.Mode()&os.ModeNamedPipe != 0 {
+		rawPwd := make([]byte, 128)
+		if n, err := os.Stdin.Read(rawPwd); err == nil && n > 0 {
+			return string(rawPwd[:n])
+		}
+	}
+
+	fmt.Println("No password found in standard input")
+	fmt.Printf("Please enter credentials decryption password: ")
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+
+	return line
 }
 
 func encryptCredentials() int {
@@ -210,11 +222,12 @@ func encryptCredentials() int {
 	initCmd.StringVar(&credentialsFile, "credentials", v3client.DefaultCredentialsFile(), "Path to the credentials file")
 
 	if err := initCmd.Parse(os.Args[2:]); err != nil {
+		initCmd.PrintDefaults()
 		return 1
 	}
 
 	if err := v3client.EncryptInPlace(credentialsFile, credentialsPassword()); err != nil {
-		fmt.Printf("Could not encrype file %s: %s", credentialsFile, err)
+		fmt.Printf("Could not encrypt file %s: %s", credentialsFile, err)
 		return 1
 	} else {
 		return 0
@@ -250,6 +263,11 @@ func initToken() int {
 }
 
 func main() {
+	if len(os.Args) == 0 {
+		fmt.Println("expected at least a subcommand")
+		os.Exit(1)
+	}
+
 	var exitCode int
 
 	switch os.Args[1] {

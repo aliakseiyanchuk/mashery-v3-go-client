@@ -6,7 +6,7 @@ NAME=mashery
 TRGT_GOOS?=windows
 TRGT_GOARCH?=amd64
 CONNECT_BIN?=mash-connect.exe
-QUERY_BIN?=mash-connect.exe
+QUERY_BIN?=mash-query.exe
 
 default: install
 
