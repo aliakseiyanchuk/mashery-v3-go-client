@@ -25,7 +25,7 @@ func GetPackage(ctx context.Context, id string, c *HttpTransport) (*MasheryPacka
 	}
 }
 
-// Create a new service.
+// CreatePackage Create a new service.
 func CreatePackage(ctx context.Context, pack MasheryPackage, c *HttpTransport) (*MasheryPackage, error) {
 	rawResp, err := c.createObject(ctx, pack, FetchSpec{
 		Resource:   "/packages",
@@ -44,7 +44,7 @@ func CreatePackage(ctx context.Context, pack MasheryPackage, c *HttpTransport) (
 	}
 }
 
-// Create a new service.
+// UpdatePackage Create a new service.
 func UpdatePackage(ctx context.Context, pack MasheryPackage, c *HttpTransport) (*MasheryPackage, error) {
 	if pack.Id == "" {
 		return nil, errors.New("illegal argument: package Id must be set and not nil")

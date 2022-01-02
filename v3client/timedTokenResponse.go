@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Timed access token response, suitable for storing in a log file.
+// TimedAccessTokenResponse Timed access token response, suitable for storing in a log file.
 type TimedAccessTokenResponse struct {
 	Obtained time.Time `json:"obtained"`
 	QPS      int       `json:"qps"`
@@ -35,7 +35,7 @@ func (t *TimedAccessTokenResponse) ExpiryTime() time.Time {
 	return time.Unix(t.Obtained.Unix()+int64(t.ExpiresIn), 0)
 }
 
-// Returns number of seconds that are still left in this access tokens.
+// TimeLeft Returns number of seconds that are still left in this access tokens.
 func (t *TimedAccessTokenResponse) TimeLeft() int {
 	diff := t.Obtained.Unix() + int64(t.ExpiresIn) - time.Now().Unix()
 	if diff > 0 {

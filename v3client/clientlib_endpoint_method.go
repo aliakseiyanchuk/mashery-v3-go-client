@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-// List methods associated with this endpoint, having only implicit fields returned.
+// ListEndpointMethods List methods associated with this endpoint, having only implicit fields returned.
 func ListEndpointMethods(ctx context.Context, serviceId, endpointId string, c *HttpTransport) ([]MasheryMethod, error) {
 	spec := FetchSpec{
 		Pagination:     PerPage,
@@ -33,7 +33,7 @@ func ListEndpointMethods(ctx context.Context, serviceId, endpointId string, c *H
 	}
 }
 
-// List endpoints methods with their extended information.
+// ListEndpointMethodsWithFullInfo List endpoints methods with their extended information.
 func ListEndpointMethodsWithFullInfo(ctx context.Context, serviceId, endpointId string, c *HttpTransport) ([]MasheryMethod, error) {
 	spec := FetchSpec{
 		Pagination: PerPage,
@@ -61,9 +61,9 @@ func ListEndpointMethodsWithFullInfo(ctx context.Context, serviceId, endpointId 
 	}
 }
 
-// Create a new service.
-func CreateEndpointMethod(ctx context.Context, serviceId, endpointId string, methoUpsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
-	rawResp, err := c.createObject(ctx, methoUpsert, FetchSpec{
+// CreateEndpointMethod Create a new service.
+func CreateEndpointMethod(ctx context.Context, serviceId, endpointId string, methodUpsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
+	rawResp, err := c.createObject(ctx, methodUpsert, FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),
 		AppContext: "endpoint method",
 		Query: url.Values{
@@ -80,7 +80,7 @@ func CreateEndpointMethod(ctx context.Context, serviceId, endpointId string, met
 	}
 }
 
-// Update mashery endpoint method using the specified upsertable.
+// UpdateEndpointMethod Update mashery endpoint method using the specified upsertable.
 func UpdateEndpointMethod(ctx context.Context, serviceId, endpointId string, methUpsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
 	if methUpsert.Id == "" {
 		return nil, errors.New("illegal argument: endpoint Id must be set and not nil")
@@ -132,7 +132,7 @@ func DeleteEndpointMethod(ctx context.Context, serviceId, endpointId, methodId s
 	})
 }
 
-// Count the number of services that would match this criteria
+// CountEndpointsMethodsOf Count the number of services that would match this criteria
 func CountEndpointsMethodsOf(ctx context.Context, serviceId, endpointId string, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,

@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-// List filters associated with this endpoint method, having only implicit fields returned.
+// ListEndpointMethodFilters List filters associated with this endpoint method, having only implicit fields returned.
 func ListEndpointMethodFilters(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) ([]MasheryResponseFilter, error) {
 	spec := FetchSpec{
 		Pagination:     PerPage,
@@ -32,7 +32,7 @@ func ListEndpointMethodFilters(ctx context.Context, serviceId, endpointId, metho
 	}
 }
 
-// List endpoints methods filters with their extended information.
+// ListEndpointMethodFiltersWithFullInfo List endpoints methods filters with their extended information.
 func ListEndpointMethodFiltersWithFullInfo(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) ([]MasheryResponseFilter, error) {
 	spec := FetchSpec{
 		Pagination: PerPage,
@@ -60,7 +60,7 @@ func ListEndpointMethodFiltersWithFullInfo(ctx context.Context, serviceId, endpo
 	}
 }
 
-// Create a new service.
+// CreateEndpointMethodFilter Create a new service.
 func CreateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, filterUpsert MasheryResponseFilter, c *HttpTransport) (*MasheryResponseFilter, error) {
 	rawResp, err := c.createObject(ctx, filterUpsert, FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
@@ -79,7 +79,7 @@ func CreateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, meth
 	}
 }
 
-// Update mashery endpoint method using the specified upsertable.
+// UpdateEndpointMethodFilter Update mashery endpoint method using the specified upsertable.
 func UpdateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, methUpsert MasheryResponseFilter, c *HttpTransport) (*MasheryResponseFilter, error) {
 	if methUpsert.Id == "" {
 		return nil, errors.New("illegal argument: response filter must be set and not nil")
@@ -131,7 +131,7 @@ func DeleteEndpointMethodFilter(ctx context.Context, serviceId, endpointId, meth
 	})
 }
 
-// Count the number of services that would match this criteria
+// CountEndpointsMethodsFiltersOf Count the number of services that would match this criteria
 func CountEndpointsMethodsFiltersOf(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) (int64, error) {
 	opCtx := FetchSpec{
 		Pagination: NotRequired,

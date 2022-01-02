@@ -246,7 +246,8 @@ func (c *HttpTransport) send(ctx context.Context, meth string, res string, body 
 	}
 }
 
-func readResponseBody(r *http.Response) ([]byte, error) {
+// ReadResponseBody Reads the response body of the response
+func ReadResponseBody(r *http.Response) ([]byte, error) {
 	if r.Body != nil {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -306,7 +307,7 @@ func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.
 		}
 
 		// Where the response is successful or cannot be re-tried, the both
-		// are returned back to the caller
+		// are returned to the caller
 		return resp, lastErr
 	}
 
@@ -371,19 +372,20 @@ func v3ErrorFromResponse(context string, code int, headers http.Header, data []b
 // -----------------------------------
 // Generic operations
 
-// Function that parses responses returned by JSON.
+// ResponseParserFunc Function that parses responses returned by JSON.
 type ResponseParserFunc func(data []byte) (interface{}, int, error)
 
-// Operation context
+// FetchSpec Operation context
 type FetchSpec struct {
 	Pagination     PaginationType
 	Resource       string
 	Query          url.Values
 	AppContext     string
 	ResponseParser ResponseParserFunc
+	Return404AsNil bool
 }
 
-// Resource that need to be called on the server. This method will return the resource and
+// DestResource Resource that need to be called on the server. This method will return the resource and
 // will append the query string, if specified
 func (ctx *FetchSpec) DestResource() string {
 	if ctx.Query == nil {
@@ -437,7 +439,7 @@ func (c *HttpTransport) asyncFetch(ctx context.Context, opContext FetchSpec, com
 
 func (c *HttpTransport) getObject(ctx context.Context, opCtx FetchSpec) (interface{}, error) {
 	if resp, err := c.fetch(ctx, opCtx.DestResource()); err == nil {
-		if dat, err := readResponseBody(resp); err != nil {
+		if dat, err := ReadResponseBody(resp); err != nil {
 			return nil, &WrappedError{
 				Context: fmt.Sprintf("get %s->read server response", opCtx.AppContext),
 				Cause:   err,
@@ -482,7 +484,7 @@ func (c *HttpTransport) deleteObject(ctx context.Context, opCtx FetchSpec) error
 // Create a new service.
 func (c *HttpTransport) createObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
 	if resp, err := c.post(ctx, opCtx.DestResource(), objIn); err == nil {
-		if dat, err := readResponseBody(resp); err != nil {
+		if dat, err := ReadResponseBody(resp); err != nil {
 			return nil, &WrappedError{
 				Context: fmt.Sprintf("create %s->read server response", opCtx.AppContext),
 				Cause:   err,
@@ -513,11 +515,12 @@ func (c *HttpTransport) createObject(ctx context.Context, objIn interface{}, opC
 // Update existing object
 func (c *HttpTransport) updateObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
 	if resp, err := c.put(ctx, opCtx.DestResource(), objIn); err == nil {
-		if dat, err := readResponseBody(resp); err != nil {
+		if dat, err := ReadResponseBody(resp); err != nil {
 			return nil, &WrappedError{
 				Context: fmt.Sprintf("update %s->read server response", opCtx.AppContext),
 				Cause:   err,
 			}
+
 		} else {
 			if resp.StatusCode == 200 {
 				// Ignoring page size when retrieving an object
@@ -585,7 +588,7 @@ func (c *HttpTransport) fetchAll(ctx context.Context, opCtx FetchSpec) ([]interf
 	}
 
 	if firstPage.StatusCode == 200 {
-		if dat, err := readResponseBody(firstPage); err != nil {
+		if dat, err := ReadResponseBody(firstPage); err != nil {
 			return nil, &WrappedError{
 				Context: fmt.Sprintf("fetch all %s->read first page server response", opCtx.AppContext),
 				Cause:   err,
@@ -635,7 +638,7 @@ func (c *HttpTransport) fetchAll(ctx context.Context, opCtx FetchSpec) ([]interf
 							// TODO: if error occurred, we might need to terminate the rest
 							// of the fetching operations.
 						} else {
-							if pageDat, pageReadErr := readResponseBody(asyncRead.Data); pageReadErr != nil {
+							if pageDat, pageReadErr := ReadResponseBody(asyncRead.Data); pageReadErr != nil {
 								collErr = &WrappedError{
 									Context: fmt.Sprintf("fetch all %s->read async response", opCtx.AppContext),
 									Cause:   pageReadErr,
@@ -656,10 +659,12 @@ func (c *HttpTransport) fetchAll(ctx context.Context, opCtx FetchSpec) ([]interf
 
 			return rv, collErr
 		}
-	} else {
-		return nil, &WrappedError{
-			Context: fmt.Sprintf("fetchAll %s->fetch first page->response", opCtx.AppContext),
-			Cause:   errors.New(fmt.Sprintf("received status code %d", firstPage.StatusCode)),
-		}
+	} else if firstPage.StatusCode == 404 && opCtx.Return404AsNil {
+		return nil, nil
+	}
+
+	return nil, &WrappedError{
+		Context: fmt.Sprintf("fetchAll %s->fetch first page->response", opCtx.AppContext),
+		Cause:   errors.New(fmt.Sprintf("received status code %d", firstPage.StatusCode)),
 	}
 }

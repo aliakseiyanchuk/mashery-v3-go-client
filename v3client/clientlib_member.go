@@ -40,7 +40,7 @@ func fetchMember(ctx context.Context, id string, qs url.Values, c *HttpTransport
 	}
 }
 
-// Create a new service.
+// CreateMember Create a new service.
 func CreateMember(ctx context.Context, member MasheryMember, c *HttpTransport) (*MasheryMember, error) {
 	rawResp, err := c.createObject(ctx, member, FetchSpec{
 		Resource:       "/members",
@@ -56,7 +56,7 @@ func CreateMember(ctx context.Context, member MasheryMember, c *HttpTransport) (
 	}
 }
 
-// Create a new service.
+// UpdateMember Create a new service.
 func UpdateMember(ctx context.Context, member MasheryMember, c *HttpTransport) (*MasheryMember, error) {
 	if member.Id == "" {
 		return nil, errors.New("illegal argument: member Id must be set and not nil")

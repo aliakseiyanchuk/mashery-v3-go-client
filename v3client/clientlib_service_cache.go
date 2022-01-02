@@ -14,7 +14,7 @@ func masheryServiceCacheSpec(id string) FetchSpec {
 	}
 }
 
-// Retrieve the service cache
+// GetServiceCache Retrieve the service cache
 func GetServiceCache(ctx context.Context, id string, c *HttpTransport) (*MasheryServiceCache, error) {
 	rv, err := c.getObject(ctx, masheryServiceCacheSpec(id))
 
@@ -26,7 +26,7 @@ func GetServiceCache(ctx context.Context, id string, c *HttpTransport) (*Mashery
 	}
 }
 
-// Create a new service cache
+// CreateServiceCache Create a new service cache
 func CreateServiceCache(ctx context.Context, id string, service MasheryServiceCache, c *HttpTransport) (*MasheryServiceCache, error) {
 	rawResp, err := c.createObject(ctx, service, masheryServiceCacheSpec(id))
 
@@ -38,7 +38,7 @@ func CreateServiceCache(ctx context.Context, id string, service MasheryServiceCa
 	}
 }
 
-// Update cache of this service
+// UpdateServiceCache Update cache of this service
 func UpdateServiceCache(ctx context.Context, id string, service MasheryServiceCache, c *HttpTransport) (*MasheryServiceCache, error) {
 	if d, err := c.updateObject(ctx, service, masheryServiceCacheSpec(id)); err == nil {
 		rv, _ := d.(MasheryServiceCache)
@@ -48,7 +48,7 @@ func UpdateServiceCache(ctx context.Context, id string, service MasheryServiceCa
 	}
 }
 
-// Create a new service.
+// DeleteServiceCache Create a new service.
 func DeleteServiceCache(ctx context.Context, id string, c *HttpTransport) error {
 	return c.deleteObject(ctx, masheryServiceCacheSpec(id))
 }

@@ -116,7 +116,7 @@ func GetPlan(ctx context.Context, packageId string, planId string, c *HttpTransp
 	}
 }
 
-// Create a new service.
+// CreatePlan Create a new service.
 func CreatePlan(ctx context.Context, packageId string, plan MasheryPlan, c *HttpTransport) (*MasheryPlan, error) {
 	rawResp, err := c.createObject(ctx, plan, FetchSpec{
 		Resource:   fmt.Sprintf("/packages/%s/plans", packageId),
@@ -136,7 +136,7 @@ func CreatePlan(ctx context.Context, packageId string, plan MasheryPlan, c *Http
 	}
 }
 
-// Create a new service.
+// UpdatePlan Create a new service.
 func UpdatePlan(ctx context.Context, plan MasheryPlan, c *HttpTransport) (*MasheryPlan, error) {
 	if plan.Id == "" || plan.ParentPackageId == "" {
 		return nil, errors.New("illegal argument: package Id and plan id must be set and not nil")

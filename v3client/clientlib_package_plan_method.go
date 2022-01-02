@@ -41,7 +41,7 @@ func ListPackagePlanMethods(ctx context.Context, id MasheryPlanServiceEndpoint, 
 	}
 }
 
-// Retrieve the information about a pacakge plan method.
+// GetPackagePlanMethod Retrieve the information about a package plan method.
 func GetPackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpointMethod, c *HttpTransport) (*MasheryMethod, error) {
 	rv, err := c.getObject(ctx, FetchSpec{
 		Pagination: PerItem,
@@ -61,7 +61,7 @@ func GetPackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpointMeth
 	}
 }
 
-// Create a new service cache
+// CreatePackagePlanMethod Create a new service cache
 func CreatePackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpoint, upsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
 	rawResp, err := c.createObject(ctx, upsert, FetchSpec{
 		Pagination: NotRequired,
@@ -81,7 +81,7 @@ func CreatePackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpoint,
 	}
 }
 
-// Create a new service.
+// DeletePackagePlanMethod Create a new service.
 func DeletePackagePlanMethod(ctx context.Context, id MasheryPlanServiceEndpointMethod, c *HttpTransport) error {
 	return c.deleteObject(ctx, FetchSpec{
 		Pagination: NotRequired,

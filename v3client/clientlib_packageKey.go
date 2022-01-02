@@ -26,7 +26,7 @@ func GetPackageKey(ctx context.Context, id string, c *HttpTransport) (*MasheryPa
 	}
 }
 
-// Create a new service.
+// CreatePackageKey Create a new service.
 func CreatePackageKey(ctx context.Context, appId string, packageKey MasheryPackageKey, c *HttpTransport) (*MasheryPackageKey, error) {
 	if !packageKey.LinksPackageAndPlan() {
 		return nil, &WrappedError{
@@ -48,7 +48,7 @@ func CreatePackageKey(ctx context.Context, appId string, packageKey MasheryPacka
 	}
 }
 
-// Create a new service.
+// UpdatePackageKey Create a new service.
 func UpdatePackageKey(ctx context.Context, packageKey MasheryPackageKey, c *HttpTransport) (*MasheryPackageKey, error) {
 	if packageKey.Id == "" {
 		return nil, errors.New("illegal argument: package key Id must be set and not nil")

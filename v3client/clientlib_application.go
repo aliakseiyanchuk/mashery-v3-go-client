@@ -94,7 +94,7 @@ func httpToApplication(ctx context.Context, appId string, qs url.Values, c *Http
 	}
 }
 
-// Create a new service.
+// CreateApplication Create a new service.
 func CreateApplication(ctx context.Context, memberId string, member MasheryApplication, c *HttpTransport) (*MasheryApplication, error) {
 	rawResp, err := c.createObject(ctx, member, FetchSpec{
 		Resource:       fmt.Sprintf("/members/%s/applications", memberId),

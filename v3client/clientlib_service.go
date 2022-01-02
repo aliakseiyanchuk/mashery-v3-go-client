@@ -66,7 +66,7 @@ func UpdateService(ctx context.Context, service MasheryService, c *HttpTransport
 	}
 }
 
-// Delete a service.
+// DeleteService Delete a service.
 func DeleteService(ctx context.Context, serviceId string, c *HttpTransport) error {
 	opContext := FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s", serviceId),

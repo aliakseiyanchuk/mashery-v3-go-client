@@ -174,11 +174,13 @@ type IdReferenced struct {
 	IdRef string `json:"id"`
 }
 
+// AddressableV3Object base properties of any object that is read through Mashery V3 API
 type AddressableV3Object struct {
-	Id      string           `json:"id,omitempty"`
-	Name    string           `json:"name,omitempty"`
-	Created *MasheryJSONTime `json:"created,omitempty"`
-	Updated *MasheryJSONTime `json:"updated,omitempty"`
+	Id        string           `json:"id,omitempty"`
+	Name      string           `json:"name,omitempty"`
+	Created   *MasheryJSONTime `json:"created,omitempty"`
+	Updated   *MasheryJSONTime `json:"updated,omitempty"`
+	Retrieved time.Time        `json:"retrieved,omitempty"`
 }
 
 func (t *MasheryJSONTime) UnmarshalJSON(b []byte) error {

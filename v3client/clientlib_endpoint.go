@@ -32,7 +32,7 @@ func ListEndpoints(ctx context.Context, serviceId string, c *HttpTransport) ([]A
 	}
 }
 
-// List endpoints with their extended information.
+// ListEndpointsWithFullInfo List endpoints with their extended information.
 func ListEndpointsWithFullInfo(ctx context.Context, serviceId string, c *HttpTransport) ([]MasheryEndpoint, error) {
 	spec := FetchSpec{
 		Pagination: PerPage,

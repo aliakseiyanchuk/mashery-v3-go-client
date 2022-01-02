@@ -11,6 +11,7 @@ func masheryServiceRolesSpec(id string) FetchSpec {
 		Query:          nil,
 		AppContext:     "get service roles",
 		ResponseParser: ParseMasheryRolePermissionArray,
+		Return404AsNil: true,
 	}
 }
 

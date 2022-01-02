@@ -4,10 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 )
 
+type WildcardClient interface {
+	// FetchAny fetch an arbitrary resource from Mashery V3
+	FetchAny(ctx context.Context, resource string, qs *url.Values) (*http.Response, error)
+	// DeleteAny Delete an arbitrary resource from Mashery V3
+	DeleteAny(ctx context.Context, resource string) (*http.Response, error)
+	// PostAny post any value to an arbitrary resource
+	PostAny(ctx context.Context, resource string, body interface{}) (*http.Response, error)
+	// PutAny put any value to an arbitrary resource
+	PutAny(ctx context.Context, resource string, body interface{}) (*http.Response, error)
+}
+
 type Client interface {
+	// GetPublicDomains Get public domains in this area
 	GetPublicDomains(ctx context.Context) ([]string, error)
 	GetSystemDomains(ctx context.Context) ([]string, error)
 
@@ -135,7 +148,7 @@ type Client interface {
 	UpdateServiceCache(ctx context.Context, id string, service MasheryServiceCache) (*MasheryServiceCache, error)
 	DeleteServiceCache(ctx context.Context, id string) error
 
-	// Service OAuth
+	// GetServiceOAuthSecurityProfile Service OAuth
 	GetServiceOAuthSecurityProfile(ctx context.Context, id string) (*MasheryOAuth, error)
 	CreateServiceOAuthSecurityProfile(ctx context.Context, id string, service MasheryOAuth) (*MasheryOAuth, error)
 	UpdateServiceOAuthSecurityProfile(ctx context.Context, id string, service MasheryOAuth) (*MasheryOAuth, error)
@@ -156,7 +169,7 @@ func (fsc *FixedSchemeClient) AssumeSchema(_ *ClientMethodSchema) {
 	panic("This client cannot change method schema after it was created")
 }
 
-// Allows a pluggable client to assume a schema. This method should be mainly used in the test contexts.
+// AssumeSchema Allows a pluggable client to assume a schema. This method should be mainly used in the test contexts.
 func (pc *PluggableClient) AssumeSchema(sch *ClientMethodSchema) {
 	pc.schema = sch
 }
