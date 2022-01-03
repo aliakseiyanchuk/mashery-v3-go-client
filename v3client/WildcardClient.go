@@ -15,7 +15,7 @@ type WildcardClientImpl struct {
 func (w WildcardClientImpl) FetchAny(ctx context.Context, resource string, qs *url.Values) (*http.Response, error) {
 	destResource := resource
 	if qs != nil && len(*qs) > 0 {
-		destResource += qs.Encode()
+		destResource += "?" + qs.Encode()
 	}
 
 	return w.transport.fetch(ctx, destResource)
