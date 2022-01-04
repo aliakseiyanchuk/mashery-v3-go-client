@@ -2,6 +2,7 @@ package v3client_test
 
 import (
 	"encoding/json"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"io/ioutil"
 	"testing"
@@ -23,7 +24,7 @@ func saveTestFile(inp *v3client.TimedAccessTokenResponse) bool {
 func TestNewFileSystemTokenProvider(t *testing.T) {
 	ref := v3client.TimedAccessTokenResponse{
 		Obtained: time.Now(),
-		AccessTokenResponse: v3client.AccessTokenResponse{
+		AccessTokenResponse: masherytypes.AccessTokenResponse{
 			TokenType:    "bearer",
 			ApiKey:       "apiKey",
 			AccessToken:  "accessToken",
@@ -52,7 +53,7 @@ func TestNewFileSystemTokenProvider(t *testing.T) {
 func TestNewFileSystemTokenProviderWithExpiredToken(t *testing.T) {
 	ref := v3client.TimedAccessTokenResponse{
 		Obtained: time.Unix(time.Now().Unix()-int64(7200), 0),
-		AccessTokenResponse: v3client.AccessTokenResponse{
+		AccessTokenResponse: masherytypes.AccessTokenResponse{
 			TokenType:    "bearer",
 			ApiKey:       "apiKey",
 			AccessToken:  "accessToken",

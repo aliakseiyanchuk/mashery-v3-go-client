@@ -2,6 +2,7 @@ package v3client
 
 import (
 	"context"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"golang.org/x/sync/semaphore"
 	"net/http"
 	"net/url"
@@ -9,7 +10,7 @@ import (
 )
 
 type WildcardClientImpl struct {
-	transport *HttpTransport
+	transport *transport.HttpTransport
 }
 
 func (w WildcardClientImpl) FetchAny(ctx context.Context, resource string, qs *url.Values) (*http.Response, error) {
@@ -18,30 +19,32 @@ func (w WildcardClientImpl) FetchAny(ctx context.Context, resource string, qs *u
 		destResource += "?" + qs.Encode()
 	}
 
-	return w.transport.fetch(ctx, destResource)
+	return w.transport.Fetch(ctx, destResource)
 }
 
 func (w WildcardClientImpl) DeleteAny(ctx context.Context, resource string) (*http.Response, error) {
-	return w.transport.delete(ctx, resource)
+	return w.transport.Delete(ctx, resource)
 }
 
 func (w WildcardClientImpl) PostAny(ctx context.Context, resource string, body interface{}) (*http.Response, error) {
-	return w.transport.post(ctx, resource, body)
+	return w.transport.Post(ctx, resource, body)
 }
 
 func (w WildcardClientImpl) PutAny(ctx context.Context, resource string, body interface{}) (*http.Response, error) {
-	return w.transport.put(ctx, resource, body)
+	return w.transport.Put(ctx, resource, body)
 }
 
 // NewWildcardClient creates a "wildcard" client, which will auto-apply access tokens and will throttle the
 // calls with the specified QPS.
 func NewWildcardClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Duration) WildcardClient {
-	impl := HttpTransport{
-		mashEndpoint:  "https://api.mashery.com/v3/rest",
-		tokenProvider: p,
-		sem:           semaphore.NewWeighted(qps),
-		httpCl:        &http.Client{},
-		avgNetLatency: travelTimeComp,
+	impl := transport.HttpTransport{
+		MashEndpoint: "https://api.mashery.com/v3/rest",
+		Authorizer:   p,
+		Sem:          semaphore.NewWeighted(qps),
+		HttpClient: &http.Client{
+			Timeout: time.Second * 60,
+		},
+		AvgNetLatency: travelTimeComp,
 	}
 
 	rv := WildcardClientImpl{

@@ -4,25 +4,27 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"net/url"
 )
 
 // ListEndpointMethodFilters List filters associated with this endpoint method, having only implicit fields returned.
-func ListEndpointMethodFilters(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) ([]MasheryResponseFilter, error) {
-	spec := FetchSpec{
-		Pagination:     PerPage,
+func ListEndpointMethodFilters(ctx context.Context, serviceId, endpointId, methodId string, c *transport.V3Transport) ([]masherytypes.MasheryResponseFilter, error) {
+	spec := transport.FetchSpec{
+		Pagination:     transport.PerPage,
 		Resource:       fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
 		Query:          nil,
 		AppContext:     "endpoint methods filters",
-		ResponseParser: ParseMasheryResponseFilterArray,
+		ResponseParser: masherytypes.ParseMasheryResponseFilterArray,
 	}
 
-	if d, err := c.fetchAll(ctx, spec); err != nil {
-		return []MasheryResponseFilter{}, err
+	if d, err := c.FetchAll(ctx, spec); err != nil {
+		return []masherytypes.MasheryResponseFilter{}, err
 	} else {
-		var rv []MasheryResponseFilter
+		var rv []masherytypes.MasheryResponseFilter
 		for _, raw := range d {
-			ms, ok := raw.([]MasheryResponseFilter)
+			ms, ok := raw.([]masherytypes.MasheryResponseFilter)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -33,24 +35,24 @@ func ListEndpointMethodFilters(ctx context.Context, serviceId, endpointId, metho
 }
 
 // ListEndpointMethodFiltersWithFullInfo List endpoints methods filters with their extended information.
-func ListEndpointMethodFiltersWithFullInfo(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) ([]MasheryResponseFilter, error) {
-	spec := FetchSpec{
-		Pagination: PerPage,
+func ListEndpointMethodFiltersWithFullInfo(ctx context.Context, serviceId, endpointId, methodId string, c *transport.V3Transport) ([]masherytypes.MasheryResponseFilter, error) {
+	spec := transport.FetchSpec{
+		Pagination: transport.PerPage,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
 		Query: url.Values{
 			"fields": {MasheryResponseFilterFieldsStr},
 		},
 		AppContext:     "endpoint methods filters",
-		ResponseParser: ParseMasheryResponseFilterArray,
+		ResponseParser: masherytypes.ParseMasheryResponseFilterArray,
 	}
 
-	if d, err := c.fetchAll(ctx, spec); err != nil {
-		return []MasheryResponseFilter{}, err
+	if d, err := c.FetchAll(ctx, spec); err != nil {
+		return []masherytypes.MasheryResponseFilter{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []MasheryResponseFilter
+		var rv []masherytypes.MasheryResponseFilter
 		for _, raw := range d {
-			ms, ok := raw.([]MasheryResponseFilter)
+			ms, ok := raw.([]masherytypes.MasheryResponseFilter)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -61,18 +63,18 @@ func ListEndpointMethodFiltersWithFullInfo(ctx context.Context, serviceId, endpo
 }
 
 // CreateEndpointMethodFilter Create a new service.
-func CreateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, filterUpsert MasheryResponseFilter, c *HttpTransport) (*MasheryResponseFilter, error) {
-	rawResp, err := c.createObject(ctx, filterUpsert, FetchSpec{
+func CreateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, filterUpsert masherytypes.MasheryResponseFilter, c *transport.V3Transport) (*masherytypes.MasheryResponseFilter, error) {
+	rawResp, err := c.CreateObject(ctx, filterUpsert, transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
 		AppContext: "endpoint method filters",
 		Query: url.Values{
 			"fields": {MasheryResponseFilterFieldsStr},
 		},
-		ResponseParser: ParseMasheryResponseFilter,
+		ResponseParser: masherytypes.ParseMasheryResponseFilter,
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(MasheryResponseFilter)
+		rv, _ := rawResp.(masherytypes.MasheryResponseFilter)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -80,43 +82,43 @@ func CreateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, meth
 }
 
 // UpdateEndpointMethodFilter Update mashery endpoint method using the specified upsertable.
-func UpdateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, methUpsert MasheryResponseFilter, c *HttpTransport) (*MasheryResponseFilter, error) {
+func UpdateEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId string, methUpsert masherytypes.MasheryResponseFilter, c *transport.V3Transport) (*masherytypes.MasheryResponseFilter, error) {
 	if methUpsert.Id == "" {
 		return nil, errors.New("illegal argument: response filter must be set and not nil")
 	}
 
-	opContext := FetchSpec{
+	opContext := transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters/%s", serviceId, endpointId, methodId, methUpsert.Id),
 		AppContext: "endpoint method filters",
 		Query: url.Values{
 			"fields": {MasheryResponseFilterFieldsStr},
 		},
-		ResponseParser: ParseMasheryResponseFilter,
+		ResponseParser: masherytypes.ParseMasheryResponseFilter,
 	}
 
-	if d, err := c.updateObject(ctx, methUpsert, opContext); err == nil {
-		rv, _ := d.(MasheryResponseFilter)
+	if d, err := c.UpdateObject(ctx, methUpsert, opContext); err == nil {
+		rv, _ := d.(masherytypes.MasheryResponseFilter)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func GetEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId, filterId string, c *HttpTransport) (*MasheryResponseFilter, error) {
-	fetchSpec := FetchSpec{
-		Pagination: NotRequired,
+func GetEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId, filterId string, c *transport.V3Transport) (*masherytypes.MasheryResponseFilter, error) {
+	fetchSpec := transport.FetchSpec{
+		Pagination: transport.NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters/%s", serviceId, endpointId, methodId, filterId),
 		Query: url.Values{
 			"fields": {MasheryResponseFilterFieldsStr},
 		},
 		AppContext:     "endpoint method filters",
-		ResponseParser: ParseMasheryResponseFilter,
+		ResponseParser: masherytypes.ParseMasheryResponseFilter,
 	}
 
-	if raw, err := c.getObject(ctx, fetchSpec); err != nil {
+	if raw, err := c.GetObject(ctx, fetchSpec); err != nil {
 		return nil, err
 	} else {
-		if rv, ok := raw.(MasheryResponseFilter); ok {
+		if rv, ok := raw.(masherytypes.MasheryResponseFilter); ok {
 			return &rv, nil
 		} else {
 			return nil, errors.New("invalid return type")
@@ -124,20 +126,20 @@ func GetEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodI
 	}
 }
 
-func DeleteEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId, filterId string, c *HttpTransport) error {
-	return c.deleteObject(ctx, FetchSpec{
+func DeleteEndpointMethodFilter(ctx context.Context, serviceId, endpointId, methodId, filterId string, c *transport.V3Transport) error {
+	return c.DeleteObject(ctx, transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters/%s", serviceId, endpointId, methodId, filterId),
 		AppContext: "endpoint method filters",
 	})
 }
 
 // CountEndpointsMethodsFiltersOf Count the number of services that would match this criteria
-func CountEndpointsMethodsFiltersOf(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) (int64, error) {
-	opCtx := FetchSpec{
-		Pagination: NotRequired,
+func CountEndpointsMethodsFiltersOf(ctx context.Context, serviceId, endpointId, methodId string, c *transport.V3Transport) (int64, error) {
+	opCtx := transport.FetchSpec{
+		Pagination: transport.NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s/responseFilters", serviceId, endpointId, methodId),
 		AppContext: "endpoint method filters",
 	}
 
-	return c.count(ctx, opCtx)
+	return c.Count(ctx, opCtx)
 }

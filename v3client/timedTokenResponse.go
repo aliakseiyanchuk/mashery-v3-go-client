@@ -1,6 +1,7 @@
 package v3client
 
 import (
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"math"
 	"time"
 )
@@ -9,10 +10,10 @@ import (
 type TimedAccessTokenResponse struct {
 	Obtained time.Time `json:"obtained"`
 	QPS      int       `json:"qps"`
-	AccessTokenResponse
+	masherytypes.AccessTokenResponse
 }
 
-func (a AccessTokenResponse) ObtainedNow() *TimedAccessTokenResponse {
+func (a masherytypes.AccessTokenResponse) ObtainedNow() *TimedAccessTokenResponse {
 	rv := TimedAccessTokenResponse{
 		AccessTokenResponse: a,
 		Obtained:            time.Now(),

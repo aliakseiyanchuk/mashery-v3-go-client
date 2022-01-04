@@ -7,13 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/errwrap"
+	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"gopkg.in/yaml.v2"
 )
 
 const AccessTokenEnv = "MASHERY_V3_TOKEN"
@@ -60,17 +59,17 @@ func EncryptInPlace(path string, pass string) error {
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return &WrappedError{Context: "reading", Cause: err}
+		return &errwrap.WrappedError{Context: "reading", Cause: err}
 	}
 
 	if cphr, err := aes.NewCipher([]byte(pass)); err != nil {
-		return &WrappedError{Context: "obtaining cipher", Cause: err}
+		return &errwrap.WrappedError{Context: "obtaining cipher", Cause: err}
 	} else if gcm, err := cipher.NewGCM(cphr); err != nil {
-		return &WrappedError{Context: "failed to initialize counter", Cause: err}
+		return &errwrap.WrappedError{Context: "failed to initialize counter", Cause: err}
 	} else {
 		nonce := make([]byte, gcm.NonceSize())
 		if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-			return &WrappedError{Context: "cannot initialize nonce", Cause: err}
+			return &errwrap.WrappedError{Context: "cannot initialize nonce", Cause: err}
 		} else {
 			return ioutil.WriteFile(path, gcm.Seal(nonce, nonce, data, nil), 0777)
 		}
@@ -83,11 +82,11 @@ func ReadCiphertext(fileName string, pass string) ([]byte, error) {
 	}
 
 	if ciphertext, err := ioutil.ReadFile(fileName); err != nil {
-		return []byte{}, &WrappedError{Context: "reading source file", Cause: err}
+		return []byte{}, &errwrap.WrappedError{Context: "reading source file", Cause: err}
 	} else if chr, err := aes.NewCipher([]byte(pass)); err != nil {
-		return []byte{}, &WrappedError{Context: "initializing cipher", Cause: err}
+		return []byte{}, &errwrap.WrappedError{Context: "initializing cipher", Cause: err}
 	} else if gcmDecrypt, err := cipher.NewGCM(chr); err != nil {
-		return []byte{}, &WrappedError{Context: "initializing counter", Cause: err}
+		return []byte{}, &errwrap.WrappedError{Context: "initializing counter", Cause: err}
 	} else {
 		nonceSize := gcmDecrypt.NonceSize()
 		nonce, encryptedMessage := ciphertext[:nonceSize], ciphertext[nonceSize:]
@@ -133,15 +132,4 @@ func DeriveAccessCredentials(customFile, filePass string, fallbackCreds *Mashery
 	}
 
 	return creds
-}
-
-// Converts query parameters to V3-required filter string.
-func toV3FilterExpression(params map[string]string) string {
-	filterTokens := make([]string, len(params))
-	idx := 0
-	for k, v := range params {
-		filterTokens[idx] = fmt.Sprintf("%s:%s", k, v)
-		idx++
-	}
-	return strings.Join(filterTokens, ",")
 }

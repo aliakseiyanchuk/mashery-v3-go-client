@@ -4,26 +4,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"net/url"
 )
 
 // ListEndpointMethods List methods associated with this endpoint, having only implicit fields returned.
-func ListEndpointMethods(ctx context.Context, serviceId, endpointId string, c *HttpTransport) ([]MasheryMethod, error) {
-	spec := FetchSpec{
-		Pagination:     PerPage,
+func ListEndpointMethods(ctx context.Context, serviceId, endpointId string, c *transport.V3Transport) ([]masherytypes.MasheryMethod, error) {
+	spec := transport.FetchSpec{
+		Pagination:     transport.PerPage,
 		Resource:       fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),
 		Query:          nil,
 		AppContext:     "endpoint methods",
-		ResponseParser: ParseMasheryMethodArray,
+		ResponseParser: masherytypes.ParseMasheryMethodArray,
 	}
 
-	if d, err := c.fetchAll(ctx, spec); err != nil {
-		return []MasheryMethod{}, err
+	if d, err := c.FetchAll(ctx, spec); err != nil {
+		return []masherytypes.MasheryMethod{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []MasheryMethod
+		var rv []masherytypes.MasheryMethod
 		for _, raw := range d {
-			ms, ok := raw.([]MasheryMethod)
+			ms, ok := raw.([]masherytypes.MasheryMethod)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -34,24 +36,24 @@ func ListEndpointMethods(ctx context.Context, serviceId, endpointId string, c *H
 }
 
 // ListEndpointMethodsWithFullInfo List endpoints methods with their extended information.
-func ListEndpointMethodsWithFullInfo(ctx context.Context, serviceId, endpointId string, c *HttpTransport) ([]MasheryMethod, error) {
-	spec := FetchSpec{
-		Pagination: PerPage,
+func ListEndpointMethodsWithFullInfo(ctx context.Context, serviceId, endpointId string, c *transport.V3Transport) ([]masherytypes.MasheryMethod, error) {
+	spec := transport.FetchSpec{
+		Pagination: transport.PerPage,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),
 		Query: url.Values{
 			"fields": {MasheryMethodsFieldsStr},
 		},
 		AppContext:     "endpoint methods",
-		ResponseParser: ParseMasheryMethodArray,
+		ResponseParser: masherytypes.ParseMasheryMethodArray,
 	}
 
-	if d, err := c.fetchAll(ctx, spec); err != nil {
-		return []MasheryMethod{}, err
+	if d, err := c.FetchAll(ctx, spec); err != nil {
+		return []masherytypes.MasheryMethod{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []MasheryMethod
+		var rv []masherytypes.MasheryMethod
 		for _, raw := range d {
-			ms, ok := raw.([]MasheryMethod)
+			ms, ok := raw.([]masherytypes.MasheryMethod)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -62,18 +64,18 @@ func ListEndpointMethodsWithFullInfo(ctx context.Context, serviceId, endpointId 
 }
 
 // CreateEndpointMethod Create a new service.
-func CreateEndpointMethod(ctx context.Context, serviceId, endpointId string, methodUpsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
-	rawResp, err := c.createObject(ctx, methodUpsert, FetchSpec{
+func CreateEndpointMethod(ctx context.Context, serviceId, endpointId string, methodUpsert masherytypes.MasheryMethod, c *transport.V3Transport) (*masherytypes.MasheryMethod, error) {
+	rawResp, err := c.CreateObject(ctx, methodUpsert, transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),
 		AppContext: "endpoint method",
 		Query: url.Values{
 			"fields": {MasheryMethodsFieldsStr},
 		},
-		ResponseParser: ParseMasheryMethod,
+		ResponseParser: masherytypes.ParseMasheryMethod,
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(MasheryMethod)
+		rv, _ := rawResp.(masherytypes.MasheryMethod)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -81,43 +83,43 @@ func CreateEndpointMethod(ctx context.Context, serviceId, endpointId string, met
 }
 
 // UpdateEndpointMethod Update mashery endpoint method using the specified upsertable.
-func UpdateEndpointMethod(ctx context.Context, serviceId, endpointId string, methUpsert MasheryMethod, c *HttpTransport) (*MasheryMethod, error) {
+func UpdateEndpointMethod(ctx context.Context, serviceId, endpointId string, methUpsert masherytypes.MasheryMethod, c *transport.V3Transport) (*masherytypes.MasheryMethod, error) {
 	if methUpsert.Id == "" {
 		return nil, errors.New("illegal argument: endpoint Id must be set and not nil")
 	}
 
-	opContext := FetchSpec{
+	opContext := transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s", serviceId, endpointId, methUpsert.Id),
 		AppContext: "endpoint method",
 		Query: url.Values{
 			"fields": {MasheryMethodsFieldsStr},
 		},
-		ResponseParser: ParseMasheryMethod,
+		ResponseParser: masherytypes.ParseMasheryMethod,
 	}
 
-	if d, err := c.updateObject(ctx, methUpsert, opContext); err == nil {
-		rv, _ := d.(MasheryMethod)
+	if d, err := c.UpdateObject(ctx, methUpsert, opContext); err == nil {
+		rv, _ := d.(masherytypes.MasheryMethod)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func GetEndpointMethod(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) (*MasheryMethod, error) {
-	fetchSpec := FetchSpec{
-		Pagination: NotRequired,
+func GetEndpointMethod(ctx context.Context, serviceId, endpointId, methodId string, c *transport.V3Transport) (*masherytypes.MasheryMethod, error) {
+	fetchSpec := transport.FetchSpec{
+		Pagination: transport.NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s", serviceId, endpointId, methodId),
 		Query: url.Values{
 			"fields": {MasheryMethodsFieldsStr},
 		},
 		AppContext:     "endpoint method",
-		ResponseParser: ParseMasheryMethod,
+		ResponseParser: masherytypes.ParseMasheryMethod,
 	}
 
-	if raw, err := c.getObject(ctx, fetchSpec); err != nil {
+	if raw, err := c.GetObject(ctx, fetchSpec); err != nil {
 		return nil, err
 	} else {
-		if rv, ok := raw.(MasheryMethod); ok {
+		if rv, ok := raw.(masherytypes.MasheryMethod); ok {
 			return &rv, nil
 		} else {
 			return nil, errors.New("invalid return type")
@@ -125,20 +127,20 @@ func GetEndpointMethod(ctx context.Context, serviceId, endpointId, methodId stri
 	}
 }
 
-func DeleteEndpointMethod(ctx context.Context, serviceId, endpointId, methodId string, c *HttpTransport) error {
-	return c.deleteObject(ctx, FetchSpec{
+func DeleteEndpointMethod(ctx context.Context, serviceId, endpointId, methodId string, c *transport.V3Transport) error {
+	return c.DeleteObject(ctx, transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods/%s", serviceId, endpointId, methodId),
 		AppContext: "endpoint method",
 	})
 }
 
 // CountEndpointsMethodsOf Count the number of services that would match this criteria
-func CountEndpointsMethodsOf(ctx context.Context, serviceId, endpointId string, c *HttpTransport) (int64, error) {
-	opCtx := FetchSpec{
-		Pagination: NotRequired,
+func CountEndpointsMethodsOf(ctx context.Context, serviceId, endpointId string, c *transport.V3Transport) (int64, error) {
+	opCtx := transport.FetchSpec{
+		Pagination: transport.NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s/methods", serviceId, endpointId),
 		AppContext: "endpoints methods",
 	}
 
-	return c.count(ctx, opCtx)
+	return c.Count(ctx, opCtx)
 }

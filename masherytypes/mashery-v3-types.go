@@ -1,4 +1,4 @@
-package v3client
+package masherytypes
 
 import (
 	"encoding/json"
@@ -506,7 +506,7 @@ type V3GenericErrorResponse struct {
 	ErrorMessage string `json:"errorMessage"`
 }
 
-func (e *V3GenericErrorResponse) hasData() bool {
+func (e *V3GenericErrorResponse) HasData() bool {
 	return len(e.ErrorCode) > 0 || len(e.ErrorMessage) > 0
 }
 
@@ -591,7 +591,7 @@ func ParseMasheryEndpointArray(dat []byte) (interface{}, int, error) {
 	return rv, len(rv), err
 }
 
-func nilParser(dat []byte) (interface{}, int, error) {
+func NilParser(dat []byte) (interface{}, int, error) {
 	return nil, 0, nil
 }
 

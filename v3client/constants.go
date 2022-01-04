@@ -12,7 +12,7 @@ const (
 
 var EmptyQuery url.Values = map[string][]string{}
 
-// Usual mashery service fields without endpoints
+// MasheryServiceFields Usual mashery service fields without endpoints
 var MasheryServiceFields = []string{
 	"id", "name", "created", "updated", "editorHandle", "revisionNumber", "robotsPolicy",
 	"crossdomainPolicy", "description", "errorSets", "qpsLimitOverall", "rfc3986Encode",

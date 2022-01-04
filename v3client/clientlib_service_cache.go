@@ -3,35 +3,37 @@ package v3client
 import (
 	"context"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 )
 
-func masheryServiceCacheSpec(id string) FetchSpec {
-	return FetchSpec{
+func masheryServiceCacheSpec(id string) transport.FetchSpec {
+	return transport.FetchSpec{
 		Resource:       fmt.Sprintf("/services/%s/cache", id),
 		Query:          nil,
 		AppContext:     "service cache",
-		ResponseParser: ParseMasheryServiceCache,
+		ResponseParser: masherytypes.ParseMasheryServiceCache,
 	}
 }
 
 // GetServiceCache Retrieve the service cache
-func GetServiceCache(ctx context.Context, id string, c *HttpTransport) (*MasheryServiceCache, error) {
-	rv, err := c.getObject(ctx, masheryServiceCacheSpec(id))
+func GetServiceCache(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryServiceCache, error) {
+	rv, err := c.GetObject(ctx, masheryServiceCacheSpec(id))
 
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(MasheryServiceCache)
+		retServ, _ := rv.(masherytypes.MasheryServiceCache)
 		return &retServ, nil
 	}
 }
 
 // CreateServiceCache Create a new service cache
-func CreateServiceCache(ctx context.Context, id string, service MasheryServiceCache, c *HttpTransport) (*MasheryServiceCache, error) {
-	rawResp, err := c.createObject(ctx, service, masheryServiceCacheSpec(id))
+func CreateServiceCache(ctx context.Context, id string, service masherytypes.MasheryServiceCache, c *transport.V3Transport) (*masherytypes.MasheryServiceCache, error) {
+	rawResp, err := c.CreateObject(ctx, service, masheryServiceCacheSpec(id))
 
 	if err == nil {
-		rv, _ := rawResp.(MasheryServiceCache)
+		rv, _ := rawResp.(masherytypes.MasheryServiceCache)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -39,9 +41,9 @@ func CreateServiceCache(ctx context.Context, id string, service MasheryServiceCa
 }
 
 // UpdateServiceCache Update cache of this service
-func UpdateServiceCache(ctx context.Context, id string, service MasheryServiceCache, c *HttpTransport) (*MasheryServiceCache, error) {
-	if d, err := c.updateObject(ctx, service, masheryServiceCacheSpec(id)); err == nil {
-		rv, _ := d.(MasheryServiceCache)
+func UpdateServiceCache(ctx context.Context, id string, service masherytypes.MasheryServiceCache, c *transport.V3Transport) (*masherytypes.MasheryServiceCache, error) {
+	if d, err := c.UpdateObject(ctx, service, masheryServiceCacheSpec(id)); err == nil {
+		rv, _ := d.(masherytypes.MasheryServiceCache)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -49,6 +51,6 @@ func UpdateServiceCache(ctx context.Context, id string, service MasheryServiceCa
 }
 
 // DeleteServiceCache Create a new service.
-func DeleteServiceCache(ctx context.Context, id string, c *HttpTransport) error {
-	return c.deleteObject(ctx, masheryServiceCacheSpec(id))
+func DeleteServiceCache(ctx context.Context, id string, c *transport.V3Transport) error {
+	return c.DeleteObject(ctx, masheryServiceCacheSpec(id))
 }

@@ -4,53 +4,55 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"net/url"
 )
 
-func ListEndpoints(ctx context.Context, serviceId string, c *HttpTransport) ([]AddressableV3Object, error) {
-	spec := FetchSpec{
-		Pagination:     PerPage,
+func ListEndpoints(ctx context.Context, serviceId string, c *transport.V3Transport) ([]masherytypes.AddressableV3Object, error) {
+	spec := transport.FetchSpec{
+		Pagination:     transport.PerPage,
 		Resource:       fmt.Sprintf("/services/%s/endpoints", serviceId),
 		Query:          nil,
 		AppContext:     "endpoint of service",
-		ResponseParser: ParseMasheryEndpointArray,
+		ResponseParser: masherytypes.ParseMasheryEndpointArray,
 	}
 
-	if d, err := c.fetchAll(ctx, spec); err != nil {
-		return []AddressableV3Object{}, err
+	if d, err := c.FetchAll(ctx, spec); err != nil {
+		return []masherytypes.AddressableV3Object{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []MasheryEndpoint
+		var rv []masherytypes.MasheryEndpoint
 		for _, raw := range d {
-			ms, ok := raw.([]MasheryEndpoint)
+			ms, ok := raw.([]masherytypes.MasheryEndpoint)
 			if ok {
 				rv = append(rv, ms...)
 			}
 		}
 
-		return AddressableEndpoints(rv), nil
+		return masherytypes.AddressableEndpoints(rv), nil
 	}
 }
 
 // ListEndpointsWithFullInfo List endpoints with their extended information.
-func ListEndpointsWithFullInfo(ctx context.Context, serviceId string, c *HttpTransport) ([]MasheryEndpoint, error) {
-	spec := FetchSpec{
-		Pagination: PerPage,
+func ListEndpointsWithFullInfo(ctx context.Context, serviceId string, c *transport.V3Transport) ([]masherytypes.MasheryEndpoint, error) {
+	spec := transport.FetchSpec{
+		Pagination: transport.PerPage,
 		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId),
 		Query: url.Values{
 			"fields": {MasheryEndpointFieldsStr},
 		},
 		AppContext:     "endpoint of service",
-		ResponseParser: ParseMasheryEndpointArray,
+		ResponseParser: masherytypes.ParseMasheryEndpointArray,
 	}
 
-	if d, err := c.fetchAll(ctx, spec); err != nil {
-		return []MasheryEndpoint{}, err
+	if d, err := c.FetchAll(ctx, spec); err != nil {
+		return []masherytypes.MasheryEndpoint{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []MasheryEndpoint
+		var rv []masherytypes.MasheryEndpoint
 		for _, raw := range d {
-			ms, ok := raw.([]MasheryEndpoint)
+			ms, ok := raw.([]masherytypes.MasheryEndpoint)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -60,63 +62,63 @@ func ListEndpointsWithFullInfo(ctx context.Context, serviceId string, c *HttpTra
 	}
 }
 
-// Create a new service.
-func CreateEndpoint(ctx context.Context, serviceId string, endp MasheryEndpoint, c *HttpTransport) (*MasheryEndpoint, error) {
-	rawResp, err := c.createObject(ctx, endp, FetchSpec{
+// CreateEndpoint Create a new endpoint of the service.
+func CreateEndpoint(ctx context.Context, serviceId string, endp masherytypes.MasheryEndpoint, c *transport.V3Transport) (*masherytypes.MasheryEndpoint, error) {
+	rawResp, err := c.CreateObject(ctx, endp, transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId),
 		AppContext: "endpoint",
 		Query: url.Values{
 			"fields": {MasheryEndpointFieldsStr},
 		},
-		ResponseParser: ParseMasheryEndpoint,
+		ResponseParser: masherytypes.ParseMasheryEndpoint,
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(MasheryEndpoint)
+		rv, _ := rawResp.(masherytypes.MasheryEndpoint)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-// Create a new service.
-func UpdateEndpoint(ctx context.Context, serviceId string, endp MasheryEndpoint, c *HttpTransport) (*MasheryEndpoint, error) {
+// UpdateEndpoint updates an endpoint
+func UpdateEndpoint(ctx context.Context, serviceId string, endp masherytypes.MasheryEndpoint, c *transport.V3Transport) (*masherytypes.MasheryEndpoint, error) {
 	if endp.Id == "" {
 		return nil, errors.New("illegal argument: endpoint Id must be set and not nil")
 	}
 
-	opContext := FetchSpec{
+	opContext := transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s", serviceId, endp.Id),
 		AppContext: "endpoint",
 		Query: url.Values{
 			"fields": {MasheryEndpointFieldsStr},
 		},
-		ResponseParser: ParseMasheryEndpoint,
+		ResponseParser: masherytypes.ParseMasheryEndpoint,
 	}
 
-	if d, err := c.updateObject(ctx, endp, opContext); err == nil {
-		rv, _ := d.(MasheryEndpoint)
+	if d, err := c.UpdateObject(ctx, endp, opContext); err == nil {
+		rv, _ := d.(masherytypes.MasheryEndpoint)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func GetEndpoint(ctx context.Context, serviceId string, endpointId string, c *HttpTransport) (*MasheryEndpoint, error) {
-	fetchSpec := FetchSpec{
-		Pagination: NotRequired,
+func GetEndpoint(ctx context.Context, serviceId string, endpointId string, c *transport.V3Transport) (*masherytypes.MasheryEndpoint, error) {
+	fetchSpec := transport.FetchSpec{
+		Pagination: transport.NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s", serviceId, endpointId),
 		Query: url.Values{
 			"fields": {MasheryEndpointFieldsStr},
 		},
 		AppContext:     "endpoint",
-		ResponseParser: ParseMasheryEndpoint,
+		ResponseParser: masherytypes.ParseMasheryEndpoint,
 	}
 
-	if raw, err := c.getObject(ctx, fetchSpec); err != nil {
+	if raw, err := c.GetObject(ctx, fetchSpec); err != nil {
 		return nil, err
 	} else {
-		if rv, ok := raw.(MasheryEndpoint); ok {
+		if rv, ok := raw.(masherytypes.MasheryEndpoint); ok {
 			return &rv, nil
 		} else {
 			return nil, errors.New("invalid return type")
@@ -124,20 +126,20 @@ func GetEndpoint(ctx context.Context, serviceId string, endpointId string, c *Ht
 	}
 }
 
-func DeleteEndpoint(ctx context.Context, serviceId, endpointId string, c *HttpTransport) error {
-	return c.deleteObject(ctx, FetchSpec{
+func DeleteEndpoint(ctx context.Context, serviceId, endpointId string, c *transport.V3Transport) error {
+	return c.DeleteObject(ctx, transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/endpoints/%s", serviceId, endpointId),
 		AppContext: "endpoint",
 	})
 }
 
-// Count the number of services that would match this criteria
-func CountEndpointsOf(ctx context.Context, serviceId string, c *HttpTransport) (int64, error) {
-	opCtx := FetchSpec{
-		Pagination: NotRequired,
+// CountEndpointsOf Count the number of services that would match this criteria
+func CountEndpointsOf(ctx context.Context, serviceId string, c *transport.V3Transport) (int64, error) {
+	opCtx := transport.FetchSpec{
+		Pagination: transport.NotRequired,
 		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId),
 		AppContext: "service endpoints",
 	}
 
-	return c.count(ctx, opCtx)
+	return c.Count(ctx, opCtx)
 }

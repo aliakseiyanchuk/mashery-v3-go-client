@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"net/url"
 )
 
@@ -11,35 +13,35 @@ var serviceAllFieldsQuery = url.Values{
 	"fields": {MasheryServiceFullFieldsStr},
 }
 
-func GetService(ctx context.Context, id string, c *HttpTransport) (*MasheryService, error) {
-	rv, err := c.getObject(ctx, FetchSpec{
+func GetService(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryService, error) {
+	rv, err := c.GetObject(ctx, transport.FetchSpec{
 		Resource:       fmt.Sprintf("/services/%s", id),
 		Query:          serviceAllFieldsQuery,
 		AppContext:     "service",
-		ResponseParser: ParseMasheryService,
+		ResponseParser: masherytypes.ParseMasheryService,
 	})
 
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(MasheryService)
+		retServ, _ := rv.(masherytypes.MasheryService)
 		return &retServ, nil
 	}
 }
 
 // CreateService Create a new service.
-func CreateService(ctx context.Context, service MasheryService, c *HttpTransport) (*MasheryService, error) {
-	rawResp, err := c.createObject(ctx, service, FetchSpec{
+func CreateService(ctx context.Context, service masherytypes.MasheryService, c *transport.V3Transport) (*masherytypes.MasheryService, error) {
+	rawResp, err := c.CreateObject(ctx, service, transport.FetchSpec{
 		Resource:   "/services",
 		AppContext: "services",
 		Query: url.Values{
 			"fields": {MasheryServiceFullFieldsStr},
 		},
-		ResponseParser: ParseMasheryService,
+		ResponseParser: masherytypes.ParseMasheryService,
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(MasheryService)
+		rv, _ := rawResp.(masherytypes.MasheryService)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -47,19 +49,19 @@ func CreateService(ctx context.Context, service MasheryService, c *HttpTransport
 }
 
 // UpdateService updates a Mashery service
-func UpdateService(ctx context.Context, service MasheryService, c *HttpTransport) (*MasheryService, error) {
+func UpdateService(ctx context.Context, service masherytypes.MasheryService, c *transport.V3Transport) (*masherytypes.MasheryService, error) {
 	if service.Id == "" {
 		return nil, errors.New("illegal argument: service Id must be set and not nil")
 	}
 
-	opContext := FetchSpec{
+	opContext := transport.FetchSpec{
 		Resource:       fmt.Sprintf("/services/%s", service.Id),
 		AppContext:     "service",
-		ResponseParser: ParseMasheryService,
+		ResponseParser: masherytypes.ParseMasheryService,
 	}
 
-	if d, err := c.updateObject(ctx, service, opContext); err == nil {
-		rv, _ := d.(MasheryService)
+	if d, err := c.UpdateObject(ctx, service, opContext); err == nil {
+		rv, _ := d.(masherytypes.MasheryService)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -67,41 +69,41 @@ func UpdateService(ctx context.Context, service MasheryService, c *HttpTransport
 }
 
 // DeleteService Delete a service.
-func DeleteService(ctx context.Context, serviceId string, c *HttpTransport) error {
-	opContext := FetchSpec{
+func DeleteService(ctx context.Context, serviceId string, c *transport.V3Transport) error {
+	opContext := transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s", serviceId),
 		AppContext: "service",
 	}
 
-	return c.deleteObject(ctx, opContext)
+	return c.DeleteObject(ctx, opContext)
 }
 
 // ListServicesFiltered List services that are filtered according to the condition that is V3-supported and containing the fields
 // that the requester specifies
-func ListServicesFiltered(ctx context.Context, params map[string]string, fields []string, c *HttpTransport) ([]MasheryService, error) {
-	return listServicesWithQuery(ctx, c.v3FilteringParams(params, fields), c)
+func ListServicesFiltered(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.MasheryService, error) {
+	return listServicesWithQuery(ctx, c.V3FilteringParams(params, fields), c)
 }
 
-func ListServices(ctx context.Context, c *HttpTransport) ([]MasheryService, error) {
+func ListServices(ctx context.Context, c *transport.V3Transport) ([]masherytypes.MasheryService, error) {
 	return listServicesWithQuery(ctx, nil, c)
 }
 
-func listServicesWithQuery(ctx context.Context, qs url.Values, c *HttpTransport) ([]MasheryService, error) {
-	opCtx := FetchSpec{
-		Pagination:     PerItem,
+func listServicesWithQuery(ctx context.Context, qs url.Values, c *transport.V3Transport) ([]masherytypes.MasheryService, error) {
+	opCtx := transport.FetchSpec{
+		Pagination:     transport.PerItem,
 		Resource:       "/services",
 		Query:          qs,
 		AppContext:     "all service",
-		ResponseParser: ParseMasheryServiceArray,
+		ResponseParser: masherytypes.ParseMasheryServiceArray,
 	}
 
-	if d, err := c.fetchAll(ctx, opCtx); err != nil {
-		return []MasheryService{}, nil
+	if d, err := c.FetchAll(ctx, opCtx); err != nil {
+		return []masherytypes.MasheryService{}, nil
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []MasheryService
+		var rv []masherytypes.MasheryService
 		for _, raw := range d {
-			ms, ok := raw.([]MasheryService)
+			ms, ok := raw.([]masherytypes.MasheryService)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -111,17 +113,17 @@ func listServicesWithQuery(ctx context.Context, qs url.Values, c *HttpTransport)
 	}
 }
 
-// Count the number of services that would match this criteria
-func CountServices(ctx context.Context, params map[string]string, c *HttpTransport) (int64, error) {
-	opCtx := FetchSpec{
-		Pagination: NotRequired,
+// CountServices Count the number of services that would match this criteria
+func CountServices(ctx context.Context, params map[string]string, c *transport.V3Transport) (int64, error) {
+	opCtx := transport.FetchSpec{
+		Pagination: transport.NotRequired,
 		Resource:   "/services",
 		Query: url.Values{
-			"filter": {toV3FilterExpression(params)},
+			"filter": {transport.V3FilterExpression(params)},
 		},
 		AppContext:     "all service count",
-		ResponseParser: ParseMasheryServiceArray,
+		ResponseParser: masherytypes.ParseMasheryServiceArray,
 	}
 
-	return c.count(ctx, opCtx)
+	return c.Count(ctx, opCtx)
 }

@@ -10,11 +10,18 @@ import (
 // An access token provider that  serve access token that has been pre-saved and persisted. The file will be periodically
 // checked for the modification. The provider will retain the most recent successfully read response.
 type FileSystemTokenProvider struct {
+	FixedTokenProvider
+
 	path               string
 	Response           *TimedAccessTokenResponse
 	lastFSCheck        time.Time
 	sourceLastModified time.Time
 	syncInterval       time.Duration
+}
+
+func (f *FileSystemTokenProvider) Authorization() (map[string]string, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (f *FileSystemTokenProvider) AccessToken() (string, error) {
@@ -38,6 +45,7 @@ func (f *FileSystemTokenProvider) checkFileSync() {
 
 			if resp, err := ReadSavedV3TokenData(f.path); err == nil {
 				f.Response = resp
+				f.UpdateToken(resp.AccessToken)
 			}
 
 			f.sourceLastModified = info.ModTime()

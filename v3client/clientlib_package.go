@@ -4,40 +4,42 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"net/url"
 )
 
-func GetPackage(ctx context.Context, id string, c *HttpTransport) (*MasheryPackage, error) {
-	rv, err := c.getObject(ctx, FetchSpec{
+func GetPackage(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryPackage, error) {
+	rv, err := c.GetObject(ctx, transport.FetchSpec{
 		Resource: fmt.Sprintf("/packages/%s", id),
 		Query: url.Values{
 			"fields": {MasheryPackageFieldsStr},
 		},
 		AppContext:     "service",
-		ResponseParser: ParseMasheryPackage,
+		ResponseParser: masherytypes.ParseMasheryPackage,
 	})
 
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(MasheryPackage)
+		retServ, _ := rv.(masherytypes.MasheryPackage)
 		return &retServ, nil
 	}
 }
 
 // CreatePackage Create a new service.
-func CreatePackage(ctx context.Context, pack MasheryPackage, c *HttpTransport) (*MasheryPackage, error) {
-	rawResp, err := c.createObject(ctx, pack, FetchSpec{
+func CreatePackage(ctx context.Context, pack masherytypes.MasheryPackage, c *transport.V3Transport) (*masherytypes.MasheryPackage, error) {
+	rawResp, err := c.CreateObject(ctx, pack, transport.FetchSpec{
 		Resource:   "/packages",
 		AppContext: "package",
 		Query: url.Values{
 			"fields": {MasheryPackageFieldsStr},
 		},
-		ResponseParser: ParseMasheryPackage,
+		ResponseParser: masherytypes.ParseMasheryPackage,
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(MasheryPackage)
+		rv, _ := rawResp.(masherytypes.MasheryPackage)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -45,50 +47,50 @@ func CreatePackage(ctx context.Context, pack MasheryPackage, c *HttpTransport) (
 }
 
 // UpdatePackage Create a new service.
-func UpdatePackage(ctx context.Context, pack MasheryPackage, c *HttpTransport) (*MasheryPackage, error) {
+func UpdatePackage(ctx context.Context, pack masherytypes.MasheryPackage, c *transport.V3Transport) (*masherytypes.MasheryPackage, error) {
 	if pack.Id == "" {
 		return nil, errors.New("illegal argument: package Id must be set and not nil")
 	}
 
-	opContext := FetchSpec{
+	opContext := transport.FetchSpec{
 		Resource:       fmt.Sprintf("/packages/%s", pack.Id),
 		AppContext:     "package",
-		ResponseParser: ParseMasheryService,
+		ResponseParser: masherytypes.ParseMasheryService,
 	}
 
-	if d, err := c.updateObject(ctx, pack, opContext); err == nil {
-		rv, _ := d.(MasheryPackage)
+	if d, err := c.UpdateObject(ctx, pack, opContext); err == nil {
+		rv, _ := d.(masherytypes.MasheryPackage)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func DeletePackage(ctx context.Context, packId string, c *HttpTransport) error {
-	opContext := FetchSpec{
+func DeletePackage(ctx context.Context, packId string, c *transport.V3Transport) error {
+	opContext := transport.FetchSpec{
 		Resource:   fmt.Sprintf("/packages/%s", packId),
 		AppContext: "package",
 	}
 
-	return c.deleteObject(ctx, opContext)
+	return c.DeleteObject(ctx, opContext)
 }
 
-func ListPackages(ctx context.Context, c *HttpTransport) ([]MasheryPackage, error) {
-	opCtx := FetchSpec{
-		Pagination:     PerItem,
+func ListPackages(ctx context.Context, c *transport.V3Transport) ([]masherytypes.MasheryPackage, error) {
+	opCtx := transport.FetchSpec{
+		Pagination:     transport.PerItem,
 		Resource:       "/packages",
 		Query:          nil,
 		AppContext:     "all service",
-		ResponseParser: ParseMasheryPackageArray,
+		ResponseParser: masherytypes.ParseMasheryPackageArray,
 	}
 
-	if d, err := c.fetchAll(ctx, opCtx); err != nil {
-		return []MasheryPackage{}, err
+	if d, err := c.FetchAll(ctx, opCtx); err != nil {
+		return []masherytypes.MasheryPackage{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []MasheryPackage
+		var rv []masherytypes.MasheryPackage
 		for _, raw := range d {
-			ms, ok := raw.([]MasheryPackage)
+			ms, ok := raw.([]masherytypes.MasheryPackage)
 			if ok {
 				rv = append(rv, ms...)
 			}
