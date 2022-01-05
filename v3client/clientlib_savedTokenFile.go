@@ -3,6 +3,7 @@ package v3client
 import (
 	"encoding/json"
 	"errors"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -22,7 +23,7 @@ func DefaultSavedAccessTokenFilePath() string {
 	}
 }
 
-func PersistV3TokenResponse(dat *TimedAccessTokenResponse, path string) error {
+func PersistV3TokenResponse(dat *masherytypes.TimedAccessTokenResponse, path string) error {
 	if stat, err := os.Stat(path); (err == nil || os.IsExist(err)) && stat.IsDir() {
 		return errors.New("cannot persis a file into existing directory")
 	}
@@ -34,10 +35,10 @@ func PersistV3TokenResponse(dat *TimedAccessTokenResponse, path string) error {
 	}
 }
 
-func LoadV3TokenResponse(path string) (*TimedAccessTokenResponse, error) {
+func LoadV3TokenResponse(path string) (*masherytypes.TimedAccessTokenResponse, error) {
 	if stat, err := os.Stat(path); (err == nil || os.IsExist(err)) && !stat.IsDir() {
 		if dat, err := ioutil.ReadFile(path); err == nil {
-			resp := TimedAccessTokenResponse{}
+			resp := masherytypes.TimedAccessTokenResponse{}
 			err = json.Unmarshal(dat, &resp)
 			return &resp, err
 		} else {

@@ -3,6 +3,7 @@ package v3client
 import (
 	"encoding/json"
 	"errors"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -25,7 +26,7 @@ func NewOAuthHelper() *V3OAuthHelper {
 	return &rv
 }
 
-func (lcp *V3OAuthHelper) RetrieveAccessTokenFor(creds *MasheryV3Credentials) (*TimedAccessTokenResponse, error) {
+func (lcp *V3OAuthHelper) RetrieveAccessTokenFor(creds *MasheryV3Credentials) (*masherytypes.TimedAccessTokenResponse, error) {
 	data := url.Values{
 		"grant_type": {"password"},
 		"username":   {creds.Username},
@@ -36,7 +37,7 @@ func (lcp *V3OAuthHelper) RetrieveAccessTokenFor(creds *MasheryV3Credentials) (*
 	return lcp.postForToken(data, creds)
 }
 
-func (lcp *V3OAuthHelper) ExchangeRefreshToken(creds *MasheryV3Credentials, refreshToken string) (*TimedAccessTokenResponse, error) {
+func (lcp *V3OAuthHelper) ExchangeRefreshToken(creds *MasheryV3Credentials, refreshToken string) (*masherytypes.TimedAccessTokenResponse, error) {
 
 	data := url.Values{
 		"grant_type":    {"refresh_token"},
@@ -46,7 +47,7 @@ func (lcp *V3OAuthHelper) ExchangeRefreshToken(creds *MasheryV3Credentials, refr
 	return lcp.postForToken(data, creds)
 }
 
-func (lcp *V3OAuthHelper) postForToken(data url.Values, creds *MasheryV3Credentials) (*TimedAccessTokenResponse, error) {
+func (lcp *V3OAuthHelper) postForToken(data url.Values, creds *MasheryV3Credentials) (*masherytypes.TimedAccessTokenResponse, error) {
 
 	req, _ := http.NewRequest("POST", lcp.TokenEndpoint, strings.NewReader(data.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -67,7 +68,7 @@ func (lcp *V3OAuthHelper) postForToken(data url.Values, creds *MasheryV3Credenti
 		return nil, errors.New("Failed to read response body")
 	}
 
-	procResp := TimedAccessTokenResponse{
+	procResp := masherytypes.TimedAccessTokenResponse{
 		Obtained: time.Now(),
 		QPS:      creds.MaxQPS,
 	}

@@ -2,6 +2,7 @@ package v3client
 
 import (
 	"errors"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"net/http"
 	"time"
 )
@@ -29,7 +30,7 @@ func (m *MasheryV3Credentials) FullySpecified() bool {
 type ClientCredentialsProvider struct {
 	V3OAuthHelper
 
-	Response            *TimedAccessTokenResponse
+	Response            *masherytypes.TimedAccessTokenResponse
 	tokenFile           string
 	credentials         MasheryV3Credentials
 	comm                chan int
@@ -136,7 +137,7 @@ func (lcp *ClientCredentialsProvider) Refresh() error {
 	return err
 }
 
-func (lcp *ClientCredentialsProvider) TokenData() (*TimedAccessTokenResponse, error) {
+func (lcp *ClientCredentialsProvider) TokenData() (*masherytypes.TimedAccessTokenResponse, error) {
 	if lcp.Response != nil && !lcp.Response.Expired() {
 		return lcp.Response, nil
 	} else {

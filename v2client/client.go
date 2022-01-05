@@ -3,8 +3,13 @@ package v2client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/errwrap"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
+	"golang.org/x/sync/semaphore"
+	"net/http"
+	"net/url"
+	"time"
 )
 
 type JSONRPCQueryResult struct {
@@ -40,7 +45,8 @@ type Client interface {
 }
 
 type ClientImpl struct {
-	transport *transport.HttpTransport
+	V2Authorizer transport.Authorizer
+	transport    *transport.HttpTransport
 }
 
 func (ci *ClientImpl) Invoke(ctx context.Context, method string, obj interface{}) (V2Result, error) {
@@ -51,7 +57,13 @@ func (ci *ClientImpl) Invoke(ctx context.Context, method string, obj interface{}
 		Id:      1,
 	}
 
-	if resp, err := ci.transport.Post(ctx, "", req); err != nil {
+	m, _ := ci.V2Authorizer.Authorization()
+	qs := url.Values{}
+	for k, v := range m {
+		qs[k] = []string{v}
+	}
+
+	if resp, err := ci.transport.Post(ctx, "?"+qs.Encode(), req); err != nil {
 		return V2Result{}, &errwrap.WrappedError{
 			Context: "sending V2 post request",
 			Cause:   err,
@@ -68,4 +80,23 @@ func (ci *ClientImpl) Invoke(ctx context.Context, method string, obj interface{}
 			return rv, err
 		}
 	}
+}
+
+// NewHTTPClient Create a new V2 HTTP client to invoke Mashery V2 API
+func NewHTTPClient(areaNID int, p transport.Authorizer, qps int64, travelTimeComp time.Duration) Client {
+	if p == nil {
+		panic("v2 HTTP client requires an authorizer")
+	}
+
+	return &ClientImpl{
+		V2Authorizer: p,
+		transport: &transport.HttpTransport{
+			MashEndpoint:  fmt.Sprintf("https://api.mashery.com/v2/json-rpc/%d", areaNID),
+			Authorizer:    nil,
+			Sem:           semaphore.NewWeighted(qps),
+			AvgNetLatency: travelTimeComp,
+			HttpClient: &http.Client{
+				Timeout: time.Second * 60,
+			},
+		}}
 }

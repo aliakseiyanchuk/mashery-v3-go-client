@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/errwrap"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
@@ -24,7 +25,7 @@ const UserPassEnv = "MASHERY_PASS"
 
 const userSettingsFile = ".mashery-v3-credentials"
 
-func ReadSavedV3TokenData(fp string) (*TimedAccessTokenResponse, error) {
+func ReadSavedV3TokenData(fp string) (*masherytypes.TimedAccessTokenResponse, error) {
 	_, err := os.Stat(fp)
 	if err != nil || os.IsNotExist(err) {
 		return nil, errors.New(fmt.Sprintf("File %s does not exist", fp))
@@ -35,7 +36,7 @@ func ReadSavedV3TokenData(fp string) (*TimedAccessTokenResponse, error) {
 		return nil, errors.New(fmt.Sprintf("File %s could not be read (%s)", fp, err))
 	}
 
-	rv := TimedAccessTokenResponse{}
+	rv := masherytypes.TimedAccessTokenResponse{}
 	err = json.Unmarshal(dat, &rv)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("File %s is not valid json: %s", fp, err))

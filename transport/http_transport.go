@@ -20,9 +20,9 @@ type HttpTransport struct {
 }
 
 func (c *HttpTransport) Fetch(ctx context.Context, res string) (*http.Response, error) {
-	get := fmt.Sprintf("%s%s", c.MashEndpoint, res)
+	uri := fmt.Sprintf("%s%s", c.MashEndpoint, res)
 
-	if req, err := http.NewRequest("GET", get, nil); err != nil {
+	if req, err := http.NewRequest("GET", uri, nil); err != nil {
 		return nil, err
 	} else {
 		return c.httpExec(ctx, req)
@@ -74,13 +74,12 @@ func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.
 		}
 
 		if c.Authorizer != nil {
-			tkn, err := c.Authorizer.Authorization()
-			if err != nil {
+			if tkn, err := c.Authorizer.Authorization(); err != nil {
 				return nil, err
-			}
-
-			for k, v := range tkn {
-				req.Header.Add(k, v)
+			} else if len(tkn) > 0 {
+				for k, v := range tkn {
+					req.Header.Add(k, v)
+				}
 			}
 		}
 

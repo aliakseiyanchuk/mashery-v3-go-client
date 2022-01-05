@@ -11,7 +11,7 @@ import (
 
 const savedFileName = "./out/sampleSavedAccessToken.json"
 
-func saveTestFile(inp *v3client.TimedAccessTokenResponse) bool {
+func saveTestFile(inp *masherytypes.TimedAccessTokenResponse) bool {
 	if data, err := json.Marshal(inp); err == nil {
 		err = ioutil.WriteFile(savedFileName, data, 0644)
 		return err == nil
@@ -22,7 +22,7 @@ func saveTestFile(inp *v3client.TimedAccessTokenResponse) bool {
 }
 
 func TestNewFileSystemTokenProvider(t *testing.T) {
-	ref := v3client.TimedAccessTokenResponse{
+	ref := masherytypes.TimedAccessTokenResponse{
 		Obtained: time.Now(),
 		AccessTokenResponse: masherytypes.AccessTokenResponse{
 			TokenType:    "bearer",
@@ -51,7 +51,7 @@ func TestNewFileSystemTokenProvider(t *testing.T) {
 }
 
 func TestNewFileSystemTokenProviderWithExpiredToken(t *testing.T) {
-	ref := v3client.TimedAccessTokenResponse{
+	ref := masherytypes.TimedAccessTokenResponse{
 		Obtained: time.Unix(time.Now().Unix()-int64(7200), 0),
 		AccessTokenResponse: masherytypes.AccessTokenResponse{
 			TokenType:    "bearer",

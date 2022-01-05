@@ -2,6 +2,7 @@ package v3client
 
 import (
 	"errors"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"os"
 	"time"
 )
@@ -13,7 +14,7 @@ type FileSystemTokenProvider struct {
 	FixedTokenProvider
 
 	path               string
-	Response           *TimedAccessTokenResponse
+	Response           *masherytypes.TimedAccessTokenResponse
 	lastFSCheck        time.Time
 	sourceLastModified time.Time
 	syncInterval       time.Duration
