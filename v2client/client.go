@@ -31,6 +31,8 @@ type V2Result struct {
 	Id      *int          `json:"id"`
 	Result  interface{}   `json:"result"`
 	Error   *JSONRPCError `json:"error"`
+
+	HttpStatusCode int `json:"-"`
 }
 
 type V2Request struct {
@@ -42,6 +44,8 @@ type V2Request struct {
 
 type Client interface {
 	Invoke(ctx context.Context, method string, obj interface{}) (V2Result, error)
+	InvokeDirect(ctx context.Context, req V2Request) (V2Result, error)
+	InvokeRaw(ctx context.Context, req V2Request) (*http.Response, error)
 }
 
 type ClientImpl struct {
@@ -57,6 +61,24 @@ func (ci *ClientImpl) Invoke(ctx context.Context, method string, obj interface{}
 		Id:      1,
 	}
 
+	return ci.InvokeDirect(ctx, req)
+}
+
+func (ci *ClientImpl) InvokeDirect(ctx context.Context, req V2Request) (V2Result, error) {
+	if resp, err := ci.InvokeRaw(ctx, req); err != nil {
+		return V2Result{}, err
+	} else if body, err := transport.ReadResponseBody(resp); err != nil {
+		return V2Result{}, err
+	} else {
+		var rv V2Result
+		rv.HttpStatusCode = resp.StatusCode
+
+		err := json.Unmarshal(body, &rv)
+		return rv, err
+	}
+}
+
+func (ci *ClientImpl) InvokeRaw(ctx context.Context, req V2Request) (*http.Response, error) {
 	m, _ := ci.V2Authorizer.Authorization()
 	qs := url.Values{}
 	for k, v := range m {
@@ -64,21 +86,12 @@ func (ci *ClientImpl) Invoke(ctx context.Context, method string, obj interface{}
 	}
 
 	if resp, err := ci.transport.Post(ctx, "?"+qs.Encode(), req); err != nil {
-		return V2Result{}, &errwrap.WrappedError{
+		return nil, &errwrap.WrappedError{
 			Context: "sending V2 post request",
 			Cause:   err,
 		}
 	} else {
-		if body, err := transport.ReadResponseBody(resp); err != nil {
-			return V2Result{}, &errwrap.WrappedError{
-				Context: "reading V2 response",
-				Cause:   err,
-			}
-		} else {
-			var rv V2Result
-			err := json.Unmarshal(body, &rv)
-			return rv, err
-		}
+		return resp, err
 	}
 }
 
