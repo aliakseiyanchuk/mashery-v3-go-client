@@ -90,7 +90,12 @@ func main() {
 		if durErr != nil {
 			dur = 173 * time.Millisecond
 		}
-		cl := v3client.NewHttpClient(tknProvider, qps, dur)
+
+		cl := v3client.NewHttpClient(v3client.Params{
+			Authorizer:    tknProvider,
+			QPS:           qps,
+			AvgNetLatency: dur,
+		})
 
 		exitCode := handler(ctx, cl, handlerArgs)
 		os.Exit(exitCode)

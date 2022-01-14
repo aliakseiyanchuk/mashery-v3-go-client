@@ -1,6 +1,7 @@
 package v3client
 
 import (
+	"crypto/tls"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"golang.org/x/sync/semaphore"
 	"net/http"
@@ -38,15 +39,40 @@ func NewCustomClient(schema *ClientMethodSchema) Client {
 	return &rv
 }
 
-func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Duration) Client {
+type Params struct {
+	MashEndpoint  string
+	Authorizer    transport.Authorizer
+	QPS           int64
+	Timeout       time.Duration
+	AvgNetLatency time.Duration
+	TLSConfig     *tls.Config
+}
+
+func (p *Params) FillDefaults() {
+	if len(p.MashEndpoint) == 0 {
+		p.MashEndpoint = "https://api.mashery.com/v3/rest"
+	}
+
+	if p.QPS <= 0 {
+		p.QPS = 2
+	}
+	if p.Timeout <= 0 {
+		p.Timeout = time.Minute * 2
+	}
+	if p.AvgNetLatency <= 0 {
+		p.AvgNetLatency = time.Millisecond * 147
+	}
+
+	if p.TLSConfig == nil {
+		p.TLSConfig = transport.DefaultTLSConfig()
+	}
+}
+
+func NewHttpClient(p Params) Client {
+	p.FillDefaults()
+
 	impl := transport.V3Transport{
-		HttpTransport: transport.HttpTransport{
-			MashEndpoint:  "https://api.mashery.com/v3/rest",
-			Authorizer:    p,
-			Sem:           semaphore.NewWeighted(qps),
-			HttpClient:    &http.Client{},
-			AvgNetLatency: travelTimeComp,
-		},
+		HttpTransport: createHTTPTransport(p),
 	}
 
 	rv := FixedSchemeClient{
@@ -57,6 +83,22 @@ func NewHttpClient(p V3AccessTokenProvider, qps int64, travelTimeComp time.Durat
 	}
 
 	return &rv
+}
+
+func createHTTPTransport(p Params) transport.HttpTransport {
+	return transport.HttpTransport{
+		MashEndpoint: p.MashEndpoint,
+		Authorizer:   p.Authorizer,
+		Sem:          semaphore.NewWeighted(p.QPS),
+		HttpClient: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: p.TLSConfig,
+			},
+			Timeout: p.Timeout,
+		},
+
+		AvgNetLatency: p.AvgNetLatency,
+	}
 }
 
 func StandardClientMethodSchema() *ClientMethodSchema {

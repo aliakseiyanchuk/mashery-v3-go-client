@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -26,7 +27,7 @@ func refresh() int {
 			return 1
 		}
 
-		ccProvider := v3client.NewOAuthHelper()
+		ccProvider := v3client.NewOAuthHelper(transport.DefaultTLSConfig())
 
 		fmt.Println("Trying to refresh Mashery V3 access token...")
 		if resp, err := ccProvider.ExchangeRefreshToken(&runtimeCredentials, tkn.RefreshToken); err == nil {
@@ -134,7 +135,7 @@ func keepTokenAlive() int {
 			return 1
 		}
 
-		provider := v3client.NewClientCredentialsProvider(runtimeCredentials)
+		provider := v3client.NewClientCredentialsProvider(runtimeCredentials, nil)
 
 		if initTkn, err := provider.TokenData(); err != nil || initTkn == nil {
 			if err != nil {
@@ -192,7 +193,7 @@ func tokenCommandLine(name string) *flag.FlagSet {
 	return initCmd
 }
 
-// credentialsPassword derive the credentials password.
+// credentialsPassword derive the credentials' password.
 func credentialsPassword() string {
 	if env := os.Getenv("MASH_CREDS_AES"); len(env) > 0 {
 		return env
@@ -243,7 +244,7 @@ func initToken() int {
 			return 1
 		}
 
-		provider := v3client.NewOAuthHelper()
+		provider := v3client.NewOAuthHelper(transport.DefaultTLSConfig())
 
 		if dat, err := provider.RetrieveAccessTokenFor(&runtimeCredentials); err == nil {
 			if err = v3client.PersistV3TokenResponse(dat, cmdTokenFile); err != nil {

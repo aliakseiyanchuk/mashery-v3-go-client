@@ -1,6 +1,7 @@
 package transport
 
 type Authorizer interface {
-	Authorization() (map[string]string, error)
+	HeaderAuthorization() (map[string]string, error)
+	QueryStringAuthorization() (map[string]string, error)
 	Close()
 }

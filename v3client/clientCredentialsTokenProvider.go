@@ -1,6 +1,7 @@
 package v3client
 
 import (
+	"crypto/tls"
 	"errors"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"net/http"
@@ -39,15 +40,24 @@ type ClientCredentialsProvider struct {
 	postRefreshAction func()
 }
 
-func NewClientCredentialsProvider(credentials MasheryV3Credentials) *ClientCredentialsProvider {
-	return NewLiveCredentialsProviderUsing(credentials, MasheryTokenEndpoint)
+func NewClientCredentialsProvider(credentials MasheryV3Credentials, tlsCfg *tls.Config) *ClientCredentialsProvider {
+	return NewLiveCredentialsProviderUsing(credentials, MasheryTokenEndpoint, tlsCfg)
 }
 
-func NewLiveCredentialsProviderUsing(credentials MasheryV3Credentials, endpoint string) *ClientCredentialsProvider {
+func NewLiveCredentialsProviderUsing(credentials MasheryV3Credentials, endpoint string, tlsCfg *tls.Config) *ClientCredentialsProvider {
+	if tlsCfg == nil {
+		panic("nil tls configuration is not allowed")
+	}
+
 	retVal := ClientCredentialsProvider{
 		V3OAuthHelper: V3OAuthHelper{
 			TokenEndpoint: endpoint,
-			client:        &http.Client{},
+			client: &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: tlsCfg,
+				},
+				Timeout: time.Second * 30,
+			},
 		},
 
 		credentials: credentials,
@@ -122,6 +132,16 @@ func (lcp *ClientCredentialsProvider) doEnsureRefresh() {
 			lcp.postRefreshAction()
 		}
 	}
+}
+
+func ResponseDate(resp *http.Response) time.Time {
+	if val := resp.Header.Get("Date"); len(val) > 0 {
+		if t, err := time.Parse(time.RFC1123, val); err == nil {
+			return t
+		}
+	}
+
+	return time.Unix(0, 0)
 }
 
 func (lcp *ClientCredentialsProvider) Refresh() error {

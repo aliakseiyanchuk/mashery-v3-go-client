@@ -74,7 +74,7 @@ func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.
 		}
 
 		if c.Authorizer != nil {
-			if tkn, err := c.Authorizer.Authorization(); err != nil {
+			if tkn, err := c.Authorizer.HeaderAuthorization(); err != nil {
 				return nil, err
 			} else if len(tkn) > 0 {
 				for k, v := range tkn {

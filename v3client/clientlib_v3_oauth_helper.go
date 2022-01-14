@@ -1,6 +1,7 @@
 package v3client
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
@@ -17,9 +18,13 @@ type V3OAuthHelper struct {
 }
 
 // NewOAuthHelper creates an instance of a helper that could be used directly
-func NewOAuthHelper() *V3OAuthHelper {
+func NewOAuthHelper(tlsCfg *tls.Config) *V3OAuthHelper {
 	rv := V3OAuthHelper{
-		client:        &http.Client{},
+		client: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsCfg,
+			},
+		},
 		TokenEndpoint: MasheryTokenEndpoint,
 	}
 
@@ -76,6 +81,8 @@ func (lcp *V3OAuthHelper) postForToken(data url.Values, creds *MasheryV3Credenti
 	if err != nil {
 		return nil, errors.New("Could not unmarshal access token response")
 	}
+
+	procResp.ServerTime = ResponseDate(resp)
 
 	return &procResp, nil
 }

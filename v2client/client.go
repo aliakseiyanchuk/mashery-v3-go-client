@@ -2,7 +2,9 @@ package v2client
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/errwrap"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
@@ -49,8 +51,7 @@ type Client interface {
 }
 
 type ClientImpl struct {
-	V2Authorizer transport.Authorizer
-	transport    *transport.HttpTransport
+	transport *transport.HttpTransport
 }
 
 func (ci *ClientImpl) Invoke(ctx context.Context, method string, obj interface{}) (V2Result, error) {
@@ -79,7 +80,7 @@ func (ci *ClientImpl) InvokeDirect(ctx context.Context, req V2Request) (V2Result
 }
 
 func (ci *ClientImpl) InvokeRaw(ctx context.Context, req V2Request) (*http.Response, error) {
-	m, _ := ci.V2Authorizer.Authorization()
+	m, _ := ci.transport.Authorizer.QueryStringAuthorization()
 	qs := url.Values{}
 	for k, v := range m {
 		qs[k] = []string{v}
@@ -95,21 +96,59 @@ func (ci *ClientImpl) InvokeRaw(ctx context.Context, req V2Request) (*http.Respo
 	}
 }
 
+type Params struct {
+	AreaNID        int
+	Authorizer     transport.Authorizer
+	QPS            int64
+	TravelTimeComp time.Duration
+
+	MasheryEndpoint string
+	APICallTimeout  time.Duration
+	TLSConfig       *tls.Config
+}
+
+func (h Params) FillDefaults() error {
+	if h.Authorizer == nil {
+		return errors.New("v2 client requires a non-nil Authorizer")
+	}
+	if len(h.MasheryEndpoint) == 0 {
+		if h.AreaNID > 0 {
+			h.MasheryEndpoint = fmt.Sprintf("https://api.mashery.com/v2/json-rpc/%d", h.AreaNID)
+		} else {
+			return errors.New("for an empty MasheryEndpoint, input must supply AreaNID")
+		}
+	}
+	if h.TravelTimeComp == 0 {
+		h.TravelTimeComp = time.Millisecond * 147
+	}
+	if h.QPS <= 0 {
+		h.QPS = 2
+	}
+
+	if h.APICallTimeout == 0 {
+		h.APICallTimeout = time.Second * 60
+	}
+
+	return nil
+}
+
 // NewHTTPClient Create a new V2 HTTP client to invoke Mashery V2 API
-func NewHTTPClient(areaNID int, p transport.Authorizer, qps int64, travelTimeComp time.Duration) Client {
-	if p == nil {
-		panic("v2 HTTP client requires an authorizer")
+func NewHTTPClient(params Params) Client {
+	if err := params.FillDefaults(); err != nil {
+		panic(err)
 	}
 
 	return &ClientImpl{
-		V2Authorizer: p,
 		transport: &transport.HttpTransport{
-			MashEndpoint:  fmt.Sprintf("https://api.mashery.com/v2/json-rpc/%d", areaNID),
-			Authorizer:    nil,
-			Sem:           semaphore.NewWeighted(qps),
-			AvgNetLatency: travelTimeComp,
+			MashEndpoint:  params.MasheryEndpoint,
+			Authorizer:    params.Authorizer,
+			Sem:           semaphore.NewWeighted(params.QPS),
+			AvgNetLatency: params.TravelTimeComp,
 			HttpClient: &http.Client{
-				Timeout: time.Second * 60,
+				Transport: &http.Transport{
+					TLSClientConfig: params.TLSConfig,
+				},
+				Timeout: params.TravelTimeComp,
 			},
 		}}
 }

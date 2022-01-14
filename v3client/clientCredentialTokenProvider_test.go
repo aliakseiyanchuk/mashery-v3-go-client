@@ -2,8 +2,40 @@ package v3client_test
 
 import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"net/http"
 	"testing"
 )
+
+func TestParsingDateHeader(t *testing.T) {
+	resp := http.Response{
+		Header: map[string][]string{
+			"Date": {"Wed, 12 Jan 2022 20:41:09 GMT"},
+		},
+	}
+
+	v := v3client.ResponseDate(&resp)
+	if v.Unix() == 0 {
+		t.Errorf("time could not be established")
+	}
+}
+
+func TestParsingMalformedDateHeader(t *testing.T) {
+	resp := http.Response{
+		Header: map[string][]string{
+			"Date": {"Wed, 123 Jan 2022 20:41:09 GMT"},
+		},
+	}
+
+	v := v3client.ResponseDate(&resp)
+	if v.Unix() != 0 {
+		t.Errorf("time parshign should fail")
+	}
+
+	v = v3client.ResponseDate(&http.Response{})
+	if v.Unix() != 0 {
+		t.Errorf("time parshign should fail")
+	}
+}
 
 func TestMasheryV3Credentials_FullySpecified(t *testing.T) {
 	creds := v3client.MasheryV3Credentials{}

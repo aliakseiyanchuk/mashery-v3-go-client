@@ -170,7 +170,7 @@ type MasheryErrorSet struct {
 
 type MasheryJSONTime time.Time
 
-// Id referenced data structure, used internally.
+// IdReferenced Id referenced data structure, used internally.
 type IdReferenced struct {
 	IdRef string `json:"id"`
 }
@@ -567,8 +567,9 @@ func (e *V3UndeterminedError) Error() string {
 
 // TimedAccessTokenResponse Timed access token response, suitable for storing in a log file.
 type TimedAccessTokenResponse struct {
-	Obtained time.Time `json:"obtained"`
-	QPS      int       `json:"qps"`
+	Obtained   time.Time `json:"obtained"`
+	ServerTime time.Time `json:"-"`
+	QPS        int       `json:"qps"`
 	AccessTokenResponse
 }
 
