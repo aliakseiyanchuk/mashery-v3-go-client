@@ -9,6 +9,7 @@ import (
 	"errors"
 	"math/big"
 	"strings"
+	"time"
 )
 
 type TLSCertChainPin struct {
@@ -17,12 +18,16 @@ type TLSCertChainPin struct {
 	Fingerprint  []byte
 }
 
-func (pin *TLSCertChainPin) SerialNumberFromHex(str string) {
-	decodeUserHex(str, &pin.SerialNumber)
+func (pin *TLSCertChainPin) SerialNumberFromHex(str string) error {
+	return decodeUserHex(str, &pin.SerialNumber)
 }
 
-func (pin *TLSCertChainPin) FingerprintFrom(str string) {
-	decodeUserHex(str, &pin.Fingerprint)
+func (pin *TLSCertChainPin) FingerprintFrom(str string) error {
+	return decodeUserHex(str, &pin.Fingerprint)
+}
+
+func (pin *TLSCertChainPin) IsEmpty() bool {
+	return len(pin.CommonName) == 0 && len(pin.SerialNumber) == 0 && len(pin.Fingerprint) == 0
 }
 
 func decodeUserHex(input string, output *[]byte) error {
@@ -63,8 +68,14 @@ chains:
 		for _, chainPin := range tlp.TLSCertChainPins {
 
 			pinnedSerial := chainPin.PinnedSerial()
+			checkTime := time.Now()
 
 			for _, cert := range v {
+				// We can't accept expired certificates in the chain path
+				if checkTime.Before(cert.NotBefore) || checkTime.After(cert.NotAfter) {
+					continue chains
+				}
+
 				// Check the common name pin
 				if len(chainPin.CommonName) > 0 && chainPin.CommonName != cert.Subject.CommonName {
 					continue

@@ -1,10 +1,9 @@
 package v3client
 
 import (
-	"crypto/tls"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
-	"golang.org/x/sync/semaphore"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -40,12 +39,12 @@ func NewCustomClient(schema *ClientMethodSchema) Client {
 }
 
 type Params struct {
+	transport.HTTPClientParams
+
 	MashEndpoint  string
 	Authorizer    transport.Authorizer
 	QPS           int64
-	Timeout       time.Duration
 	AvgNetLatency time.Duration
-	TLSConfig     *tls.Config
 }
 
 func (p *Params) FillDefaults() {
@@ -87,17 +86,13 @@ func NewHttpClient(p Params) Client {
 
 func createHTTPTransport(p Params) transport.HttpTransport {
 	return transport.HttpTransport{
-		MashEndpoint: p.MashEndpoint,
-		Authorizer:   p.Authorizer,
-		Sem:          semaphore.NewWeighted(p.QPS),
-		HttpClient: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: p.TLSConfig,
-			},
-			Timeout: p.Timeout,
-		},
-
+		MashEndpoint:  p.MashEndpoint,
+		Authorizer:    p.Authorizer,
 		AvgNetLatency: p.AvgNetLatency,
+		Mutex:         &sync.Mutex{},
+		MaxQPS:        p.QPS,
+
+		HttpClient: p.CreateClient(),
 	}
 }
 
@@ -237,8 +232,6 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		DeleteServiceOAuthSecurityProfile: DeleteServiceOAuthSecurityProfile,
 	}
 }
-
-// TODO: Need to define the method for collectAll
 
 type AsyncFetchResult struct {
 	Data *http.Response

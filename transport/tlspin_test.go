@@ -46,7 +46,9 @@ func TestPinnerWillSuccessfullyValidate(t *testing.T) {
 
 	wildCl := v3client.NewWildcardClient(v3client.Params{
 		MashEndpoint: "https://api.mashery.com",
-		TLSConfig:    p.CreateTLSConfig(),
+		HTTPClientParams: transport.HTTPClientParams{
+			TLSConfig: p.CreateTLSConfig(),
+		},
 	})
 
 	_, err := wildCl.FetchAny(context.Background(), "", nil)
@@ -74,7 +76,9 @@ func TestPinnerWillSuccessfullyRejectCertOnMismatch(t *testing.T) {
 
 	wildCl := v3client.NewWildcardClient(v3client.Params{
 		MashEndpoint: "https://api.mashery.com",
-		TLSConfig:    p.CreateTLSConfig(),
+		HTTPClientParams: transport.HTTPClientParams{
+			TLSConfig: p.CreateTLSConfig(),
+		},
 	})
 
 	_, err := wildCl.FetchAny(context.Background(), "", nil)

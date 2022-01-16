@@ -20,9 +20,12 @@ type FileSystemTokenProvider struct {
 	syncInterval       time.Duration
 }
 
-func (f *FileSystemTokenProvider) Authorization() (map[string]string, error) {
-	//TODO implement me
-	panic("implement me")
+func (f FileSystemTokenProvider) HeaderAuthorization() (map[string]string, error) {
+	f.checkFileSync()
+
+	return map[string]string{
+		"Authorization": f.header,
+	}, nil
 }
 
 func (f *FileSystemTokenProvider) AccessToken() (string, error) {
@@ -34,7 +37,7 @@ func (f *FileSystemTokenProvider) AccessToken() (string, error) {
 		return "", errors.New("saved token has already expired")
 	}
 
-	return f.Response.AccessToken, nil
+	return f.FixedTokenProvider.AccessToken()
 }
 
 func (f *FileSystemTokenProvider) checkFileSync() {

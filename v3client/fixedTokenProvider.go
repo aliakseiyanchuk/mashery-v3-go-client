@@ -8,20 +8,15 @@ type FixedTokenProvider struct {
 	header string
 }
 
-func (f FixedTokenProvider) Authorization() (map[string]string, error) {
+func (f FixedTokenProvider) HeaderAuthorization() (map[string]string, error) {
 	return map[string]string{
-		"HeaderAuthorization": f.header,
+		"Authorization": f.header,
 	}, nil
 }
 
-func (f FixedTokenProvider) HeaderAuthorization() (map[string]string, error) {
+func (f FixedTokenProvider) QueryStringAuthorization() (map[string]string, error) {
 	var noop map[string]string
 	return noop, nil
-}
-
-func (f FixedTokenProvider) QueryStringAuthorization() (map[string]string, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (f FixedTokenProvider) AccessToken() (string, error) {

@@ -19,6 +19,8 @@ type WildcardClient interface {
 	PostAny(ctx context.Context, resource string, body interface{}) (*http.Response, error)
 	// PutAny put any value to an arbitrary resource
 	PutAny(ctx context.Context, resource string, body interface{}) (*http.Response, error)
+
+	Close(ctx context.Context)
 }
 
 type Client interface {

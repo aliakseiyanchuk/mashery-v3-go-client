@@ -5,7 +5,11 @@ type V2Authorizer struct {
 	signature string
 }
 
-func (v *V2Authorizer) Authorization() (map[string]string, error) {
+func (v *V2Authorizer) HeaderAuthorization() (map[string]string, error) {
+	return nil, nil
+}
+
+func (v *V2Authorizer) QueryStringAuthorization() (map[string]string, error) {
 	return map[string]string{
 		"apikey": v.apiKey,
 		"sig":    v.signature,

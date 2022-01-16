@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -15,8 +15,41 @@ type HttpTransport struct {
 	MashEndpoint  string
 	Authorizer    Authorizer
 	AvgNetLatency time.Duration
-	Sem           *semaphore.Weighted
 	HttpClient    *http.Client
+
+	PlannedSecond  int64
+	AllocatedCalls int64
+	MaxQPS         int64
+
+	Mutex *sync.Mutex
+}
+
+func (c *HttpTransport) DelayBeforeCall() time.Duration {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+
+	// A call to Mashery will be received at this time
+	nextServTime := time.Now().Add(c.AvgNetLatency)
+	nextServSecond := nextServTime.Unix()
+
+	if nextServSecond > c.PlannedSecond {
+		c.PlannedSecond = nextServSecond
+		c.AllocatedCalls = 1
+		return time.Duration(0)
+	} else if nextServSecond == c.PlannedSecond && c.AllocatedCalls < c.MaxQPS {
+		c.AllocatedCalls++
+		return time.Duration(0)
+	} else {
+		wait := c.PlannedSecond - nextServSecond
+		if c.AllocatedCalls < c.MaxQPS {
+			c.AllocatedCalls++
+		} else {
+			wait++
+			c.PlannedSecond++
+			c.AllocatedCalls = 1
+		}
+		return time.Second * time.Duration(wait)
+	}
 }
 
 func (c *HttpTransport) Fetch(ctx context.Context, res string) (*http.Response, error) {
@@ -60,18 +93,14 @@ func (c *HttpTransport) Send(ctx context.Context, meth string, res string, body 
 }
 
 func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.Response, error) {
-	// TODO: add check for the cancelled context
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 
 	var lastErr error
 
 	for i := 0; i < 10; i++ {
-		err := c.Sem.Acquire(ctx, 1)
-
-		if err != nil {
-			return nil, err
-		} else {
-			go c.releaseSemaphoreLater()
-		}
+		time.Sleep(c.DelayBeforeCall())
 
 		if c.Authorizer != nil {
 			if tkn, err := c.Authorizer.HeaderAuthorization(); err != nil {
@@ -101,11 +130,6 @@ func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.
 	}
 
 	return nil, lastErr
-}
-
-func (c *HttpTransport) releaseSemaphoreLater() {
-	time.Sleep(time.Second + c.AvgNetLatency)
-	c.Sem.Release(1)
 }
 
 // ReadResponseBody Reads the response body of the response

@@ -1,10 +1,10 @@
 package v3client
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -17,15 +17,27 @@ type V3OAuthHelper struct {
 	TokenEndpoint string
 }
 
+type OAuthHelperParams struct {
+	transport.HTTPClientParams
+	MasheryTokenEndpoint string
+}
+
+func (ohp *OAuthHelperParams) FillDefaults() {
+	if ohp.Timeout == 0 {
+		ohp.Timeout = time.Second * 30
+	}
+	if len(ohp.MasheryTokenEndpoint) == 0 {
+		ohp.MasheryTokenEndpoint = MasheryTokenEndpoint
+	}
+}
+
 // NewOAuthHelper creates an instance of a helper that could be used directly
-func NewOAuthHelper(tlsCfg *tls.Config) *V3OAuthHelper {
+func NewOAuthHelper(params OAuthHelperParams) *V3OAuthHelper {
+	params.FillDefaults()
+
 	rv := V3OAuthHelper{
-		client: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: tlsCfg,
-			},
-		},
-		TokenEndpoint: MasheryTokenEndpoint,
+		client:        params.CreateClient(),
+		TokenEndpoint: params.MasheryTokenEndpoint,
 	}
 
 	return &rv

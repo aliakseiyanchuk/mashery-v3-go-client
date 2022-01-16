@@ -32,6 +32,10 @@ func (w WildcardClientImpl) PutAny(ctx context.Context, resource string, body in
 	return w.transport.Put(ctx, resource, body)
 }
 
+func (w *WildcardClientImpl) Close(ctx context.Context) {
+	w.transport.HttpClient.CloseIdleConnections()
+}
+
 // NewWildcardClient creates a "wildcard" client, which will auto-apply access tokens and will throttle the
 // calls with the specified QPS.
 func NewWildcardClient(params Params) WildcardClient {

@@ -2,15 +2,14 @@ package v2client
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/errwrap"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
-	"golang.org/x/sync/semaphore"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -47,7 +46,9 @@ type V2Request struct {
 type Client interface {
 	Invoke(ctx context.Context, method string, obj interface{}) (V2Result, error)
 	InvokeDirect(ctx context.Context, req V2Request) (V2Result, error)
-	InvokeRaw(ctx context.Context, req V2Request) (*http.Response, error)
+	GetRawResponse(ctx context.Context, req V2Request) (*http.Response, error)
+
+	Close(ctx context.Context)
 }
 
 type ClientImpl struct {
@@ -66,7 +67,7 @@ func (ci *ClientImpl) Invoke(ctx context.Context, method string, obj interface{}
 }
 
 func (ci *ClientImpl) InvokeDirect(ctx context.Context, req V2Request) (V2Result, error) {
-	if resp, err := ci.InvokeRaw(ctx, req); err != nil {
+	if resp, err := ci.GetRawResponse(ctx, req); err != nil {
 		return V2Result{}, err
 	} else if body, err := transport.ReadResponseBody(resp); err != nil {
 		return V2Result{}, err
@@ -79,7 +80,14 @@ func (ci *ClientImpl) InvokeDirect(ctx context.Context, req V2Request) (V2Result
 	}
 }
 
-func (ci *ClientImpl) InvokeRaw(ctx context.Context, req V2Request) (*http.Response, error) {
+func (ci *ClientImpl) Close(ctx context.Context) {
+	ci.transport.HttpClient.CloseIdleConnections()
+}
+
+func (ci *ClientImpl) GetRawResponse(ctx context.Context, req V2Request) (*http.Response, error) {
+	// Implement rate-controls
+	time.Sleep(ci.transport.DelayBeforeCall())
+
 	m, _ := ci.transport.Authorizer.QueryStringAuthorization()
 	qs := url.Values{}
 	for k, v := range m {
@@ -97,17 +105,16 @@ func (ci *ClientImpl) InvokeRaw(ctx context.Context, req V2Request) (*http.Respo
 }
 
 type Params struct {
+	transport.HTTPClientParams
 	AreaNID        int
 	Authorizer     transport.Authorizer
 	QPS            int64
 	TravelTimeComp time.Duration
 
 	MasheryEndpoint string
-	APICallTimeout  time.Duration
-	TLSConfig       *tls.Config
 }
 
-func (h Params) FillDefaults() error {
+func (h *Params) FillDefaults() error {
 	if h.Authorizer == nil {
 		return errors.New("v2 client requires a non-nil Authorizer")
 	}
@@ -125,8 +132,8 @@ func (h Params) FillDefaults() error {
 		h.QPS = 2
 	}
 
-	if h.APICallTimeout == 0 {
-		h.APICallTimeout = time.Second * 60
+	if h.Timeout == 0 {
+		h.Timeout = time.Second * 60
 	}
 
 	return nil
@@ -140,15 +147,13 @@ func NewHTTPClient(params Params) Client {
 
 	return &ClientImpl{
 		transport: &transport.HttpTransport{
-			MashEndpoint:  params.MasheryEndpoint,
-			Authorizer:    params.Authorizer,
-			Sem:           semaphore.NewWeighted(params.QPS),
+			MashEndpoint: params.MasheryEndpoint,
+			Authorizer:   params.Authorizer,
+
 			AvgNetLatency: params.TravelTimeComp,
-			HttpClient: &http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: params.TLSConfig,
-				},
-				Timeout: params.TravelTimeComp,
-			},
+
+			HttpClient: params.CreateClient(),
+			Mutex:      &sync.Mutex{},
+			MaxQPS:     params.QPS,
 		}}
 }
