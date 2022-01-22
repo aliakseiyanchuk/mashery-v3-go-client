@@ -127,6 +127,11 @@ var defaultMasheryPinner *TLSPinner
 func init() {
 	defaultMasheryPinner = &TLSPinner{}
 
+	leafPIN := TLSCertChainPin{
+		CommonName: "*.mashery.com",
+	}
+	defaultMasheryPinner.Add(leafPIN)
+
 	issuerPin := TLSCertChainPin{
 		CommonName: "DigiCert TLS RSA SHA256 2020 CA1",
 	}
