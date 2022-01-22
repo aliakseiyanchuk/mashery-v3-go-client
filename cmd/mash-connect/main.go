@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -27,7 +26,7 @@ func refresh() int {
 			return 1
 		}
 
-		ccProvider := v3client.NewOAuthHelper(transport.DefaultTLSConfig())
+		ccProvider := v3client.NewOAuthHelper(v3client.OAuthHelperParams{})
 
 		fmt.Println("Trying to refresh Mashery V3 access token...")
 		if resp, err := ccProvider.ExchangeRefreshToken(&runtimeCredentials, tkn.RefreshToken); err == nil {
@@ -244,7 +243,7 @@ func initToken() int {
 			return 1
 		}
 
-		provider := v3client.NewOAuthHelper(transport.DefaultTLSConfig())
+		provider := v3client.NewOAuthHelper(v3client.OAuthHelperParams{})
 
 		if dat, err := provider.RetrieveAccessTokenFor(&runtimeCredentials); err == nil {
 			if err = v3client.PersistV3TokenResponse(dat, cmdTokenFile); err != nil {

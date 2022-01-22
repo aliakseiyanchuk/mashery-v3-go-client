@@ -24,6 +24,10 @@ type OAuthHelperParams struct {
 }
 
 func (ohp *OAuthHelperParams) FillDefaults() {
+	if ohp.TLSConfig == nil {
+		ohp.TLSConfig = transport.DefaultTLSConfig()
+	}
+
 	if ohp.Timeout == 0 {
 		ohp.Timeout = time.Second * 30
 	}
