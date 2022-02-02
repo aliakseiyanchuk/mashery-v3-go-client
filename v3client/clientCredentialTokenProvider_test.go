@@ -2,9 +2,16 @@ package v3client_test
 
 import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
 )
+
+func TestClientCredentialsProviderIsImplementedCorrectly(t *testing.T) {
+	var tokenProvider v3client.V3AccessTokenProvider
+	tokenProvider = v3client.NewClientCredentialsProvider(v3client.MasheryV3Credentials{}, nil)
+	assert.NotNil(t, tokenProvider)
+}
 
 func TestParsingDateHeader(t *testing.T) {
 	resp := http.Response{

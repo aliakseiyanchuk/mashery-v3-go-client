@@ -176,5 +176,22 @@ func (lcp *ClientCredentialsProvider) AccessToken() (string, error) {
 	} else {
 		return dat.AccessToken, nil
 	}
+}
 
+func (lcp *ClientCredentialsProvider) HeaderAuthorization() (map[string]string, error) {
+	var token string
+	var err error
+	var rv map[string]string
+
+	if token, err = lcp.AccessToken(); err == nil {
+		rv["Authorization"] = token
+	}
+
+	return rv, err
+}
+
+func (lcp *ClientCredentialsProvider) QueryStringAuthorization() (map[string]string, error) {
+	var emptyMap map[string]string
+
+	return emptyMap, nil
 }

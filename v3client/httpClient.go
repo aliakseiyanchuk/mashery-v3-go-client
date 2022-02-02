@@ -62,7 +62,9 @@ func (p *Params) FillDefaults() {
 		p.AvgNetLatency = time.Millisecond * 147
 	}
 
-	if p.TLSConfig == nil {
+	// Default is set if no TLS configuration is supplied, and where no explicit flag is set
+	// to delegate the trust to the system settings.
+	if p.TLSConfig == nil && !p.TLSConfigDelegateSystem {
 		p.TLSConfig = transport.DefaultTLSConfig()
 	}
 }
