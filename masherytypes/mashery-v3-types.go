@@ -181,7 +181,7 @@ type AddressableV3Object struct {
 	Name      string           `json:"name,omitempty"`
 	Created   *MasheryJSONTime `json:"created,omitempty"`
 	Updated   *MasheryJSONTime `json:"updated,omitempty"`
-	Retrieved time.Time        `json:"retrieved,omitempty"`
+	Retrieved time.Time        `json:"-"`
 }
 
 func (t *MasheryJSONTime) UnmarshalJSON(b []byte) error {
