@@ -10,10 +10,10 @@ import (
 	"net/url"
 )
 
-func GetPackageKey(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryPackageKey, error) {
+func GetPackageKey(ctx context.Context, id masherytypes.PackageKeyIdentifier, c *transport.V3Transport) (*masherytypes.PackageKey, error) {
 
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource: fmt.Sprintf("/packageKeys/%s", id),
+		Resource: fmt.Sprintf("/packageKeys/%s", id.PackageKeyId),
 		Query: url.Values{
 			"filter": MasheryPackageKeyFullFields,
 		},
@@ -24,13 +24,13 @@ func GetPackageKey(ctx context.Context, id string, c *transport.V3Transport) (*m
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(masherytypes.MasheryPackageKey)
+		retServ, _ := rv.(masherytypes.PackageKey)
 		return &retServ, nil
 	}
 }
 
 // CreatePackageKey Create a new service.
-func CreatePackageKey(ctx context.Context, appId string, packageKey masherytypes.MasheryPackageKey, c *transport.V3Transport) (*masherytypes.MasheryPackageKey, error) {
+func CreatePackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey, c *transport.V3Transport) (*masherytypes.PackageKey, error) {
 	if !packageKey.LinksPackageAndPlan() {
 		return nil, &errwrap.WrappedError{
 			Context: "create package key",
@@ -44,7 +44,7 @@ func CreatePackageKey(ctx context.Context, appId string, packageKey masherytypes
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(masherytypes.MasheryPackageKey)
+		rv, _ := rawResp.(masherytypes.PackageKey)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -52,7 +52,7 @@ func CreatePackageKey(ctx context.Context, appId string, packageKey masherytypes
 }
 
 // UpdatePackageKey Create a new service.
-func UpdatePackageKey(ctx context.Context, packageKey masherytypes.MasheryPackageKey, c *transport.V3Transport) (*masherytypes.MasheryPackageKey, error) {
+func UpdatePackageKey(ctx context.Context, packageKey masherytypes.PackageKey, c *transport.V3Transport) (*masherytypes.PackageKey, error) {
 	if packageKey.Id == "" {
 		return nil, errors.New("illegal argument: package key Id must be set and not nil")
 	}
@@ -64,16 +64,16 @@ func UpdatePackageKey(ctx context.Context, packageKey masherytypes.MasheryPackag
 	}
 
 	if d, err := c.UpdateObject(ctx, packageKey, opContext); err == nil {
-		rv, _ := d.(masherytypes.MasheryPackageKey)
+		rv, _ := d.(masherytypes.PackageKey)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func DeletePackageKey(ctx context.Context, keyId string, c *transport.V3Transport) error {
+func DeletePackageKey(ctx context.Context, keyId masherytypes.PackageKeyIdentifier, c *transport.V3Transport) error {
 	opSpec := transport.FetchSpec{
-		Resource:       fmt.Sprintf("/packageKeys/%s", keyId),
+		Resource:       fmt.Sprintf("/packageKeys/%s", keyId.PackageKeyId),
 		AppContext:     "package key",
 		ResponseParser: nil,
 	}
@@ -81,15 +81,15 @@ func DeletePackageKey(ctx context.Context, keyId string, c *transport.V3Transpor
 	return c.DeleteObject(ctx, opSpec)
 }
 
-func ListPackageKeysFiltered(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.MasheryPackageKey, error) {
+func ListPackageKeysFiltered(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.PackageKey, error) {
 	return listPackageKeysWithQuery(ctx, c.V3FilteringParams(params, fields), c)
 }
 
-func ListPackageKeys(ctx context.Context, c *transport.V3Transport) ([]masherytypes.MasheryPackageKey, error) {
+func ListPackageKeys(ctx context.Context, c *transport.V3Transport) ([]masherytypes.PackageKey, error) {
 	return listPackageKeysWithQuery(ctx, nil, c)
 }
 
-func listPackageKeysWithQuery(ctx context.Context, qs url.Values, c *transport.V3Transport) ([]masherytypes.MasheryPackageKey, error) {
+func listPackageKeysWithQuery(ctx context.Context, qs url.Values, c *transport.V3Transport) ([]masherytypes.PackageKey, error) {
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerPage,
 		Resource:       "/packageKeys",
@@ -99,12 +99,12 @@ func listPackageKeysWithQuery(ctx context.Context, qs url.Values, c *transport.V
 	}
 
 	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.MasheryPackageKey{}, err
+		return []masherytypes.PackageKey{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []masherytypes.MasheryPackageKey
+		var rv []masherytypes.PackageKey
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryPackageKey)
+			ms, ok := raw.([]masherytypes.PackageKey)
 			if ok {
 				rv = append(rv, ms...)
 			}

@@ -61,3 +61,8 @@ func SetServiceRoles(ctx context.Context, id string, roles []masherytypes.Masher
 		return err
 	}
 }
+
+// DeleteServiceRoles delete service roles
+func DeleteServiceRoles(ctx context.Context, id string, c *transport.V3Transport) error {
+	return c.DeleteObject(ctx, masheryServiceRolesSpec(id))
+}

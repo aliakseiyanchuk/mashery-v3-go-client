@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -11,7 +12,8 @@ import (
 func showAppKeysData(ctx context.Context, cl v3client.Client, rawIds interface{}) int {
 	ids, _ := rawIds.([]string)
 
-	for _, id := range ids {
+	for _, idv := range ids {
+		id := masherytypes.ApplicationIdentifier{ApplicationId: idv}
 		if srv, err := cl.GetApplicationPackageKeys(ctx, id); err == nil {
 			fmt.Printf("Application %s has %d package keys:", id, len(srv))
 			fmt.Println()

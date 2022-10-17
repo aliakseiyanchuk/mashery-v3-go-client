@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -17,7 +18,7 @@ type ShowEndpointMethodData struct {
 func showMethodFilter(ctx context.Context, cl v3client.Client, args interface{}) int {
 	p, _ := args.(ShowEndpointMethodData)
 
-	if srv, gerr := cl.GetEndpointMethodFilter(ctx, p.serviceId, p.endpointId, p.methodId, p.filterId); gerr == nil {
+	if srv, gerr := cl.GetEndpointMethodFilter(ctx, masherytypes.ServiceEndpointMethodFilterIdentityFrom(p.serviceId, p.endpointId, p.methodId, p.filterId)); gerr == nil {
 		fmt.Println()
 		_ = jsonEncoder.Encode(&srv)
 
@@ -31,7 +32,7 @@ func showMethodFilter(ctx context.Context, cl v3client.Client, args interface{})
 func listMethodFilters(ctx context.Context, cl v3client.Client, args interface{}) int {
 	p, _ := args.(ShowEndpointMethodData)
 
-	if srv, gerr := cl.ListEndpointMethodFiltersWithFullInfo(ctx, p.serviceId, p.endpointId, p.methodId); gerr == nil {
+	if srv, gerr := cl.ListEndpointMethodFiltersWithFullInfo(ctx, masherytypes.ServiceEndpointMethodIdentityFrom(p.serviceId, p.endpointId, p.methodId)); gerr == nil {
 		fmt.Printf("There are %d filters", len(srv))
 		fmt.Println()
 

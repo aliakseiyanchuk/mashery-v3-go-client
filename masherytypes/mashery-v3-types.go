@@ -80,14 +80,14 @@ type Domain struct {
 	Address string `json:"address"`
 }
 
-type MasheryEndpoint struct {
+type Endpoint struct {
 	AddressableV3Object
 
 	AllowMissingApiKey                         bool                        `json:"allowMissingApiKey"`
 	ApiKeyValueLocationKey                     string                      `json:"apiKeyValueLocationKey"`
 	ApiKeyValueLocations                       []string                    `json:"apiKeyValueLocations"`
 	ApiMethodDetectionKey                      string                      `json:"apiMethodDetectionKey"`
-	ApiMethodDetectionLocations                []string                    `json:"apiMethodDetectionLocations"`
+	ApiMethodDetectionLocations                []string                    `json:"apiMethodDetectionLocations,omitempty"`
 	Cache                                      *Cache                      `json:"cache,omitempty"`
 	ConnectionTimeoutForSystemDomainRequest    int                         `json:"connectionTimeoutForSystemDomainRequest"`
 	ConnectionTimeoutForSystemDomainResponse   int                         `json:"connectionTimeoutForSystemDomainResponse"`
@@ -101,30 +101,40 @@ type MasheryEndpoint struct {
 	HighSecurity                               bool                        `json:"highSecurity"`
 	HostPassthroughIncludedInBackendCallHeader bool                        `json:"hostPassthroughIncludedInBackendCallHeader"`
 	InboundSslRequired                         bool                        `json:"inboundSslRequired"`
-	JsonpCallbackParameter                     string                      `json:"jsonpCallbackParameter"`
-	JsonpCallbackParameterValue                string                      `json:"jsonpCallbackParameterValue"`
-	ScheduledMaintenanceEvent                  *ScheduledMaintenanceEvent  `json:"scheduledMaintenanceEvent"`
+	InboundMutualSslRequired                   bool                        `json:"inboundMsslRequired"`
+	JsonpCallbackParameter                     string                      `json:"jsonpCallbackParameter,omitempty"`
+	JsonpCallbackParameterValue                string                      `json:"jsonpCallbackParameterValue,omitempty"`
+	ScheduledMaintenanceEvent                  *ScheduledMaintenanceEvent  `json:"scheduledMaintenanceEvent,omitempty"`
 	ForwardedHeaders                           []string                    `json:"forwardedHeaders,omitempty"`
 	ReturnedHeaders                            []string                    `json:"returnedHeaders,omitempty"`
-	Methods                                    *[]MasheryMethod            `json:"methods,omitempty"`
-	NumberOfHttpRedirectsToFollow              int                         `json:"numberOfHttpRedirectsToFollow"`
-	OutboundRequestTargetPath                  string                      `json:"outboundRequestTargetPath"`
-	OutboundRequestTargetQueryParameters       string                      `json:"outboundRequestTargetQueryParameters"`
-	OutboundTransportProtocol                  string                      `json:"outboundTransportProtocol"`
-	Processor                                  *Processor                  `json:"processor"`
-	PublicDomains                              []Domain                    `json:"publicDomains"`
-	RequestAuthenticationType                  string                      `json:"requestAuthenticationType"`
-	RequestPathAlias                           string                      `json:"requestPathAlias"`
-	RequestProtocol                            string                      `json:"requestProtocol"`
-	OAuthGrantTypes                            []string                    `json:"oauthGrantTypes"`
-	StringsToTrimFromApiKey                    string                      `json:"stringsToTrimFromApiKey"`
-	SupportedHttpMethods                       []string                    `json:"supportedHttpMethods"`
-	SystemDomainAuthentication                 *SystemDomainAuthentication `json:"systemDomainAuthentication"`
-	SystemDomains                              []Domain                    `json:"systemDomains"`
+	Methods                                    *[]ServiceEndpointMethod    `json:"methods,omitempty"`
+	NumberOfHttpRedirectsToFollow              int                         `json:"numberOfHttpRedirectsToFollow,omitempty"`
+	OutboundRequestTargetPath                  string                      `json:"outboundRequestTargetPath,omitempty"`
+	OutboundRequestTargetQueryParameters       string                      `json:"outboundRequestTargetQueryParameters,omitempty"`
+	OutboundTransportProtocol                  string                      `json:"outboundTransportProtocol,omitempty"`
+	Processor                                  *Processor                  `json:"processor,omitempty"`
+	PublicDomains                              []Domain                    `json:"publicDomains,omitempty"`
+	RequestAuthenticationType                  string                      `json:"requestAuthenticationType,omitempty"`
+	RequestPathAlias                           string                      `json:"requestPathAlias,omitempty"`
+	RequestProtocol                            string                      `json:"requestProtocol,omitempty"`
+	OAuthGrantTypes                            []string                    `json:"oauthGrantTypes,omitempty"`
+	StringsToTrimFromApiKey                    string                      `json:"stringsToTrimFromApiKey,omitempty"`
+	SupportedHttpMethods                       []string                    `json:"supportedHttpMethods,omitempty"`
+	SystemDomainAuthentication                 *SystemDomainAuthentication `json:"systemDomainAuthentication,omitempty"`
+	SystemDomains                              []Domain                    `json:"systemDomainsm,omitempty"`
 	TrafficManagerDomain                       string                      `json:"trafficManagerDomain"`
 	UseSystemDomainCredentials                 bool                        `json:"useSystemDomainCredentials"`
-	SystemDomainCredentialKey                  *string                     `json:"systemDomainCredentialKey"`
-	SystemDomainCredentialSecret               *string                     `json:"systemDomainCredentialSecret"`
+	SystemDomainCredentialKey                  *string                     `json:"systemDomainCredentialKey,omitempty"`
+	SystemDomainCredentialSecret               *string                     `json:"systemDomainCredentialSecret,omitempty"`
+
+	ParentServiceId ServiceIdentifier
+}
+
+func (e *Endpoint) Identifier() ServiceEndpointIdentifier {
+	return ServiceEndpointIdentifier{
+		ServiceIdentifier: e.ParentServiceId,
+		EndpointId:        e.Id,
+	}
 }
 
 type MasheryOAuth struct {
@@ -149,7 +159,7 @@ type MasheryOAuth struct {
 }
 
 type MasherySecurityProfile struct {
-	OAuth MasheryOAuth `json:"oauth"`
+	OAuth *MasheryOAuth `json:"oauth,omitempty"`
 }
 
 type MasheryErrorMessage struct {
@@ -160,12 +170,21 @@ type MasheryErrorMessage struct {
 	ResponseBody string `json:"responseBody"`
 }
 
-type MasheryErrorSet struct {
+type ErrorSet struct {
 	AddressableV3Object
 	Type          string                 `json:"type,omitempty"`
 	JSONP         bool                   `json:"jsonp"`
 	JSONPType     string                 `json:"jsonpType,omitempty"`
 	ErrorMessages *[]MasheryErrorMessage `json:"errorMessages,omitempty"`
+
+	ParentServiceId ServiceIdentifier
+}
+
+func (es *ErrorSet) Identifier() ErrorSetIdentifier {
+	return ErrorSetIdentifier{
+		ServiceIdentifier: es.ParentServiceId,
+		ErrorSetId:        es.Id,
+	}
 }
 
 type MasheryJSONTime time.Time
@@ -211,24 +230,30 @@ func (t *MasheryJSONTime) ToString() string {
 	return time.Time(*t).Format(time.RFC3339)
 }
 
-type MasheryService struct {
+type Service struct {
 	AddressableV3Object
-	Cache             *MasheryServiceCache    `json:"cache,omitempty"`
-	Endpoints         []MasheryEndpoint       `json:"endpoints,omitempty"`
+	Cache             *ServiceCache           `json:"cache,omitempty"`
+	Endpoints         []Endpoint              `json:"endpoints,omitempty"`
 	EditorHandle      string                  `json:"editorHandle,omitempty"`
 	RevisionNumber    int                     `json:"revisionNumber,omitempty"`
 	RobotsPolicy      string                  `json:"robotsPolicy,omitempty"`
 	CrossdomainPolicy string                  `json:"crossdomainPolicy,omitempty"`
 	Description       string                  `json:"description,omitempty"`
-	ErrorSets         *[]MasheryErrorSet      `json:"errorSets,omitempty"`
+	ErrorSets         *[]ErrorSet             `json:"errorSets,omitempty"`
 	QpsLimitOverall   *int64                  `json:"qpsLimitOverall,omitempty"`
 	RFC3986Encode     bool                    `json:"rfc3986Encode,omitempty"`
 	SecurityProfile   *MasherySecurityProfile `json:"securityProfile,omitempty"`
 	Version           string                  `json:"version,omitempty"`
-	Roles             *[]MasheryRole          `json:"roles,omitempty"`
+	Roles             *[]Role                 `json:"roles,omitempty"`
 }
 
-type MasheryServiceCache struct {
+func (s *Service) Identifier() ServiceIdentifier {
+	return ServiceIdentifier{
+		ServiceId: s.Id,
+	}
+}
+
+type ServiceCache struct {
 	CacheTtl int `json:"cacheTtl"`
 }
 
@@ -237,7 +262,7 @@ type MasheryServiceCache struct {
 
 type EAV map[string]string
 
-type MasheryPlan struct {
+type Plan struct {
 	AddressableV3Object
 	Description                       string `json:"description,omitempty"`
 	Eav                               *EAV   `json:"eav,omitempty"`
@@ -257,11 +282,18 @@ type MasheryPlan struct {
 	Status                            string `json:"status,omitempty"`
 	// Mashery's documentation erroneously quotes this field
 	// as int. It is actually UUID of the email template set Id.
-	EmailTemplateSetId string            `json:"emailTemplateSetId,omitempty"`
-	Services           *[]MasheryService `json:"services,omitempty"`
+	EmailTemplateSetId string     `json:"emailTemplateSetId,omitempty"`
+	Services           *[]Service `json:"services,omitempty"`
 
 	// Identity of the context object
-	ParentPackageId string
+	ParentPackageId PackageIdentifier
+}
+
+func (p *Plan) Identifier() PackagePlanIdentifier {
+	return PackagePlanIdentifier{
+		PackageIdentifier: p.ParentPackageId,
+		PlanId:            p.Id,
+	}
 }
 
 type PlanFilter struct {
@@ -271,24 +303,28 @@ type PlanFilter struct {
 	JsonFilterFields string `json:"jsonFilterFields"`
 }
 
-type MasheryPackage struct {
+type Package struct {
 	AddressableV3Object
-	Description                 string        `json:"description,omitempty"`
-	NotifyDeveloperPeriod       string        `json:"notifyDeveloperPeriod,omitempty"`
-	NotifyDeveloperNearQuota    bool          `json:"notifyDeveloperNearQuota"`
-	NotifyDeveloperOverQuota    bool          `json:"notifyDeveloperOverQuota"`
-	NotifyDeveloperOverThrottle bool          `json:"notifyDeveloperOverThrottle"`
-	NotifyAdminPeriod           string        `json:"notifyAdminPeriod,omitempty"`
-	NotifyAdminNearQuota        bool          `json:"notifyAdminNearQuota"`
-	NotifyAdminOverQuota        bool          `json:"notifyAdminOverQuota"`
-	NotifyAdminOverThrottle     bool          `json:"notifyAdminOverThrottle"`
-	NotifyAdminEmails           string        `json:"notifyAdminEmails,omitempty"`
-	NearQuotaThreshold          *int          `json:"nearQuotaThreshold,omitempty"`
-	Eav                         EAV           `json:"eav,omitempty"`
-	KeyAdapter                  string        `json:"keyAdapter,omitempty"`
-	KeyLength                   *int          `json:"keyLength,omitempty"`
-	SharedSecretLength          *int          `json:"sharedSecretLength,omitempty"`
-	Plans                       []MasheryPlan `json:"plans,omitempty"`
+	Description                 string `json:"description,omitempty"`
+	NotifyDeveloperPeriod       string `json:"notifyDeveloperPeriod,omitempty"`
+	NotifyDeveloperNearQuota    bool   `json:"notifyDeveloperNearQuota"`
+	NotifyDeveloperOverQuota    bool   `json:"notifyDeveloperOverQuota"`
+	NotifyDeveloperOverThrottle bool   `json:"notifyDeveloperOverThrottle"`
+	NotifyAdminPeriod           string `json:"notifyAdminPeriod,omitempty"`
+	NotifyAdminNearQuota        bool   `json:"notifyAdminNearQuota"`
+	NotifyAdminOverQuota        bool   `json:"notifyAdminOverQuota"`
+	NotifyAdminOverThrottle     bool   `json:"notifyAdminOverThrottle"`
+	NotifyAdminEmails           string `json:"notifyAdminEmails,omitempty"`
+	NearQuotaThreshold          *int   `json:"nearQuotaThreshold,omitempty"`
+	Eav                         EAV    `json:"eav,omitempty"`
+	KeyAdapter                  string `json:"keyAdapter,omitempty"`
+	KeyLength                   *int   `json:"keyLength,omitempty"`
+	SharedSecretLength          *int   `json:"sharedSecretLength,omitempty"`
+	Plans                       []Plan `json:"plans,omitempty"`
+}
+
+func (p *Package) Identifier() PackageIdentifier {
+	return PackageIdentifier{PackageId: p.Id}
 }
 
 // ---------------------------------------------------------------------------------
@@ -300,48 +336,58 @@ type Limit struct {
 	Ceiling int64  `json:"ceiling"`
 }
 
-type MasheryPackageKey struct {
+type PackageKey struct {
 	AddressableV3Object
-	Apikey           *string         `json:"apikey"`
-	Secret           *string         `json:"secret"`
-	RateLimitCeiling *int64          `json:"rateLimitCeiling"`
-	RateLimitExempt  bool            `json:"rateLimitExempt"`
-	QpsLimitCeiling  *int64          `json:"qpsLimitCeiling"`
-	QpsLimitExempt   bool            `json:"qpsLimitExempt"`
-	Status           string          `json:"status"`
-	Limits           *[]Limit        `json:"limits"`
-	Package          *MasheryPackage `json:"package"`
-	Plan             *MasheryPlan    `json:"plan"`
+	Apikey           *string  `json:"apikey"`
+	Secret           *string  `json:"secret"`
+	RateLimitCeiling *int64   `json:"rateLimitCeiling"`
+	RateLimitExempt  bool     `json:"rateLimitExempt"`
+	QpsLimitCeiling  *int64   `json:"qpsLimitCeiling"`
+	QpsLimitExempt   bool     `json:"qpsLimitExempt"`
+	Status           string   `json:"status"`
+	Limits           *[]Limit `json:"limits"`
+	Package          *Package `json:"package"`
+	Plan             *Plan    `json:"plan"`
 }
 
-func (mpk *MasheryPackageKey) LinksPackageAndPlan() bool {
+func (mpk *PackageKey) Identifier() PackageKeyIdentifier {
+	return PackageKeyIdentifier{PackageKeyId: mpk.Id}
+}
+
+func (mpk *PackageKey) LinksPackageAndPlan() bool {
 	return mpk.Package != nil && mpk.Package.Id != "" &&
 		mpk.Plan != nil && mpk.Plan.Id != ""
 }
 
-type MasheryApplication struct {
+type Application struct {
 	AddressableV3Object
 
-	Username          string               `json:"username"`
-	Description       string               `json:"description,omitempty"`
-	Type              string               `json:"type,omitempty"`
-	Commercial        bool                 `json:"commercial"`
-	Ads               bool                 `json:"ads"`
-	AdsSystem         string               `json:"adsSystem,omitempty"`
-	UsageModel        string               `json:"usageModel,omitempty"`
-	Tags              string               `json:"tags,omitempty"`
-	Notes             string               `json:"notes,omitempty"`
-	HowDidYouHear     string               `json:"howDidYouHear,omitempty"`
-	PreferredProtocol string               `json:"preferredProtocol,omitempty"`
-	PreferredOutput   string               `json:"preferredOutput,omitempty"`
-	ExternalId        string               `json:"externalId,omitempty"`
-	Uri               string               `json:"uri,omitempty"`
-	OAuthRedirectUri  string               `json:"oauthRedirectUri,omitempty"`
-	PackageKeys       *[]MasheryPackageKey `json:"packageKeys,omitempty"`
-	Eav               *EAV                 `json:"eav,omitempty"`
+	Username          string        `json:"username"`
+	Description       string        `json:"description,omitempty"`
+	Type              string        `json:"type,omitempty"`
+	Commercial        bool          `json:"commercial"`
+	Ads               bool          `json:"ads"`
+	AdsSystem         string        `json:"adsSystem,omitempty"`
+	UsageModel        string        `json:"usageModel,omitempty"`
+	Tags              string        `json:"tags,omitempty"`
+	Notes             string        `json:"notes,omitempty"`
+	HowDidYouHear     string        `json:"howDidYouHear,omitempty"`
+	PreferredProtocol string        `json:"preferredProtocol,omitempty"`
+	PreferredOutput   string        `json:"preferredOutput,omitempty"`
+	ExternalId        string        `json:"externalId,omitempty"`
+	Uri               string        `json:"uri,omitempty"`
+	OAuthRedirectUri  string        `json:"oauthRedirectUri,omitempty"`
+	PackageKeys       *[]PackageKey `json:"packageKeys,omitempty"`
+	Eav               *EAV          `json:"eav,omitempty"`
 }
 
-type MasheryRole struct {
+func (a *Application) Identifier() ApplicationIdentifier {
+	return ApplicationIdentifier{
+		ApplicationId: a.Id,
+	}
+}
+
+type Role struct {
 	AddressableV3Object
 	Description string `json:"description,omitempty"`
 	Predefined  bool   `json:"isPredefined,omitempty"`
@@ -350,36 +396,43 @@ type MasheryRole struct {
 }
 
 type MasheryRolePermission struct {
-	MasheryRole
+	Role
 	Action string `json:"action"`
 }
 
-type MasheryMember struct {
+type Member struct {
 	AddressableV3Object
 
-	Username     string                `json:"username"`
-	Email        string                `json:"email"`
-	DisplayName  string                `json:"displayName,omitempty"`
-	Uri          string                `json:"uri,omitempty"`
-	Blog         string                `json:"blog,omitempty"`
-	Im           string                `json:"im,omitempty"`
-	Imsvc        string                `json:"imsvc,omitempty"`
-	Phone        string                `json:"phone,omitempty"`
-	Company      string                `json:"company,omitempty"`
-	Address1     string                `json:"address1,omitempty"`
-	Address2     string                `json:"address2,omitempty"`
-	Locality     string                `json:"locality,omitempty"`
-	Region       string                `json:"region,omitempty"`
-	PostalCode   string                `json:"postalCode,omitempty"`
-	CountryCode  string                `json:"countryCode,omitempty"`
-	FirstName    string                `json:"firstName,omitempty"`
-	LastName     string                `json:"lastName,omitempty"`
-	AreaStatus   string                `json:"areaStatus,omitempty"`
-	ExternalId   string                `json:"externalId,omitempty"`
-	PasswdNew    *string               `json:"passwdNew,omitempty"`
-	Applications *[]MasheryApplication `json:"applications,omitempty"`
-	PackageKeys  *[]MasheryPackageKey  `json:"packageKeys,omitempty"`
-	Roles        *[]MasheryRole        `json:"roles,omitempty"`
+	Username     string         `json:"username"`
+	Email        string         `json:"email"`
+	DisplayName  string         `json:"displayName,omitempty"`
+	Uri          string         `json:"uri,omitempty"`
+	Blog         string         `json:"blog,omitempty"`
+	Im           string         `json:"im,omitempty"`
+	Imsvc        string         `json:"imsvc,omitempty"`
+	Phone        string         `json:"phone,omitempty"`
+	Company      string         `json:"company,omitempty"`
+	Address1     string         `json:"address1,omitempty"`
+	Address2     string         `json:"address2,omitempty"`
+	Locality     string         `json:"locality,omitempty"`
+	Region       string         `json:"region,omitempty"`
+	PostalCode   string         `json:"postalCode,omitempty"`
+	CountryCode  string         `json:"countryCode,omitempty"`
+	FirstName    string         `json:"firstName,omitempty"`
+	LastName     string         `json:"lastName,omitempty"`
+	AreaStatus   string         `json:"areaStatus,omitempty"`
+	ExternalId   string         `json:"externalId,omitempty"`
+	PasswdNew    *string        `json:"passwdNew,omitempty"`
+	Applications *[]Application `json:"applications,omitempty"`
+	PackageKeys  *[]PackageKey  `json:"packageKeys,omitempty"`
+	Roles        *[]Role        `json:"roles,omitempty"`
+}
+
+func (m *Member) Identifier() MemberIdentifier {
+	return MemberIdentifier{
+		MemberId: m.Id,
+		Username: m.Username,
+	}
 }
 
 // -------------------------------------------------------------------
@@ -387,50 +440,33 @@ type MasheryMember struct {
 //
 // Service-related
 
-type MasheryServiceEndpoint struct {
+type ServiceEndpoint struct {
 	ServiceId  string
 	EndpointId string
 }
-type MasheryServiceMethod struct {
-	MasheryServiceEndpoint
+type ServiceMethod struct {
+	ServiceEndpoint
 	MethodId string
 }
-type MasheryServiceMethodFilter struct {
-	MasheryServiceMethod
+type ServiceMethodFilter struct {
+	ServiceMethod
 	FilterId string
 }
+
+// ----------------------------------------
+//
 
 // Package-plan related
-type MasheryPlanService struct {
-	PackageId string
-	PlanId    string
-	ServiceId string
-}
 
-type MasheryPlanServiceEndpoint struct {
-	MasheryPlanService
-	EndpointId string
-}
-
-type MasheryPlanServiceEndpointMethod struct {
-	MasheryPlanServiceEndpoint
-	MethodId string
-}
-
-type MasheryPlanServiceEndpointMethodFilter struct {
-	MasheryPlanServiceEndpointMethod
-	FilterId string
-}
-
-// MasheryEmailTemplateSet Mashery email template set
-type MasheryEmailTemplateSet struct {
+// EmailTemplateSet email template set
+type EmailTemplateSet struct {
 	AddressableV3Object
-	Type           string                  `json:"type,omitempty"`
-	EmailTemplates *[]MasheryEmailTemplate `json:"emailTemplates,omitempty"`
+	Type           string           `json:"type,omitempty"`
+	EmailTemplates *[]EmailTemplate `json:"emailTemplates,omitempty"`
 }
 
-// MasheryEmailTemplate Mashery email template
-type MasheryEmailTemplate struct {
+// EmailTemplate email template
+type EmailTemplate struct {
 	AddressableV3Object
 	Type    string `json:"type"`
 	From    string `json:"from"`
@@ -439,41 +475,96 @@ type MasheryEmailTemplate struct {
 }
 
 // -----------------------------------------------------------------------------
-// Mashery Methods
+// Methods
 
-type MasheryMethod struct {
+type BaseMethod struct {
 	AddressableV3Object
 	SampleJsonResponse string `json:"sampleJsonResponse,omitempty"`
 	SampleXmlResponse  string `json:"sampleXmlResponse,omitempty"`
 }
 
-func ParseMasheryMethod(inp []byte) (interface{}, int, error) {
-	var rv MasheryMethod
+type ServiceEndpointMethod struct {
+	BaseMethod
+	ParentEndpointId ServiceEndpointIdentifier
+}
+
+func (m *ServiceEndpointMethod) Identifier() ServiceEndpointMethodIdentifier {
+	return ServiceEndpointMethodIdentifier{
+		MethodId:                  m.Id,
+		ServiceEndpointIdentifier: m.ParentEndpointId,
+	}
+}
+
+type PackagePlanServiceEndpointMethod struct {
+	BaseMethod
+
+	PackagePlanServiceEndpoint PackagePlanServiceEndpointIdentifier
+}
+
+func ParseServiceEndpointMethod(inp []byte) (interface{}, int, error) {
+	var rv ServiceEndpointMethod
 	err := json.Unmarshal(inp, &rv)
 	return rv, 1, err
 }
 
-func ParseMasheryMethodArray(inp []byte) (interface{}, int, error) {
-	var rv []MasheryMethod
+func ParsePacakgePlanServiceEndpointMethod(inp []byte) (interface{}, int, error) {
+	var rv PackagePlanServiceEndpointMethod
+	err := json.Unmarshal(inp, &rv)
+	return rv, 1, err
+}
+
+func ParseServiceEndpointMethodArray(inp []byte) (interface{}, int, error) {
+	var rv []ServiceEndpointMethod
 	err := json.Unmarshal(inp, &rv)
 	return rv, len(rv), err
 }
 
-type MasheryResponseFilter struct {
+type ResponseFilter struct {
 	AddressableV3Object
 	Notes            string `json:"notes"`
 	XmlFilterFields  string `json:"xmlFilterFields,omitempty"`
 	JsonFilterFields string `json:"jsonFilterFields,omitempty"`
 }
 
-func ParseMasheryResponseFilterArray(inp []byte) (interface{}, int, error) {
-	var rv []MasheryResponseFilter
+type ServiceEndpointMethodFilter struct {
+	ResponseFilter
+
+	ServiceEndpointMethod ServiceEndpointMethodIdentifier
+}
+
+type PackagePlanServiceEndpointMethodFilter struct {
+	ResponseFilter
+
+	PackagePlanServiceEndpointMethod PackagePlanServiceEndpointMethodIdentifier
+}
+
+func (emrf *ServiceEndpointMethodFilter) Identifier() ServiceEndpointMethodFilterIdentifier {
+	return ServiceEndpointMethodFilterIdentifier{
+		FilterId:                        emrf.Id,
+		ServiceEndpointMethodIdentifier: emrf.ServiceEndpointMethod,
+	}
+}
+
+func ParsePackagePlanServiceEndpointMethodFilterArray(inp []byte) (interface{}, int, error) {
+	var rv []PackagePlanServiceEndpointMethodFilter
 	err := json.Unmarshal(inp, &rv)
 	return rv, len(rv), err
 }
 
-func ParseMasheryResponseFilter(inp []byte) (interface{}, int, error) {
-	var rv MasheryResponseFilter
+func ParseServiceEndpointMethodFilterArray(inp []byte) (interface{}, int, error) {
+	var rv []ServiceEndpointMethodFilter
+	err := json.Unmarshal(inp, &rv)
+	return rv, len(rv), err
+}
+
+func ParsePackagePlanServiceEndpointMethodFilter(inp []byte) (interface{}, int, error) {
+	var rv PackagePlanServiceEndpointMethodFilter
+	err := json.Unmarshal(inp, &rv)
+	return rv, 1, err
+}
+
+func ParseServiceEndpointMethodFilter(inp []byte) (interface{}, int, error) {
+	var rv ServiceEndpointMethodFilter
 	err := json.Unmarshal(inp, &rv)
 	return rv, 1, err
 }
@@ -481,11 +572,11 @@ func ParseMasheryResponseFilter(inp []byte) (interface{}, int, error) {
 // -----------------------------------------------------------------------------
 // Type conversion functions
 
-func (m *MasheryService) AddressableEndpoints() []AddressableV3Object {
+func (m *Service) AddressableEndpoints() []AddressableV3Object {
 	return AddressableEndpoints(m.Endpoints)
 }
 
-func AddressableEndpoints(inp []MasheryEndpoint) []AddressableV3Object {
+func AddressableEndpoints(inp []Endpoint) []AddressableV3Object {
 	rv := make([]AddressableV3Object, len(inp))
 	for i, v := range inp {
 		rv[i] = AddressableV3Object{
@@ -512,7 +603,7 @@ func (e *V3GenericErrorResponse) HasData() bool {
 }
 
 func (e *V3GenericErrorResponse) Error() string {
-	return fmt.Sprintf("%s (Mashery V3 code %s)", e.ErrorMessage, e.ErrorCode)
+	return fmt.Sprintf("%s (mashery V3 code %s)", e.ErrorMessage, e.ErrorCode)
 }
 
 type V3PropertyErrorMessage struct {
@@ -622,13 +713,13 @@ func ParseMasheryAddressableObjectsArray(dat []byte) (interface{}, int, error) {
 }
 
 func ParseMasheryEndpoint(dat []byte) (interface{}, int, error) {
-	var rv MasheryEndpoint
+	var rv Endpoint
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
 
 func ParseMasheryEndpointArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryEndpoint
+	var rv []Endpoint
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
@@ -637,14 +728,14 @@ func NilParser(dat []byte) (interface{}, int, error) {
 	return nil, 0, nil
 }
 
-func ParseMasheryService(dat []byte) (interface{}, int, error) {
-	var rv MasheryService
+func ParseService(dat []byte) (interface{}, int, error) {
+	var rv Service
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
 
-func ParseMasheryServiceCache(dat []byte) (interface{}, int, error) {
-	var rv MasheryServiceCache
+func ParseServiceCache(dat []byte) (interface{}, int, error) {
+	var rv ServiceCache
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
@@ -657,19 +748,19 @@ func ParseMasheryServiceSecurityProfileOAuth(dat []byte) (interface{}, int, erro
 }
 
 func ParseMasheryServiceArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryService
+	var rv []Service
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseServiceErrorSetArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryErrorSet
+	var rv []ErrorSet
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseErrorSet(dat []byte) (interface{}, int, error) {
-	var rv MasheryErrorSet
+	var rv ErrorSet
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
@@ -681,73 +772,73 @@ func ParseErrorSetMessage(dat []byte) (interface{}, int, error) {
 }
 
 func ParseMasheryPackage(dat []byte) (interface{}, int, error) {
-	var rv MasheryPackage
+	var rv Package
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
 
 func ParseMasheryPackageArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryPackage
+	var rv []Package
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseMasheryPlan(dat []byte) (interface{}, int, error) {
-	var rv MasheryPlan
+	var rv Plan
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
 
 func ParseMasheryPlanArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryPlan
+	var rv []Plan
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseMasheryPackageKey(dat []byte) (interface{}, int, error) {
-	var rv MasheryPackageKey
+	var rv PackageKey
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
 
 func ParseMasheryPackageKeyArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryPackageKey
+	var rv []PackageKey
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseMasheryApplication(dat []byte) (interface{}, int, error) {
-	var rv MasheryApplication
+	var rv Application
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
 
 func ParseMasheryApplicationArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryApplication
+	var rv []Application
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseMasheryMember(dat []byte) (interface{}, int, error) {
-	var rv MasheryMember
+	var rv Member
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
 
 func ParseMasheryMemberArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryMember
+	var rv []Member
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseMasheryRoleArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryRole
+	var rv []Role
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseMasheryRole(dat []byte) (interface{}, int, error) {
-	var rv MasheryRole
+	var rv Role
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }
@@ -765,13 +856,13 @@ func ParseMasheryRolePermission(dat []byte) (interface{}, int, error) {
 }
 
 func ParseMasheryEmailTemplateSetArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryEmailTemplateSet
+	var rv []EmailTemplateSet
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseMasheryEmailTemplateSet(dat []byte) (interface{}, int, error) {
-	var rv MasheryEmailTemplateSet
+	var rv EmailTemplateSet
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }

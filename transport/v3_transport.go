@@ -30,7 +30,7 @@ func (c *V3Transport) AsyncFetch(ctx context.Context, opContext FetchSpec, comm 
 
 func (c *V3Transport) GetObject(ctx context.Context, opCtx FetchSpec) (interface{}, error) {
 	if resp, err := c.Fetch(ctx, opCtx.DestResource()); err == nil {
-		if dat, err := ReadResponseBody(resp); err != nil {
+		if dat, err := resp.Body(); err != nil {
 			return nil, &errwrap.WrappedError{
 				Context: fmt.Sprintf("get %s->read server response", opCtx.AppContext),
 				Cause:   err,
@@ -75,7 +75,7 @@ func (c *V3Transport) DeleteObject(ctx context.Context, opCtx FetchSpec) error {
 // CreateObject Create a new service.
 func (c *V3Transport) CreateObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
 	if resp, err := c.Post(ctx, opCtx.DestResource(), objIn); err == nil {
-		if dat, err := ReadResponseBody(resp); err != nil {
+		if dat, err := resp.Body(); err != nil {
 			return nil, &errwrap.WrappedError{
 				Context: fmt.Sprintf("create %s->read server response", opCtx.AppContext),
 				Cause:   err,
@@ -106,7 +106,7 @@ func (c *V3Transport) CreateObject(ctx context.Context, objIn interface{}, opCtx
 // UpdateObject Update existing object
 func (c *V3Transport) UpdateObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
 	if resp, err := c.Put(ctx, opCtx.DestResource(), objIn); err == nil {
-		if dat, err := ReadResponseBody(resp); err != nil {
+		if dat, err := resp.Body(); err != nil {
 			return nil, &errwrap.WrappedError{
 				Context: fmt.Sprintf("update %s->read server response", opCtx.AppContext),
 				Cause:   err,
@@ -164,7 +164,7 @@ func (c *V3Transport) FetchAll(ctx context.Context, opCtx FetchSpec) ([]interfac
 	}
 
 	if firstPage.StatusCode == 200 {
-		if dat, err := ReadResponseBody(firstPage); err != nil {
+		if dat, err := firstPage.Body(); err != nil {
 			return nil, &errwrap.WrappedError{
 				Context: fmt.Sprintf("fetch all %s->read first page server response", opCtx.AppContext),
 				Cause:   err,
@@ -214,7 +214,7 @@ func (c *V3Transport) FetchAll(ctx context.Context, opCtx FetchSpec) ([]interfac
 							// TODO: if error occurred, we might need to terminate the rest
 							// of the fetching operations.
 						} else {
-							if pageDat, pageReadErr := ReadResponseBody(asyncRead.Data); pageReadErr != nil {
+							if pageDat, pageReadErr := asyncRead.Data.Body(); pageReadErr != nil {
 								collErr = &errwrap.WrappedError{
 									Context: fmt.Sprintf("fetch all %s->read async response", opCtx.AppContext),
 									Cause:   pageReadErr,
@@ -291,7 +291,7 @@ func v3ErrorFromResponse(context string, code int, headers http.Header, data []b
 }
 
 // Extract Mashery-supplied total count of elements from this response
-func extractTotalCount(resp *http.Response) int64 {
+func extractTotalCount(resp *WrappedResponse) int64 {
 	totalCountHdr := resp.Header.Get("X-Total-Count")
 
 	if len(totalCountHdr) > 0 {

@@ -9,9 +9,9 @@ import (
 	"net/url"
 )
 
-func GetPackage(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryPackage, error) {
+func GetPackage(ctx context.Context, id masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error) {
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource: fmt.Sprintf("/packages/%s", id),
+		Resource: fmt.Sprintf("/packages/%s", id.PackageId),
 		Query: url.Values{
 			"fields": {MasheryPackageFieldsStr},
 		},
@@ -22,13 +22,13 @@ func GetPackage(ctx context.Context, id string, c *transport.V3Transport) (*mash
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(masherytypes.MasheryPackage)
+		retServ, _ := rv.(masherytypes.Package)
 		return &retServ, nil
 	}
 }
 
 // CreatePackage Create a new service.
-func CreatePackage(ctx context.Context, pack masherytypes.MasheryPackage, c *transport.V3Transport) (*masherytypes.MasheryPackage, error) {
+func CreatePackage(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error) {
 	rawResp, err := c.CreateObject(ctx, pack, transport.FetchSpec{
 		Resource:   "/packages",
 		AppContext: "package",
@@ -39,7 +39,7 @@ func CreatePackage(ctx context.Context, pack masherytypes.MasheryPackage, c *tra
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(masherytypes.MasheryPackage)
+		rv, _ := rawResp.(masherytypes.Package)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -47,7 +47,7 @@ func CreatePackage(ctx context.Context, pack masherytypes.MasheryPackage, c *tra
 }
 
 // UpdatePackage Create a new service.
-func UpdatePackage(ctx context.Context, pack masherytypes.MasheryPackage, c *transport.V3Transport) (*masherytypes.MasheryPackage, error) {
+func UpdatePackage(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error) {
 	if pack.Id == "" {
 		return nil, errors.New("illegal argument: package Id must be set and not nil")
 	}
@@ -55,27 +55,27 @@ func UpdatePackage(ctx context.Context, pack masherytypes.MasheryPackage, c *tra
 	opContext := transport.FetchSpec{
 		Resource:       fmt.Sprintf("/packages/%s", pack.Id),
 		AppContext:     "package",
-		ResponseParser: masherytypes.ParseMasheryService,
+		ResponseParser: masherytypes.ParseService,
 	}
 
 	if d, err := c.UpdateObject(ctx, pack, opContext); err == nil {
-		rv, _ := d.(masherytypes.MasheryPackage)
+		rv, _ := d.(masherytypes.Package)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func DeletePackage(ctx context.Context, packId string, c *transport.V3Transport) error {
+func DeletePackage(ctx context.Context, packId masherytypes.PackageIdentifier, c *transport.V3Transport) error {
 	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/packages/%s", packId),
+		Resource:   fmt.Sprintf("/packages/%s", packId.PackageId),
 		AppContext: "package",
 	}
 
 	return c.DeleteObject(ctx, opContext)
 }
 
-func ListPackages(ctx context.Context, c *transport.V3Transport) ([]masherytypes.MasheryPackage, error) {
+func ListPackages(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Package, error) {
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerItem,
 		Resource:       "/packages",
@@ -85,12 +85,12 @@ func ListPackages(ctx context.Context, c *transport.V3Transport) ([]masherytypes
 	}
 
 	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.MasheryPackage{}, err
+		return []masherytypes.Package{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []masherytypes.MasheryPackage
+		var rv []masherytypes.Package
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryPackage)
+			ms, ok := raw.([]masherytypes.Package)
 			if ok {
 				rv = append(rv, ms...)
 			}

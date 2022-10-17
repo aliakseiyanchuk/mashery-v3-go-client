@@ -25,7 +25,7 @@ var packageKeyFields = []string{
 var applicationDeepFields = append(applicationFields,
 	"packageKeys")
 
-func GetApplication(ctx context.Context, appId string, c *transport.V3Transport) (*masherytypes.MasheryApplication, error) {
+func GetApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.V3Transport) (*masherytypes.Application, error) {
 	qs := url.Values{
 		"fields": {strings.Join(applicationFields, ",")},
 	}
@@ -33,26 +33,26 @@ func GetApplication(ctx context.Context, appId string, c *transport.V3Transport)
 	return httpToApplication(ctx, appId, qs, c)
 }
 
-func GetApplicationPackageKeys(ctx context.Context, appId string, c *transport.V3Transport) ([]masherytypes.MasheryPackageKey, error) {
+func GetApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.V3Transport) ([]masherytypes.PackageKey, error) {
 	qs := url.Values{
 		"fields": {strings.Join(packageKeyFields, ",")},
 	}
 
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerPage,
-		Resource:       fmt.Sprintf("/applications/%s/packageKeys", appId),
+		Resource:       fmt.Sprintf("/applications/%s/packageKeys", appId.ApplicationId),
 		Query:          qs,
 		AppContext:     "application package key",
 		ResponseParser: masherytypes.ParseMasheryPackageKeyArray,
 	}
 
 	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.MasheryPackageKey{}, err
+		return []masherytypes.PackageKey{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []masherytypes.MasheryPackageKey
+		var rv []masherytypes.PackageKey
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryPackageKey)
+			ms, ok := raw.([]masherytypes.PackageKey)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -62,17 +62,17 @@ func GetApplicationPackageKeys(ctx context.Context, appId string, c *transport.V
 	}
 }
 
-func CountApplicationPackageKeys(ctx context.Context, appId string, c *transport.V3Transport) (int64, error) {
+func CountApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.V3Transport) (int64, error) {
 	opCtx := transport.FetchSpec{
 		Pagination: transport.NotRequired,
-		Resource:   fmt.Sprintf("/applications/%s/packageKeys", appId),
+		Resource:   fmt.Sprintf("/applications/%s/packageKeys", appId.ApplicationId),
 		AppContext: "application package key",
 	}
 
 	return c.Count(ctx, opCtx)
 }
 
-func GetFullApplication(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryApplication, error) {
+func GetFullApplication(ctx context.Context, id masherytypes.ApplicationIdentifier, c *transport.V3Transport) (*masherytypes.Application, error) {
 	qs := url.Values{
 		"fields": {strings.Join(applicationDeepFields, ",")},
 	}
@@ -80,7 +80,7 @@ func GetFullApplication(ctx context.Context, id string, c *transport.V3Transport
 	return httpToApplication(ctx, id, qs, c)
 }
 
-func httpToApplication(ctx context.Context, appId string, qs url.Values, c *transport.V3Transport) (*masherytypes.MasheryApplication, error) {
+func httpToApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier, qs url.Values, c *transport.V3Transport) (*masherytypes.Application, error) {
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
 		Resource:       fmt.Sprintf("/applications/%s", appId),
 		Query:          qs,
@@ -91,29 +91,29 @@ func httpToApplication(ctx context.Context, appId string, qs url.Values, c *tran
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(masherytypes.MasheryApplication)
+		retServ, _ := rv.(masherytypes.Application)
 		return &retServ, nil
 	}
 }
 
 // CreateApplication Create a new service.
-func CreateApplication(ctx context.Context, memberId string, member masherytypes.MasheryApplication, c *transport.V3Transport) (*masherytypes.MasheryApplication, error) {
-	rawResp, err := c.CreateObject(ctx, member, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/members/%s/applications", memberId),
+func CreateApplication(ctx context.Context, app masherytypes.Application, memberId masherytypes.MemberIdentifier, c *transport.V3Transport) (*masherytypes.Application, error) {
+	rawResp, err := c.CreateObject(ctx, app, transport.FetchSpec{
+		Resource:       fmt.Sprintf("/members/%s/applications", memberId.MemberId),
 		AppContext:     "application",
 		ResponseParser: masherytypes.ParseMasheryApplication,
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(masherytypes.MasheryApplication)
+		rv, _ := rawResp.(masherytypes.Application)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-// Create a new service.
-func UpdateApplication(ctx context.Context, app masherytypes.MasheryApplication, c *transport.V3Transport) (*masherytypes.MasheryApplication, error) {
+// UpdateApplication update an application
+func UpdateApplication(ctx context.Context, app masherytypes.Application, c *transport.V3Transport) (*masherytypes.Application, error) {
 	if app.Id == "" {
 		return nil, errors.New("illegal argument: member Id must be set and not nil")
 	}
@@ -125,16 +125,16 @@ func UpdateApplication(ctx context.Context, app masherytypes.MasheryApplication,
 	}
 
 	if d, err := c.UpdateObject(ctx, app, opContext); err == nil {
-		rv, _ := d.(masherytypes.MasheryApplication)
+		rv, _ := d.(masherytypes.Application)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func DeleteApplication(ctx context.Context, appId string, c *transport.V3Transport) error {
+func DeleteApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.V3Transport) error {
 	opContext := transport.FetchSpec{
-		Resource:       fmt.Sprintf("/applications/%s", appId),
+		Resource:       fmt.Sprintf("/applications/%s", appId.ApplicationId),
 		AppContext:     "application",
 		ResponseParser: masherytypes.ParseMasheryMember,
 	}
@@ -142,17 +142,17 @@ func DeleteApplication(ctx context.Context, appId string, c *transport.V3Transpo
 	return c.DeleteObject(ctx, opContext)
 }
 
-func CountApplicationsOfMember(ctx context.Context, memberId string, c *transport.V3Transport) (int64, error) {
+func CountApplicationsOfMember(ctx context.Context, memberId masherytypes.MemberIdentifier, c *transport.V3Transport) (int64, error) {
 	opCtx := transport.FetchSpec{
 		Pagination: transport.NotRequired,
-		Resource:   fmt.Sprintf("/members/%s/applications", memberId),
+		Resource:   fmt.Sprintf("/members/%s/applications", memberId.MemberId),
 		AppContext: "member's applications",
 	}
 
 	return c.Count(ctx, opCtx)
 }
 
-func ListApplications(ctx context.Context, c *transport.V3Transport) ([]masherytypes.MasheryApplication, error) {
+func ListApplications(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Application, error) {
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerPage,
 		Resource:       "/applications",
@@ -162,12 +162,12 @@ func ListApplications(ctx context.Context, c *transport.V3Transport) ([]masheryt
 	}
 
 	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.MasheryApplication{}, err
+		return []masherytypes.Application{}, err
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []masherytypes.MasheryApplication
+		var rv []masherytypes.Application
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryApplication)
+			ms, ok := raw.([]masherytypes.Application)
 			if ok {
 				rv = append(rv, ms...)
 			}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -11,7 +12,8 @@ import (
 func showMemberData(ctx context.Context, cl v3client.Client, rawIds interface{}) int {
 	ids, _ := rawIds.([]string)
 
-	for _, id := range ids {
+	for _, idv := range ids {
+		id := masherytypes.MemberIdentifier{MemberId: idv}
 		if srv, err := cl.GetMember(ctx, id); err == nil {
 			fmt.Printf("Member %s:", id)
 			fmt.Println()

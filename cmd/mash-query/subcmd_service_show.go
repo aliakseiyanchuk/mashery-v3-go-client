@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -12,18 +13,18 @@ func showServiceData(ctx context.Context, cl v3client.Client, rawIds interface{}
 	ids, _ := rawIds.([]string)
 
 	for _, id := range ids {
-		if srv, err := cl.GetService(ctx, id); err == nil {
+		if srv, err := cl.GetService(ctx, masherytypes.ServiceIdentityFrom(id)); err == nil {
 			fmt.Printf("Service %s:", id)
 			fmt.Println()
 
 			_ = jsonEncoder.Encode(&srv)
 
-			errorSets, _ := cl.ListErrorSets(ctx, srv.Id, v3client.EmptyQuery)
+			errorSets, _ := cl.ListErrorSets(ctx, srv.Identifier(), v3client.EmptyQuery)
 			fmt.Printf("Service contains %d error sets\n", len(errorSets))
 			for v, idx := range errorSets {
 				fmt.Printf("%d. %s type=%s, jsonp: %t, jsonpType=%s (id=%s)", v+1, idx.Name, idx.Type, idx.JSONP, idx.JSONPType, idx.Id)
 
-				if es, err := cl.GetErrorSet(ctx, srv.Id, idx.Id); err != nil {
+				if es, err := cl.GetErrorSet(ctx, idx.Identifier()); err != nil {
 					fmt.Printf("Can't retrieve error set: %s", err)
 				} else {
 					for idx, v := range *es.ErrorMessages {

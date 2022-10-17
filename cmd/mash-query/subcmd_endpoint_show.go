@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -17,7 +18,7 @@ func showServiceEndpoints(ctx context.Context, cl v3client.Client, args interfac
 	p, _ := args.(ShowServiceEndpointData)
 
 	if p.endpointId == "" {
-		if srv, gerr := cl.ListEndpoints(ctx, p.serviceId); gerr == nil {
+		if srv, gerr := cl.ListEndpoints(ctx, masherytypes.ServiceIdentityFrom(p.serviceId)); gerr == nil {
 			fmt.Printf("Service %s defines %d endpoints:", p.serviceId, len(srv))
 			fmt.Println()
 
@@ -32,7 +33,7 @@ func showServiceEndpoints(ctx context.Context, cl v3client.Client, args interfac
 			return 1
 		}
 	} else {
-		if endp, gerr := cl.GetEndpoint(ctx, p.serviceId, p.endpointId); gerr == nil {
+		if endp, gerr := cl.GetEndpoint(ctx, masherytypes.ServiceEndpointIdentityFrom(p.serviceId, p.endpointId)); gerr == nil {
 			_ = jsonEncoder.Encode(&endp)
 		} else {
 			fmt.Println(gerr)

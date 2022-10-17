@@ -30,7 +30,7 @@ var MasheryEndpointFields = []string{
 	"connectionTimeoutForSystemDomainResponse", "cookiesDuringHttpRedirectsEnabled", "cors",
 	"created", "customRequestAuthenticationAdapter", "dropApiKeyFromIncomingCall", "forceGzipOfBackendCall",
 	"gzipPassthroughSupportEnabled", "headersToExcludeFromIncomingCall", "highSecurity",
-	"hostPassthroughIncludedInBackendCallHeader", "inboundSslRequired", "jsonpCallbackParameter",
+	"hostPassthroughIncludedInBackendCallHeader", "inboundSslRequired", "inboundMsslRequired", "jsonpCallbackParameter",
 	"jsonpCallbackParameterValue", "scheduledMaintenanceEvent", "forwardedHeaders", "returnedHeaders",
 	"methods", "name", "numberOfHttpRedirectsToFollow", "outboundRequestTargetPath", "outboundRequestTargetQueryParameters",
 	"outboundTransportProtocol", "processor", "publicDomains", "requestAuthenticationType",

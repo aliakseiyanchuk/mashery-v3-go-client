@@ -9,22 +9,22 @@ import (
 	"net/url"
 )
 
-func ListErrorSets(ctx context.Context, serviceId string, qs url.Values, c *transport.V3Transport) ([]masherytypes.MasheryErrorSet, error) {
+func ListErrorSets(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs url.Values, c *transport.V3Transport) ([]masherytypes.ErrorSet, error) {
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerItem,
-		Resource:       fmt.Sprintf("/services/%s/errorSets", serviceId),
+		Resource:       fmt.Sprintf("/services/%s/errorSets", serviceId.ServiceId),
 		Query:          qs,
 		AppContext:     "all error sets of a service",
 		ResponseParser: masherytypes.ParseServiceErrorSetArray,
 	}
 
 	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.MasheryErrorSet{}, nil
+		return []masherytypes.ErrorSet{}, nil
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []masherytypes.MasheryErrorSet
+		var rv []masherytypes.ErrorSet
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryErrorSet)
+			ms, ok := raw.([]masherytypes.ErrorSet)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -34,9 +34,9 @@ func ListErrorSets(ctx context.Context, serviceId string, qs url.Values, c *tran
 	}
 }
 
-func GetErrorSet(ctx context.Context, serviceId, setId string, c *transport.V3Transport) (*masherytypes.MasheryErrorSet, error) {
+func GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *transport.V3Transport) (*masherytypes.ErrorSet, error) {
 	opCtx := transport.FetchSpec{
-		Resource: fmt.Sprintf("/services/%s/errorSets/%s", serviceId, setId),
+		Resource: fmt.Sprintf("/services/%s/errorSets/%s", ident.ServiceId, ident.ErrorSetId),
 		Query: map[string][]string{
 			"fields": MasheryErrorSetFields,
 		},
@@ -47,7 +47,7 @@ func GetErrorSet(ctx context.Context, serviceId, setId string, c *transport.V3Tr
 	if raw, err := c.GetObject(ctx, opCtx); err != nil {
 		return nil, err
 	} else {
-		if rv, ok := raw.(masherytypes.MasheryErrorSet); ok {
+		if rv, ok := raw.(masherytypes.ErrorSet); ok {
 			return &rv, nil
 		} else {
 			return nil, errors.New("invalid return type")
@@ -55,7 +55,7 @@ func GetErrorSet(ctx context.Context, serviceId, setId string, c *transport.V3Tr
 	}
 }
 
-func CreateErrorSet(ctx context.Context, serviceId string, set masherytypes.MasheryErrorSet, c *transport.V3Transport) (*masherytypes.MasheryErrorSet, error) {
+func CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet, c *transport.V3Transport) (*masherytypes.ErrorSet, error) {
 	rawResp, err := c.CreateObject(ctx, set, transport.FetchSpec{
 		Resource:   fmt.Sprintf("/services/%s/errorSets", serviceId),
 		AppContext: "create errorSet",
@@ -67,20 +67,20 @@ func CreateErrorSet(ctx context.Context, serviceId string, set masherytypes.Mash
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(masherytypes.MasheryErrorSet)
+		rv, _ := rawResp.(masherytypes.ErrorSet)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func UpdateErrorSet(ctx context.Context, serviceId string, setData masherytypes.MasheryErrorSet, c *transport.V3Transport) (*masherytypes.MasheryErrorSet, error) {
+func UpdateErrorSet(ctx context.Context, setData masherytypes.ErrorSet, c *transport.V3Transport) (*masherytypes.ErrorSet, error) {
 	if setData.Id == "" {
 		return nil, errors.New("illegal argument: endpoint Id must be set and not nil")
 	}
 
 	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/services/%s/errorSets/%s", serviceId, setData.Id),
+		Resource:   fmt.Sprintf("/services/%s/errorSets/%s", setData.ParentServiceId.ServiceId, setData.Id),
 		AppContext: "update error set",
 		Query: url.Values{
 			"fields": {MasheryEndpointFieldsStr},
@@ -89,20 +89,20 @@ func UpdateErrorSet(ctx context.Context, serviceId string, setData masherytypes.
 	}
 
 	if d, err := c.UpdateObject(ctx, setData, opContext); err == nil {
-		rv, _ := d.(masherytypes.MasheryErrorSet)
+		rv, _ := d.(masherytypes.ErrorSet)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func UpdateErrorSetMessage(ctx context.Context, serviceId string, setId string, msg masherytypes.MasheryErrorMessage, c *transport.V3Transport) (*masherytypes.MasheryErrorMessage, error) {
+func UpdateErrorSetMessage(ctx context.Context, ident masherytypes.ErrorSetIdentifier, msg masherytypes.MasheryErrorMessage, c *transport.V3Transport) (*masherytypes.MasheryErrorMessage, error) {
 	if msg.Id == "" {
 		return nil, errors.New("illegal argument: message Id must not be empty")
 	}
 
 	opContext := transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/errorSets/%s/errorMessages/%s", serviceId, setId, msg.Id),
+		Resource:       fmt.Sprintf("/services/%s/errorSets/%s/errorMessages/%s", ident.ServiceId, ident.ErrorSetId, msg.Id),
 		AppContext:     "update error set message",
 		ResponseParser: masherytypes.ParseErrorSetMessage,
 	}
@@ -115,9 +115,9 @@ func UpdateErrorSetMessage(ctx context.Context, serviceId string, setId string, 
 	}
 }
 
-func DeleteErrorSet(ctx context.Context, serviceId, setId string, c *transport.V3Transport) error {
+func DeleteErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *transport.V3Transport) error {
 	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/services/%s/errorSets/%s", serviceId, setId),
+		Resource:   fmt.Sprintf("/services/%s/errorSets/%s", ident.ServiceId, ident.ErrorSetId),
 		AppContext: "service error set",
 	}
 

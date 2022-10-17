@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-func GetEmailTemplateSet(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryEmailTemplateSet, error) {
+func GetEmailTemplateSet(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.EmailTemplateSet, error) {
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
 		Resource: fmt.Sprintf("/emailTemplateSets/%s", id),
 		Query: url.Values{
@@ -21,20 +21,20 @@ func GetEmailTemplateSet(ctx context.Context, id string, c *transport.V3Transpor
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(masherytypes.MasheryEmailTemplateSet)
+		retServ, _ := rv.(masherytypes.EmailTemplateSet)
 		return &retServ, nil
 	}
 }
 
-func ListEmailTemplateSets(ctx context.Context, c *transport.V3Transport) ([]masherytypes.MasheryEmailTemplateSet, error) {
+func ListEmailTemplateSets(ctx context.Context, c *transport.V3Transport) ([]masherytypes.EmailTemplateSet, error) {
 	return listEmailTemplateSet(ctx, nil, c)
 }
 
-func ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.MasheryEmailTemplateSet, error) {
+func ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.EmailTemplateSet, error) {
 	return listEmailTemplateSet(ctx, c.V3FilteringParams(params, fields), c)
 }
 
-func listEmailTemplateSet(ctx context.Context, qs url.Values, c *transport.V3Transport) ([]masherytypes.MasheryEmailTemplateSet, error) {
+func listEmailTemplateSet(ctx context.Context, qs url.Values, c *transport.V3Transport) ([]masherytypes.EmailTemplateSet, error) {
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerPage,
 		Resource:       "/emailTemplateSets",
@@ -44,12 +44,12 @@ func listEmailTemplateSet(ctx context.Context, qs url.Values, c *transport.V3Tra
 	}
 
 	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.MasheryEmailTemplateSet{}, nil
+		return []masherytypes.EmailTemplateSet{}, nil
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []masherytypes.MasheryEmailTemplateSet
+		var rv []masherytypes.EmailTemplateSet
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryEmailTemplateSet)
+			ms, ok := raw.([]masherytypes.EmailTemplateSet)
 			if ok {
 				rv = append(rv, ms...)
 			}

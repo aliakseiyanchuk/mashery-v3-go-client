@@ -95,6 +95,8 @@ func createHTTPTransport(p Params) transport.HttpTransport {
 		MaxQPS:        p.QPS,
 
 		HttpClient: p.CreateClient(),
+
+		ExchangeListener: p.ExchangeListener,
 	}
 }
 
@@ -181,7 +183,7 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		// Plan methods
 		ListPackagePlanMethods:  ListPackagePlanMethods,
 		GetPackagePlanMethod:    GetPackagePlanMethod,
-		CreatePackagePlanMethod: CreatePackagePlanMethod,
+		CreatePackagePlanMethod: CreatePackagePlanServiceEndpointMethod,
 		DeletePackagePlanMethod: DeletePackagePlanMethod,
 
 		// Plan method filter
@@ -218,8 +220,9 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		DeleteErrorSet:        DeleteErrorSet,
 		UpdateErrorSetMessage: UpdateErrorSetMessage,
 
-		GetServiceRoles: GetServiceRoles,
-		SetServiceRoles: SetServiceRoles,
+		GetServiceRoles:    GetServiceRoles,
+		SetServiceRoles:    SetServiceRoles,
+		DeleteServiceRoles: DeleteServiceRoles,
 
 		// Service cache,
 		GetServiceCache:    GetServiceCache,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -17,7 +18,7 @@ func showPackagePlans(ctx context.Context, cl v3client.Client, args interface{})
 	p, _ := args.(ShowPlanData)
 
 	if p.planId == "" {
-		if srv, gerr := cl.ListPlans(ctx, p.packageId); gerr == nil {
+		if srv, gerr := cl.ListPlans(ctx, masherytypes.PackageIdentityFrom(p.packageId)); gerr == nil {
 			fmt.Printf("Package %s defines %d plans:", p.packageId, len(srv))
 			fmt.Println()
 
@@ -32,7 +33,7 @@ func showPackagePlans(ctx context.Context, cl v3client.Client, args interface{})
 			return 1
 		}
 	} else {
-		if endp, gerr := cl.GetPlan(ctx, p.packageId, p.planId); gerr == nil {
+		if endp, gerr := cl.GetPlan(ctx, masherytypes.PackagePlanIdentityFrom(p.packageId, p.planId)); gerr == nil {
 			_ = jsonEncoder.Encode(&endp)
 		} else {
 			fmt.Println(gerr)

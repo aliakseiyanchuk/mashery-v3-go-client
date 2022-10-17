@@ -10,32 +10,39 @@ import (
 
 const PackagePlanMethodAppCtx = "package plan method"
 
-func packagePlanEndpointMethodsRoot(id masherytypes.MasheryPlanServiceEndpoint) string {
+func packagePlanEndpointMethodsRoot(id masherytypes.PackagePlanServiceEndpointIdentifier) string {
 	return fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s/methods", id.PackageId, id.PlanId, id.ServiceId, id.EndpointId)
 }
 
-func packagePlanEndpointMethod(id masherytypes.MasheryPlanServiceEndpointMethod) string {
+func packagePlanEndpointMethod(id masherytypes.PackagePlanServiceEndpointMethodIdentifier) string {
 	return fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s/methods/%s", id.PackageId, id.PlanId, id.ServiceId, id.EndpointId, id.MethodId)
 }
 
-func ListPackagePlanMethods(ctx context.Context, id masherytypes.MasheryPlanServiceEndpoint, c *transport.V3Transport) ([]masherytypes.MasheryMethod, error) {
+func ListPackagePlanMethods(ctx context.Context, id masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) ([]masherytypes.PackagePlanServiceEndpointMethod, error) {
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerItem,
 		Resource:       packagePlanEndpointMethodsRoot(id),
 		Query:          nil,
 		AppContext:     "package plan methods",
-		ResponseParser: masherytypes.ParseMasheryMethodArray,
+		ResponseParser: masherytypes.ParsePackagePlanServiceEndpointMethodFilterArray,
 	}
 
 	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.MasheryMethod{}, nil
+		return []masherytypes.PackagePlanServiceEndpointMethod{}, nil
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []masherytypes.MasheryMethod
+		var rv []masherytypes.PackagePlanServiceEndpointMethod
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryMethod)
+			ms, ok := raw.([]masherytypes.PackagePlanServiceEndpointMethod)
 			if ok {
 				rv = append(rv, ms...)
+			}
+		}
+
+		for _, v := range rv {
+			v.PackagePlanServiceEndpoint = masherytypes.PackagePlanServiceEndpointIdentifier{
+				PackagePlanIdentifier:     id.PackagePlanIdentifier,
+				ServiceEndpointIdentifier: id.ServiceEndpointIdentifier,
 			}
 		}
 
@@ -44,7 +51,7 @@ func ListPackagePlanMethods(ctx context.Context, id masherytypes.MasheryPlanServ
 }
 
 // GetPackagePlanMethod Retrieve the information about a package plan method.
-func GetPackagePlanMethod(ctx context.Context, id masherytypes.MasheryPlanServiceEndpointMethod, c *transport.V3Transport) (*masherytypes.MasheryMethod, error) {
+func GetPackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethod, error) {
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
 		Pagination: transport.PerItem,
 		Resource:   packagePlanEndpointMethod(id),
@@ -52,31 +59,50 @@ func GetPackagePlanMethod(ctx context.Context, id masherytypes.MasheryPlanServic
 			"fields": {MasheryMethodsFieldsStr},
 		},
 		AppContext:     PackagePlanMethodAppCtx,
-		ResponseParser: masherytypes.ParseMasheryMethod,
+		ResponseParser: masherytypes.ParsePacakgePlanServiceEndpointMethod,
 	})
 
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(masherytypes.MasheryMethod)
+		retServ, _ := rv.(masherytypes.PackagePlanServiceEndpointMethod)
+		retServ.PackagePlanServiceEndpoint = masherytypes.PackagePlanServiceEndpointIdentifier{
+			PackagePlanIdentifier:     id.PackagePlanIdentifier,
+			ServiceEndpointIdentifier: id.ServiceEndpointMethodIdentifier.ServiceEndpointIdentifier,
+		}
 		return &retServ, nil
 	}
 }
 
-// CreatePackagePlanMethod Create a new service cache
-func CreatePackagePlanMethod(ctx context.Context, id masherytypes.MasheryPlanServiceEndpoint, upsert masherytypes.MasheryMethod, c *transport.V3Transport) (*masherytypes.MasheryMethod, error) {
+// CreatePackagePlanServiceEndpointMethod Create a new service cache
+func CreatePackagePlanServiceEndpointMethod(ctx context.Context, ident masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethod, error) {
+	upsert := masherytypes.ServiceEndpointMethod{
+		BaseMethod: masherytypes.BaseMethod{
+			AddressableV3Object: masherytypes.AddressableV3Object{
+				Id: ident.MethodId,
+			},
+		},
+	}
+
 	rawResp, err := c.CreateObject(ctx, upsert, transport.FetchSpec{
 		Pagination: transport.NotRequired,
-		Resource:   packagePlanEndpointMethodsRoot(id),
+		Resource: packagePlanEndpointMethodsRoot(masherytypes.PackagePlanServiceEndpointIdentifier{
+			PackagePlanIdentifier:     ident.PackagePlanIdentifier,
+			ServiceEndpointIdentifier: ident.ServiceEndpointMethodIdentifier.ServiceEndpointIdentifier,
+		}),
 		Query: url.Values{
 			"fields": {MasheryMethodsFieldsStr},
 		},
 		AppContext:     PackagePlanMethodAppCtx,
-		ResponseParser: masherytypes.ParseMasheryMethodArray,
+		ResponseParser: masherytypes.ParsePacakgePlanServiceEndpointMethod,
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(masherytypes.MasheryMethod)
+		rv, _ := rawResp.(masherytypes.PackagePlanServiceEndpointMethod)
+		rv.PackagePlanServiceEndpoint = masherytypes.PackagePlanServiceEndpointIdentifier{
+			PackagePlanIdentifier:     ident.PackagePlanIdentifier,
+			ServiceEndpointIdentifier: ident.ServiceEndpointMethodIdentifier.ServiceEndpointIdentifier,
+		}
 		return &rv, nil
 	} else {
 		return nil, err
@@ -84,7 +110,7 @@ func CreatePackagePlanMethod(ctx context.Context, id masherytypes.MasheryPlanSer
 }
 
 // DeletePackagePlanMethod Create a new service.
-func DeletePackagePlanMethod(ctx context.Context, id masherytypes.MasheryPlanServiceEndpointMethod, c *transport.V3Transport) error {
+func DeletePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) error {
 	return c.DeleteObject(ctx, transport.FetchSpec{
 		Pagination: transport.NotRequired,
 		Resource:   packagePlanEndpointMethod(id),

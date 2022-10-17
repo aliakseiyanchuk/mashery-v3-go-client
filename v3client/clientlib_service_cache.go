@@ -12,28 +12,28 @@ func masheryServiceCacheSpec(id string) transport.FetchSpec {
 		Resource:       fmt.Sprintf("/services/%s/cache", id),
 		Query:          nil,
 		AppContext:     "service cache",
-		ResponseParser: masherytypes.ParseMasheryServiceCache,
+		ResponseParser: masherytypes.ParseServiceCache,
 	}
 }
 
 // GetServiceCache Retrieve the service cache
-func GetServiceCache(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryServiceCache, error) {
+func GetServiceCache(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
 	rv, err := c.GetObject(ctx, masheryServiceCacheSpec(id))
 
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(masherytypes.MasheryServiceCache)
+		retServ, _ := rv.(masherytypes.ServiceCache)
 		return &retServ, nil
 	}
 }
 
 // CreateServiceCache Create a new service cache
-func CreateServiceCache(ctx context.Context, id string, service masherytypes.MasheryServiceCache, c *transport.V3Transport) (*masherytypes.MasheryServiceCache, error) {
+func CreateServiceCache(ctx context.Context, id string, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
 	rawResp, err := c.CreateObject(ctx, service, masheryServiceCacheSpec(id))
 
 	if err == nil {
-		rv, _ := rawResp.(masherytypes.MasheryServiceCache)
+		rv, _ := rawResp.(masherytypes.ServiceCache)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -41,9 +41,9 @@ func CreateServiceCache(ctx context.Context, id string, service masherytypes.Mas
 }
 
 // UpdateServiceCache Update cache of this service
-func UpdateServiceCache(ctx context.Context, id string, service masherytypes.MasheryServiceCache, c *transport.V3Transport) (*masherytypes.MasheryServiceCache, error) {
+func UpdateServiceCache(ctx context.Context, id string, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
 	if d, err := c.UpdateObject(ctx, service, masheryServiceCacheSpec(id)); err == nil {
-		rv, _ := d.(masherytypes.MasheryServiceCache)
+		rv, _ := d.(masherytypes.ServiceCache)
 		return &rv, nil
 	} else {
 		return nil, err

@@ -24,7 +24,7 @@ type OAuthHelperParams struct {
 }
 
 func (ohp *OAuthHelperParams) FillDefaults() {
-	if ohp.TLSConfig == nil {
+	if ohp.TLSConfig == nil && !ohp.TLSConfigDelegateSystem {
 		ohp.TLSConfig = transport.DefaultTLSConfig()
 	}
 

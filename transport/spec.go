@@ -2,7 +2,6 @@ package transport
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 )
 
@@ -31,7 +30,7 @@ const (
 )
 
 type AsyncFetchResult struct {
-	Data *http.Response
+	Data *WrappedResponse
 	Err  error
 }
 

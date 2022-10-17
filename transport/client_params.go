@@ -9,12 +9,15 @@ import (
 )
 
 type HTTPClientParams struct {
-	TLSConfig *tls.Config
-	Timeout   time.Duration
+	TLSConfig               *tls.Config
+	TLSConfigDelegateSystem bool
+	Timeout                 time.Duration
 
 	ProxyServer          *url.URL
 	ProxyAuthType        string
 	ProxyAuthCredentials string
+
+	ExchangeListener ExchangeListener
 }
 
 type httpProxyFunction func(*http.Request) (*url.URL, error)

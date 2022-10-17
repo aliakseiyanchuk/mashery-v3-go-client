@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func GetMember(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryMember, error) {
+func GetMember(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.V3Transport) (*masherytypes.Member, error) {
 	qs := url.Values{
 		"fields": {memberFieldsStr},
 	}
@@ -18,7 +18,7 @@ func GetMember(ctx context.Context, id string, c *transport.V3Transport) (*mashe
 	return fetchMember(ctx, id, qs, c)
 }
 
-func GetFullMember(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryMember, error) {
+func GetFullMember(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.V3Transport) (*masherytypes.Member, error) {
 	qs := url.Values{
 		"fields": {strings.Join(memberDeepFields, ",")},
 	}
@@ -26,9 +26,9 @@ func GetFullMember(ctx context.Context, id string, c *transport.V3Transport) (*m
 	return fetchMember(ctx, id, qs, c)
 }
 
-func fetchMember(ctx context.Context, id string, qs url.Values, c *transport.V3Transport) (*masherytypes.MasheryMember, error) {
+func fetchMember(ctx context.Context, id masherytypes.MemberIdentifier, qs url.Values, c *transport.V3Transport) (*masherytypes.Member, error) {
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/members/%s", id),
+		Resource:       fmt.Sprintf("/members/%s", id.MemberId),
 		Query:          qs,
 		AppContext:     "member",
 		ResponseParser: masherytypes.ParseMasheryMember,
@@ -37,13 +37,13 @@ func fetchMember(ctx context.Context, id string, qs url.Values, c *transport.V3T
 	if err != nil {
 		return nil, err
 	} else {
-		retServ, _ := rv.(masherytypes.MasheryMember)
+		retServ, _ := rv.(masherytypes.Member)
 		return &retServ, nil
 	}
 }
 
 // CreateMember Create a new service.
-func CreateMember(ctx context.Context, member masherytypes.MasheryMember, c *transport.V3Transport) (*masherytypes.MasheryMember, error) {
+func CreateMember(ctx context.Context, member masherytypes.Member, c *transport.V3Transport) (*masherytypes.Member, error) {
 	rawResp, err := c.CreateObject(ctx, member, transport.FetchSpec{
 		Resource:       "/members",
 		AppContext:     "members",
@@ -51,7 +51,7 @@ func CreateMember(ctx context.Context, member masherytypes.MasheryMember, c *tra
 	})
 
 	if err == nil {
-		rv, _ := rawResp.(masherytypes.MasheryMember)
+		rv, _ := rawResp.(masherytypes.Member)
 		return &rv, nil
 	} else {
 		return nil, err
@@ -59,7 +59,7 @@ func CreateMember(ctx context.Context, member masherytypes.MasheryMember, c *tra
 }
 
 // UpdateMember Create a new service.
-func UpdateMember(ctx context.Context, member masherytypes.MasheryMember, c *transport.V3Transport) (*masherytypes.MasheryMember, error) {
+func UpdateMember(ctx context.Context, member masherytypes.Member, c *transport.V3Transport) (*masherytypes.Member, error) {
 	if member.Id == "" {
 		return nil, errors.New("illegal argument: member Id must be set and not nil")
 	}
@@ -71,23 +71,23 @@ func UpdateMember(ctx context.Context, member masherytypes.MasheryMember, c *tra
 	}
 
 	if d, err := c.UpdateObject(ctx, member, opContext); err == nil {
-		rv, _ := d.(masherytypes.MasheryMember)
+		rv, _ := d.(masherytypes.Member)
 		return &rv, nil
 	} else {
 		return nil, err
 	}
 }
 
-func DeleteMember(ctx context.Context, memberId string, c *transport.V3Transport) error {
+func DeleteMember(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.V3Transport) error {
 	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/members/%s", memberId),
+		Resource:   fmt.Sprintf("/members/%s", id.MemberId),
 		AppContext: "member",
 	}
 
 	return c.DeleteObject(ctx, opContext)
 }
 
-func ListMembers(ctx context.Context, c *transport.V3Transport) ([]masherytypes.MasheryMember, error) {
+func ListMembers(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Member, error) {
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerPage,
 		Resource:       "/members",
@@ -97,12 +97,12 @@ func ListMembers(ctx context.Context, c *transport.V3Transport) ([]masherytypes.
 	}
 
 	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.MasheryMember{}, nil
+		return []masherytypes.Member{}, nil
 	} else {
 		// Convert individual fetches into the array of elements
-		var rv []masherytypes.MasheryMember
+		var rv []masherytypes.Member
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryMember)
+			ms, ok := raw.([]masherytypes.Member)
 			if ok {
 				rv = append(rv, ms...)
 			}

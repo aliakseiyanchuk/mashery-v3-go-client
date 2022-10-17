@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -12,7 +13,7 @@ import (
 func showPackagePlansServices(ctx context.Context, cl v3client.Client, args interface{}) int {
 	p, _ := args.(ShowPlanData)
 
-	if srv, gerr := cl.ListPlanServices(ctx, p.packageId, p.planId); gerr == nil {
+	if srv, gerr := cl.ListPlanServices(ctx, masherytypes.PackagePlanIdentityFrom(p.packageId, p.planId)); gerr == nil {
 		fmt.Printf("Package %s, plan %s includes %d services:", p.packageId, p.planId, len(srv))
 		fmt.Println()
 
@@ -26,8 +27,6 @@ func showPackagePlansServices(ctx context.Context, cl v3client.Client, args inte
 		fmt.Println(gerr)
 		return 1
 	}
-
-	return 0
 }
 
 func showPackagePlansServicesArgParser() (bool, error) {

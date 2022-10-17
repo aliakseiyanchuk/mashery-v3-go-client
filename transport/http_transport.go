@@ -22,6 +22,8 @@ type HttpTransport struct {
 	MaxQPS         int64
 
 	Mutex *sync.Mutex
+
+	ExchangeListener ExchangeListener
 }
 
 func (c *HttpTransport) DelayBeforeCall() time.Duration {
@@ -52,30 +54,30 @@ func (c *HttpTransport) DelayBeforeCall() time.Duration {
 	}
 }
 
-func (c *HttpTransport) Fetch(ctx context.Context, res string) (*http.Response, error) {
+func (c *HttpTransport) Fetch(ctx context.Context, res string) (*WrappedResponse, error) {
 	uri := fmt.Sprintf("%s%s", c.MashEndpoint, res)
 
 	if req, err := http.NewRequest("GET", uri, nil); err != nil {
 		return nil, err
 	} else {
-		return c.httpExec(ctx, req)
+		return c.httpExec(ctx, &WrappedRequest{Request: req})
 	}
 }
 
-func (c *HttpTransport) Delete(ctx context.Context, res string) (*http.Response, error) {
+func (c *HttpTransport) Delete(ctx context.Context, res string) (*WrappedResponse, error) {
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s%s", c.MashEndpoint, res), nil)
-	return c.httpExec(ctx, req)
+	return c.httpExec(ctx, &WrappedRequest{Request: req})
 }
 
-func (c *HttpTransport) Post(ctx context.Context, res string, body interface{}) (*http.Response, error) {
+func (c *HttpTransport) Post(ctx context.Context, res string, body interface{}) (*WrappedResponse, error) {
 	return c.Send(ctx, "POST", res, body)
 }
 
-func (c *HttpTransport) Put(ctx context.Context, res string, body interface{}) (*http.Response, error) {
+func (c *HttpTransport) Put(ctx context.Context, res string, body interface{}) (*WrappedResponse, error) {
 	return c.Send(ctx, "PUT", res, body)
 }
 
-func (c *HttpTransport) Send(ctx context.Context, meth string, res string, body interface{}) (*http.Response, error) {
+func (c *HttpTransport) Send(ctx context.Context, meth string, res string, body interface{}) (*WrappedResponse, error) {
 	if dat, err := json.Marshal(body); err == nil {
 		req, _ := http.NewRequest(meth, fmt.Sprintf("%s%s", c.MashEndpoint, res), bytes.NewReader(dat))
 
@@ -83,7 +85,12 @@ func (c *HttpTransport) Send(ctx context.Context, meth string, res string, body 
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Content-Type", "application/json")
 
-		rv, rvErr := c.httpExec(ctx, req)
+		wr := &WrappedRequest{
+			Request: req,
+			Body:    body,
+		}
+
+		rv, rvErr := c.httpExec(ctx, wr)
 		_ = req.Body.Close()
 
 		return rv, rvErr
@@ -92,7 +99,7 @@ func (c *HttpTransport) Send(ctx context.Context, meth string, res string, body 
 	}
 }
 
-func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (c *HttpTransport) httpExec(ctx context.Context, wrq *WrappedRequest) (*WrappedResponse, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -107,12 +114,24 @@ func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.
 				return nil, err
 			} else if len(tkn) > 0 {
 				for k, v := range tkn {
-					req.Header.Add(k, v)
+					wrq.Request.Header.Add(k, v)
 				}
 			}
 		}
 
-		resp, lastErr := c.HttpClient.Do(req)
+		var wrs *WrappedResponse
+		resp, lastErr := c.HttpClient.Do(wrq.Request)
+		if lastErr == nil {
+			wrs = &WrappedResponse{
+				Response:   resp,
+				StatusCode: resp.StatusCode,
+				Header:     resp.Header,
+			}
+		}
+
+		if c.ExchangeListener != nil {
+			c.ExchangeListener(ctx, wrq, wrs, lastErr)
+		}
 
 		// If, for whatever reason, the request still gets over QPS, re-try with progressive
 		// back-offs could be tried.
@@ -126,7 +145,7 @@ func (c *HttpTransport) httpExec(ctx context.Context, req *http.Request) (*http.
 
 		// Where the response is successful or cannot be re-tried, the both
 		// are returned to the caller
-		return resp, lastErr
+		return wrs, lastErr
 	}
 
 	return nil, lastErr

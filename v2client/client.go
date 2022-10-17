@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/errwrap"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
-	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -46,7 +45,7 @@ type V2Request struct {
 type Client interface {
 	Invoke(ctx context.Context, method string, obj interface{}) (V2Result, error)
 	InvokeDirect(ctx context.Context, req V2Request) (V2Result, error)
-	GetRawResponse(ctx context.Context, req V2Request) (*http.Response, error)
+	GetRawResponse(ctx context.Context, req V2Request) (*transport.WrappedResponse, error)
 
 	Close(ctx context.Context)
 }
@@ -69,7 +68,7 @@ func (ci *ClientImpl) Invoke(ctx context.Context, method string, obj interface{}
 func (ci *ClientImpl) InvokeDirect(ctx context.Context, req V2Request) (V2Result, error) {
 	if resp, err := ci.GetRawResponse(ctx, req); err != nil {
 		return V2Result{}, err
-	} else if body, err := transport.ReadResponseBody(resp); err != nil {
+	} else if body, err := resp.Body(); err != nil {
 		return V2Result{}, err
 	} else {
 		var rv V2Result
@@ -84,7 +83,7 @@ func (ci *ClientImpl) Close(ctx context.Context) {
 	ci.transport.HttpClient.CloseIdleConnections()
 }
 
-func (ci *ClientImpl) GetRawResponse(ctx context.Context, req V2Request) (*http.Response, error) {
+func (ci *ClientImpl) GetRawResponse(ctx context.Context, req V2Request) (*transport.WrappedResponse, error) {
 	// Implement rate-controls
 	time.Sleep(ci.transport.DelayBeforeCall())
 
