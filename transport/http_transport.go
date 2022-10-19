@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -107,45 +108,51 @@ func (c *HttpTransport) httpExec(ctx context.Context, wrq *WrappedRequest) (*Wra
 	var lastErr error
 
 	for i := 0; i < 10; i++ {
-		time.Sleep(c.DelayBeforeCall())
+		select {
+		case <-ctx.Done():
+			return nil, errors.New("context cancelled")
+		default:
+			time.Sleep(c.DelayBeforeCall())
 
-		if c.Authorizer != nil {
-			if tkn, err := c.Authorizer.HeaderAuthorization(); err != nil {
-				return nil, err
-			} else if len(tkn) > 0 {
-				for k, v := range tkn {
-					wrq.Request.Header.Add(k, v)
+			if c.Authorizer != nil {
+				if tkn, err := c.Authorizer.HeaderAuthorization(); err != nil {
+					return nil, err
+				} else if len(tkn) > 0 {
+					for k, v := range tkn {
+						wrq.Request.Header.Add(k, v)
+					}
 				}
 			}
-		}
 
-		var wrs *WrappedResponse
-		resp, lastErr := c.HttpClient.Do(wrq.Request)
-		if lastErr == nil {
-			wrs = &WrappedResponse{
-				Response:   resp,
-				StatusCode: resp.StatusCode,
-				Header:     resp.Header,
+			var wrs *WrappedResponse
+			resp, lastErr := c.HttpClient.Do(wrq.Request)
+			if lastErr == nil {
+				wrs = &WrappedResponse{
+					Response:   resp,
+					StatusCode: resp.StatusCode,
+					Header:     resp.Header,
+				}
 			}
-		}
 
-		if c.ExchangeListener != nil {
-			c.ExchangeListener(ctx, wrq, wrs, lastErr)
-		}
-
-		// If, for whatever reason, the request still gets over QPS, re-try with progressive
-		// back-offs could be tried.
-		if lastErr == nil && resp.StatusCode == 403 {
-			if str := resp.Header.Get("X-Mashery-Error-Code"); str == "ERR_403_DEVELOPER_OVER_QPS" {
-				d := time.Duration(1+i) * time.Second
-				time.Sleep(d)
-				continue
+			if c.ExchangeListener != nil {
+				c.ExchangeListener(ctx, wrq, wrs, lastErr)
 			}
+
+			// If, for whatever reason, the request still gets over QPS, re-try with progressive
+			// back-offs could be tried.
+			if lastErr == nil && resp.StatusCode == 403 {
+				if str := resp.Header.Get("X-Mashery-Error-Code"); str == "ERR_403_DEVELOPER_OVER_QPS" {
+					d := time.Duration(1+i) * time.Second
+					time.Sleep(d)
+					continue
+				}
+			}
+
+			// Where the response is successful or cannot be re-tried, the both
+			// are returned to the caller
+			return wrs, lastErr
 		}
 
-		// Where the response is successful or cannot be re-tried, the both
-		// are returned to the caller
-		return wrs, lastErr
 	}
 
 	return nil, lastErr
