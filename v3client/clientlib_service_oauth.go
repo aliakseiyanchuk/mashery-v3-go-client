@@ -7,9 +7,9 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 )
 
-func GetServiceOAuthSecurityProfile(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
+func GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", id),
+		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", id.ServiceId),
 		Query:          nil,
 		AppContext:     "service security profile oauth",
 		ResponseParser: masherytypes.ParseMasheryServiceSecurityProfileOAuth,
@@ -24,9 +24,9 @@ func GetServiceOAuthSecurityProfile(ctx context.Context, id string, c *transport
 }
 
 // CreateServiceOAuthSecurityProfile Create a new service.
-func CreateServiceOAuthSecurityProfile(ctx context.Context, id string, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
-	rawResp, err := c.CreateObject(ctx, service, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", id),
+func CreateServiceOAuthSecurityProfile(ctx context.Context, oauth masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
+	rawResp, err := c.CreateObject(ctx, oauth, transport.FetchSpec{
+		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", oauth.ParentService.ServiceId),
 		AppContext:     "service security profile oauth",
 		ResponseParser: masherytypes.ParseMasheryServiceSecurityProfileOAuth,
 	})
@@ -40,14 +40,14 @@ func CreateServiceOAuthSecurityProfile(ctx context.Context, id string, service m
 }
 
 // UpdateServiceOAuthSecurityProfile Create a new service.
-func UpdateServiceOAuthSecurityProfile(ctx context.Context, id string, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
+func UpdateServiceOAuthSecurityProfile(ctx context.Context, oauth masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
 	opContext := transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", id),
+		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", oauth.ParentService.ServiceId),
 		AppContext:     "service security profile oauth",
 		ResponseParser: masherytypes.ParseMasheryServiceSecurityProfileOAuth,
 	}
 
-	if d, err := c.UpdateObject(ctx, service, opContext); err == nil {
+	if d, err := c.UpdateObject(ctx, oauth, opContext); err == nil {
 		rv, _ := d.(masherytypes.MasheryOAuth)
 		return &rv, nil
 	} else {
@@ -56,9 +56,9 @@ func UpdateServiceOAuthSecurityProfile(ctx context.Context, id string, service m
 }
 
 // DeleteServiceOAuthSecurityProfile Create a new service.
-func DeleteServiceOAuthSecurityProfile(ctx context.Context, id string, c *transport.V3Transport) error {
+func DeleteServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error {
 	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/services/%s/securityProfile/oauth", id),
+		Resource:   fmt.Sprintf("/services/%s/securityProfile/oauth", id.ServiceId),
 		AppContext: "service security profile oauth",
 	}
 

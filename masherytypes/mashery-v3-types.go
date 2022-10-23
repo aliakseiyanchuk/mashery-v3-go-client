@@ -156,6 +156,8 @@ type MasheryOAuth struct {
 	RateLimitCeiling            int64    `json:"rateLimitCeiling"`
 	RefreshTokenTtl             int64    `json:"refreshTokenTtl"`
 	SecureTokensEnabled         bool     `json:"secureTokensEnabled"`
+
+	ParentService ServiceIdentifier `json:"-"`
 }
 
 type MasherySecurityProfile struct {

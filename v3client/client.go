@@ -153,10 +153,10 @@ type Client interface {
 	DeleteServiceCache(ctx context.Context, id string) error
 
 	// GetServiceOAuthSecurityProfile Service OAuth
-	GetServiceOAuthSecurityProfile(ctx context.Context, id string) (*masherytypes.MasheryOAuth, error)
-	CreateServiceOAuthSecurityProfile(ctx context.Context, id string, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error)
-	UpdateServiceOAuthSecurityProfile(ctx context.Context, id string, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error)
-	DeleteServiceOAuthSecurityProfile(ctx context.Context, id string) error
+	GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.MasheryOAuth, error)
+	CreateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error)
+	UpdateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error)
+	DeleteServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) error
 }
 
 type PluggableClient struct {
@@ -317,10 +317,10 @@ type ClientMethodSchema struct {
 	DeleteServiceCache func(ctx context.Context, id string, c *transport.V3Transport) error
 
 	// Service OAuth
-	GetServiceOAuthSecurityProfile    func(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
-	CreateServiceOAuthSecurityProfile func(ctx context.Context, id string, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
-	UpdateServiceOAuthSecurityProfile func(ctx context.Context, id string, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
-	DeleteServiceOAuthSecurityProfile func(ctx context.Context, id string, c *transport.V3Transport) error
+	GetServiceOAuthSecurityProfile    func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
+	CreateServiceOAuthSecurityProfile func(ctx context.Context, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
+	UpdateServiceOAuthSecurityProfile func(ctx context.Context, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
+	DeleteServiceOAuthSecurityProfile func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error
 }
 
 func (c *PluggableClient) ListErrorSets(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs url.Values) ([]masherytypes.ErrorSet, error) {
@@ -1129,7 +1129,7 @@ func (c *PluggableClient) DeleteServiceCache(ctx context.Context, id string) err
 }
 
 // Service OAtuh
-func (c *PluggableClient) GetServiceOAuthSecurityProfile(ctx context.Context, id string) (*masherytypes.MasheryOAuth, error) {
+func (c *PluggableClient) GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.MasheryOAuth, error) {
 	if c.schema.GetServiceOAuthSecurityProfile != nil {
 		return c.schema.GetServiceOAuthSecurityProfile(ctx, id, c.transport)
 	} else {
@@ -1137,23 +1137,23 @@ func (c *PluggableClient) GetServiceOAuthSecurityProfile(ctx context.Context, id
 	}
 }
 
-func (c *PluggableClient) CreateServiceOAuthSecurityProfile(ctx context.Context, id string, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
+func (c *PluggableClient) CreateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
 	if c.schema.CreateServiceOAuthSecurityProfile != nil {
-		return c.schema.CreateServiceOAuthSecurityProfile(ctx, id, service, c.transport)
+		return c.schema.CreateServiceOAuthSecurityProfile(ctx, service, c.transport)
 	} else {
 		return nil, c.notImplemented("CreateServiceOAuthSecurityProfile")
 	}
 }
 
-func (c *PluggableClient) UpdateServiceOAuthSecurityProfile(ctx context.Context, id string, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
+func (c *PluggableClient) UpdateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
 	if c.schema.UpdateServiceOAuthSecurityProfile != nil {
-		return c.schema.UpdateServiceOAuthSecurityProfile(ctx, id, service, c.transport)
+		return c.schema.UpdateServiceOAuthSecurityProfile(ctx, service, c.transport)
 	} else {
 		return nil, c.notImplemented("UpdateServiceOAuthSecurityProfile")
 	}
 }
 
-func (c *PluggableClient) DeleteServiceOAuthSecurityProfile(ctx context.Context, id string) error {
+func (c *PluggableClient) DeleteServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) error {
 	if c.schema.DeleteServiceOAuthSecurityProfile != nil {
 		return c.schema.DeleteServiceOAuthSecurityProfile(ctx, id, c.transport)
 	} else {
