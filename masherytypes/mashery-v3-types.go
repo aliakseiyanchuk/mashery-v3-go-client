@@ -843,7 +843,7 @@ func ParseMasheryRole(dat []byte) (interface{}, int, error) {
 	return rv, 1, err
 }
 
-func ParseMasheryRolePermissionArray(dat []byte) (interface{}, int, error) {
+func ParseRolePermissionArray(dat []byte) (interface{}, int, error) {
 	var rv []MasheryRolePermission
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err

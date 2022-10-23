@@ -111,9 +111,7 @@ func (c *HttpTransport) httpExec(ctx context.Context, wrq *WrappedRequest) (*Wra
 		select {
 		case <-ctx.Done():
 			return nil, errors.New("context cancelled")
-		default:
-			time.Sleep(c.DelayBeforeCall())
-
+		case <-time.After(c.DelayBeforeCall()):
 			if c.Authorizer != nil {
 				if tkn, err := c.Authorizer.HeaderAuthorization(); err != nil {
 					return nil, err
