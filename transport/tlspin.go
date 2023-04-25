@@ -133,10 +133,10 @@ func init() {
 	defaultMasheryPinner.Add(leafPIN)
 
 	issuerPin := TLSCertChainPin{
-		CommonName: "DigiCert TLS RSA SHA256 2020 CA1",
+		CommonName: "DigiCert Global G2 TLS RSA SHA256 2020 CA1",
 	}
-	issuerPin.SerialNumberFromHex("0A:35:08:D5:5C:29:2B:01:7D:F8:AD:65:C0:0F:F7:E4")
-	issuerPin.FingerprintFrom("25:76:87:13:D3:B4:59:F9:38:2D:2A:59:4F:85:F3:47:09:FD:2A:89:30:73:15:42:A4:14:6F:FB:24:6B:EC:69")
+	issuerPin.SerialNumberFromHex("0C:F5:BD:06:2B:56:02:F4:7A:B8:50:2C:23:CC:F0:66")
+	issuerPin.FingerprintFrom("C8:02:5F:9F:C6:5F:DF:C9:5B:3C:A8:CC:78:67:B9:A5:87:B5:27:79:73:95:79:17:46:3F:C8:13:D0:B6:25:A9")
 	defaultMasheryPinner.Add(issuerPin)
 }
 
