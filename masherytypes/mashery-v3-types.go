@@ -246,7 +246,7 @@ type Service struct {
 	RFC3986Encode     bool                    `json:"rfc3986Encode,omitempty"`
 	SecurityProfile   *MasherySecurityProfile `json:"securityProfile,omitempty"`
 	Version           string                  `json:"version,omitempty"`
-	Roles             *[]Role                 `json:"roles,omitempty"`
+	Roles             *[]RolePermission       `json:"roles,omitempty"`
 }
 
 func (s *Service) Identifier() ServiceIdentifier {
@@ -397,7 +397,7 @@ type Role struct {
 	Assignable  bool   `json:"isAssignable,omitempty"`
 }
 
-type MasheryRolePermission struct {
+type RolePermission struct {
 	Role
 	Action string `json:"action"`
 }
@@ -846,13 +846,13 @@ func ParseMasheryRole(dat []byte) (interface{}, int, error) {
 }
 
 func ParseRolePermissionArray(dat []byte) (interface{}, int, error) {
-	var rv []MasheryRolePermission
+	var rv []RolePermission
 	err := json.Unmarshal(dat, &rv)
 	return rv, len(rv), err
 }
 
 func ParseMasheryRolePermission(dat []byte) (interface{}, int, error) {
-	var rv MasheryRolePermission
+	var rv RolePermission
 	err := json.Unmarshal(dat, &rv)
 	return rv, 1, err
 }

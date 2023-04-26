@@ -27,15 +27,15 @@ func masheryServiceRolesPutSpec(id masherytypes.ServiceIdentifier) transport.Fet
 }
 
 // GetServiceRoles retrieve the roles that are attached to this service.
-func GetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.MasheryRolePermission, error) {
+func GetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.RolePermission, error) {
 	d, err := c.FetchAll(ctx, masheryServiceRolesSpec(id))
 
 	if err != nil {
 		return nil, err
 	} else {
-		var rv []masherytypes.MasheryRolePermission
+		var rv []masherytypes.RolePermission
 		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.MasheryRolePermission)
+			ms, ok := raw.([]masherytypes.RolePermission)
 			if ok {
 				rv = append(rv, ms...)
 			}
@@ -46,11 +46,11 @@ func GetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, c *
 }
 
 type setServiceRolesWrapper struct {
-	Roles []masherytypes.MasheryRolePermission `json:"roles"`
+	Roles []masherytypes.RolePermission `json:"roles"`
 }
 
 // SetServiceRoles set service roles for the given service. Empty array effectively deletes all associated roles.
-func SetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.MasheryRolePermission, c *transport.V3Transport) error {
+func SetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.RolePermission, c *transport.V3Transport) error {
 	wrappedUpsert := setServiceRolesWrapper{Roles: roles}
 
 	_, err := c.UpdateObject(ctx, wrappedUpsert, masheryServiceRolesPutSpec(id))

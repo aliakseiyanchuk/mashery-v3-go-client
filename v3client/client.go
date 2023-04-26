@@ -142,8 +142,8 @@ type Client interface {
 	DeleteErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) error
 	UpdateErrorSetMessage(ctx context.Context, ident masherytypes.ErrorSetIdentifier, msg masherytypes.MasheryErrorMessage) (*masherytypes.MasheryErrorMessage, error)
 
-	GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.MasheryRolePermission, error)
-	SetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.MasheryRolePermission) error
+	GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.RolePermission, error)
+	SetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.RolePermission) error
 	DeleteServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier) error
 
 	// Service cache
@@ -306,8 +306,8 @@ type ClientMethodSchema struct {
 	DeleteErrorSet        func(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *transport.V3Transport) error
 	UpdateErrorSetMessage func(ctx context.Context, sident masherytypes.ErrorSetIdentifier, msg masherytypes.MasheryErrorMessage, c *transport.V3Transport) (*masherytypes.MasheryErrorMessage, error)
 
-	GetServiceRoles    func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.MasheryRolePermission, error)
-	SetServiceRoles    func(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.MasheryRolePermission, c *transport.V3Transport) error
+	GetServiceRoles    func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.RolePermission, error)
+	SetServiceRoles    func(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.RolePermission, c *transport.V3Transport) error
 	DeleteServiceRoles func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error
 
 	// Service cache
@@ -371,15 +371,15 @@ func (c *PluggableClient) UpdateErrorSetMessage(ctx context.Context, ident mashe
 	}
 }
 
-func (c *PluggableClient) GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.MasheryRolePermission, error) {
+func (c *PluggableClient) GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.RolePermission, error) {
 	if c.schema.GetServiceRoles != nil {
 		return c.schema.GetServiceRoles(ctx, serviceId, c.transport)
 	} else {
-		return []masherytypes.MasheryRolePermission{}, c.notImplemented("GetServiceRoles")
+		return []masherytypes.RolePermission{}, c.notImplemented("GetServiceRoles")
 	}
 }
 
-func (c *PluggableClient) SetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier, perms []masherytypes.MasheryRolePermission) error {
+func (c *PluggableClient) SetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier, perms []masherytypes.RolePermission) error {
 	if c.schema.SetServiceRoles != nil {
 		return c.schema.SetServiceRoles(ctx, serviceId, perms, c.transport)
 	} else {
