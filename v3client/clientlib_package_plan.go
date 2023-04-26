@@ -26,6 +26,22 @@ func CreatePlanService(ctx context.Context, planService masherytypes.PackagePlan
 	}
 }
 
+func CheckPlanServiceExists(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (bool, error) {
+	rv, err := c.GetObject(ctx, transport.FetchSpec{
+		Pagination:     transport.NotRequired,
+		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services", planService.PackageId, planService.PlanId),
+		Query:          nil,
+		AppContext:     "plan service",
+		ResponseParser: masherytypes.ParseMasheryAddressableObject,
+	})
+
+	if err != nil {
+		return false, err
+	} else {
+		return rv != nil, nil
+	}
+}
+
 func DeletePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) error {
 	return c.DeleteObject(ctx, transport.FetchSpec{
 		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services/%s", planService.PackageId, planService.PlanId, planService.ServiceId),
@@ -46,6 +62,20 @@ func CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanSe
 	} else {
 		rvc := rv.(masherytypes.AddressableV3Object)
 		return &rvc, nil
+	}
+}
+
+func CheckPlanEndpointExists(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (bool, error) {
+	rv, err := c.GetObject(ctx, transport.FetchSpec{
+		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId),
+		AppContext:     "create plan endpoint",
+		ResponseParser: masherytypes.ParseMasheryAddressableObject,
+	})
+
+	if err != nil {
+		return false, err
+	} else {
+		return rv != nil, nil
 	}
 }
 

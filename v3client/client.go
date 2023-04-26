@@ -87,8 +87,10 @@ type Client interface {
 
 	// Package plans
 	CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (*masherytypes.AddressableV3Object, error)
+	CheckPlanServiceExists(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (bool, error)
 	DeletePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) error
 	CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (*masherytypes.AddressableV3Object, error)
+	CheckPlanEndpointExists(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (bool, error)
 	DeletePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) error
 	ListPlanEndpoints(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) ([]masherytypes.AddressableV3Object, error)
 	CountPlanService(ctx context.Context, ident masherytypes.PackagePlanIdentifier) (int64, error)
@@ -250,11 +252,13 @@ type ClientMethodSchema struct {
 	ListPackages  func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Package, error)
 
 	// Package plans
-	CreatePlanService  func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error)
-	DeletePlanService  func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) error
-	CreatePlanEndpoint func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error)
-	DeletePlanEndpoint func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) error
-	ListPlanEndpoints  func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) ([]masherytypes.AddressableV3Object, error)
+	CreatePlanService       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error)
+	CheckPlanServiceExists  func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (bool, error)
+	DeletePlanService       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) error
+	CreatePlanEndpoint      func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error)
+	CheckPlanEndpointExists func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (bool, error)
+	DeletePlanEndpoint      func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) error
+	ListPlanEndpoints       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) ([]masherytypes.AddressableV3Object, error)
 
 	CountPlanEndpoints func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (int64, error)
 	CountPlanService   func(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.V3Transport) (int64, error)
@@ -790,6 +794,14 @@ func (c *PluggableClient) CreatePlanService(ctx context.Context, planService mas
 	}
 }
 
+func (c *PluggableClient) CheckPlanServiceExists(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (bool, error) {
+	if c.schema.CheckPlanServiceExists != nil {
+		return c.schema.CheckPlanServiceExists(ctx, planService, c.transport)
+	} else {
+		return false, c.notImplemented("CheckPlanServiceExists")
+	}
+}
+
 func (c *PluggableClient) DeletePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) error {
 	if c.schema.DeletePlanService != nil {
 		return c.schema.DeletePlanService(ctx, planService, c.transport)
@@ -803,6 +815,14 @@ func (c *PluggableClient) CreatePlanEndpoint(ctx context.Context, planEndp mashe
 		return c.schema.CreatePlanEndpoint(ctx, planEndp, c.transport)
 	} else {
 		return nil, c.notImplemented("CreatePlanEndpoint")
+	}
+}
+
+func (c *PluggableClient) CheckPlanEndpointExists(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (bool, error) {
+	if c.schema.CheckPlanEndpointExists != nil {
+		return c.schema.CheckPlanEndpointExists(ctx, planEndp, c.transport)
+	} else {
+		return false, c.notImplemented("CheckPlanEndpointExists")
 	}
 }
 

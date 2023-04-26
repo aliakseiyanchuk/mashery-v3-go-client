@@ -164,11 +164,13 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		ListPackages:  ListPackages,
 
 		// Package plans
-		CreatePlanService:  CreatePlanService,
-		DeletePlanService:  DeletePlanService,
-		CreatePlanEndpoint: CreatePlanEndpoint,
-		DeletePlanEndpoint: DeletePlanEndpoint,
-		ListPlanEndpoints:  ListPlanEndpoints,
+		CreatePlanService:       CreatePlanService,
+		CheckPlanServiceExists:  CheckPlanServiceExists,
+		DeletePlanService:       DeletePlanService,
+		CreatePlanEndpoint:      CreatePlanEndpoint,
+		CheckPlanEndpointExists: CheckPlanEndpointExists,
+		DeletePlanEndpoint:      DeletePlanEndpoint,
+		ListPlanEndpoints:       ListPlanEndpoints,
 
 		CountPlanEndpoints: CountPlanEndpoints,
 		CountPlanService:   CountPlanService,
