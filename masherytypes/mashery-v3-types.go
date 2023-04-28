@@ -59,11 +59,11 @@ type SystemDomainAuthentication struct {
 }
 
 type Processor struct {
-	PreProcessEnabled  bool     `json:"preProcessEnabled"`
-	PostProcessEnabled bool     `json:"postProcessEnabled"`
-	PostInputs         []string `json:"postInputs"`
-	PreInputs          []string `json:"preInputs"`
-	Adapter            string   `json:"adapter"`
+	PreProcessEnabled  bool              `json:"preProcessEnabled"`
+	PostProcessEnabled bool              `json:"postProcessEnabled"`
+	PostInputs         map[string]string `json:"postInputs"`
+	PreInputs          map[string]string `json:"preInputs"`
+	Adapter            string            `json:"adapter"`
 }
 
 // Checks if the pre-processor structure is empty, i.e. doesn't convey any adapter information.
