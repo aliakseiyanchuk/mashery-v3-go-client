@@ -12,7 +12,7 @@ import (
 func ListEndpoints(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.AddressableV3Object, error) {
 	spec := transport.FetchSpec{
 		Pagination:     transport.PerPage,
-		Resource:       fmt.Sprintf("/services/%s/endpoints", serviceId),
+		Resource:       fmt.Sprintf("/services/%s/endpoints", serviceId.ServiceId),
 		Query:          nil,
 		AppContext:     "endpoint of service",
 		ResponseParser: masherytypes.ParseMasheryEndpointArray,
@@ -38,7 +38,7 @@ func ListEndpoints(ctx context.Context, serviceId masherytypes.ServiceIdentifier
 func ListEndpointsWithFullInfo(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.Endpoint, error) {
 	spec := transport.FetchSpec{
 		Pagination: transport.PerPage,
-		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId),
+		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId.ServiceId),
 		Query: url.Values{
 			"fields": {MasheryEndpointFieldsStr},
 		},
@@ -65,7 +65,7 @@ func ListEndpointsWithFullInfo(ctx context.Context, serviceId masherytypes.Servi
 // CreateEndpoint Create a new endpoint of the service.
 func CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint, c *transport.V3Transport) (*masherytypes.Endpoint, error) {
 	rawResp, err := c.CreateObject(ctx, endp, transport.FetchSpec{
-		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId),
+		Resource:   fmt.Sprintf("/services/%s/endpoints", serviceId.ServiceId),
 		AppContext: "endpoint",
 		Query: url.Values{
 			"fields": {MasheryEndpointFieldsStr},
