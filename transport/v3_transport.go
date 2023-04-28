@@ -85,8 +85,8 @@ func (c *V3Transport) CreateObject(ctx context.Context, objIn interface{}, opCtx
 				// Ignore page size when retrieving an object
 				if rv, _, jsonErr := opCtx.ResponseParser(dat); jsonErr != nil {
 					return nil, &errwrap.WrappedError{
-						Context: fmt.Sprintf("create %s->unmarshal response", opCtx.AppContext),
-						Cause:   err,
+						Context: fmt.Sprintf("create %s->unmarshal response (%s)", opCtx.AppContext, dat),
+						Cause:   jsonErr,
 					}
 				} else {
 					return rv, nil
