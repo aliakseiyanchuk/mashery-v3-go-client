@@ -121,7 +121,7 @@ type Endpoint struct {
 	StringsToTrimFromApiKey                    string                      `json:"stringsToTrimFromApiKey,omitempty"`
 	SupportedHttpMethods                       []string                    `json:"supportedHttpMethods,omitempty"`
 	SystemDomainAuthentication                 *SystemDomainAuthentication `json:"systemDomainAuthentication,omitempty"`
-	SystemDomains                              []Domain                    `json:"systemDomainsm,omitempty"`
+	SystemDomains                              []Domain                    `json:"systemDomains,omitempty"`
 	TrafficManagerDomain                       string                      `json:"trafficManagerDomain"`
 	UseSystemDomainCredentials                 bool                        `json:"useSystemDomainCredentials"`
 	SystemDomainCredentialKey                  *string                     `json:"systemDomainCredentialKey,omitempty"`
