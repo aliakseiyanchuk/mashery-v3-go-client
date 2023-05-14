@@ -503,6 +503,21 @@ type PackagePlanServiceEndpointMethod struct {
 	PackagePlanServiceEndpoint PackagePlanServiceEndpointIdentifier
 }
 
+func (ppsem *PackagePlanServiceEndpointMethod) Identifier() PackagePlanServiceEndpointMethodIdentifier {
+	return PackagePlanServiceEndpointMethodIdentifier{
+		PackagePlanIdentifier: ppsem.PackagePlanServiceEndpoint.PackagePlanIdentifier,
+		ServiceEndpointMethodIdentifier: ServiceEndpointMethodIdentifier{
+			MethodId: ppsem.Id,
+			ServiceEndpointIdentifier: ServiceEndpointIdentifier{
+				EndpointId: ppsem.PackagePlanServiceEndpoint.EndpointId,
+				ServiceIdentifier: ServiceIdentifier{
+					ServiceId: ppsem.PackagePlanServiceEndpoint.ServiceId,
+				},
+			},
+		},
+	}
+}
+
 func ParseServiceEndpointMethod(inp []byte) (interface{}, int, error) {
 	var rv ServiceEndpointMethod
 	err := json.Unmarshal(inp, &rv)
@@ -538,6 +553,29 @@ type PackagePlanServiceEndpointMethodFilter struct {
 	ResponseFilter
 
 	PackagePlanServiceEndpointMethod PackagePlanServiceEndpointMethodIdentifier
+}
+
+func (ppsemf *PackagePlanServiceEndpointMethodFilter) Identifier() PackagePlanServiceEndpointMethodFilterIdentifier {
+	return PackagePlanServiceEndpointMethodFilterIdentifier{
+		PackagePlanServiceIdentifier: PackagePlanServiceIdentifier{
+			PackagePlanIdentifier: ppsemf.PackagePlanServiceEndpointMethod.PackagePlanIdentifier,
+			ServiceIdentifier: ServiceIdentifier{
+				ServiceId: ppsemf.PackagePlanServiceEndpointMethod.ServiceId,
+			},
+		},
+		ServiceEndpointMethodFilterIdentifier: ServiceEndpointMethodFilterIdentifier{
+			FilterId: ppsemf.Id,
+			ServiceEndpointMethodIdentifier: ServiceEndpointMethodIdentifier{
+				MethodId: ppsemf.PackagePlanServiceEndpointMethod.MethodId,
+				ServiceEndpointIdentifier: ServiceEndpointIdentifier{
+					EndpointId: ppsemf.PackagePlanServiceEndpointMethod.EndpointId,
+					ServiceIdentifier: ServiceIdentifier{
+						ServiceId: ppsemf.PackagePlanServiceEndpointMethod.ServiceId,
+					},
+				},
+			},
+		},
+	}
 }
 
 func (emrf *ServiceEndpointMethodFilter) Identifier() ServiceEndpointMethodFilterIdentifier {
