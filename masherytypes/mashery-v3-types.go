@@ -139,10 +139,10 @@ func (e *Endpoint) Identifier() ServiceEndpointIdentifier {
 
 type MasheryOAuth struct {
 	AccessTokenTtlEnabled       bool     `json:"accessTokenTtlEnabled"`
-	AccessTokenTtl              int      `json:"accessTokenTtl"`
+	AccessTokenTtl              int64    `json:"accessTokenTtl"`
 	AccessTokenType             string   `json:"accessTokenType"`
 	AllowMultipleToken          bool     `json:"allowMultipleToken"`
-	AuthorizationCodeTtl        int      `json:"authorizationCodeTtl"`
+	AuthorizationCodeTtl        int64    `json:"authorizationCodeTtl"`
 	ForwardedHeaders            []string `json:"forwardedHeaders"`
 	MasheryTokenApiEnabled      bool     `json:"masheryTokenApiEnabled"`
 	RefreshTokenEnabled         bool     `json:"refreshTokenEnabled"`
