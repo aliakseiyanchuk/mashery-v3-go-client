@@ -256,7 +256,7 @@ func (s *Service) Identifier() ServiceIdentifier {
 }
 
 type ServiceCache struct {
-	CacheTtl int `json:"cacheTtl"`
+	CacheTtl int64 `json:"cacheTtl"`
 }
 
 // -----------------------------------------------------------------------------
