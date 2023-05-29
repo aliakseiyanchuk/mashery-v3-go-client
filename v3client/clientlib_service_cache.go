@@ -17,8 +17,8 @@ func masheryServiceCacheSpec(id string) transport.FetchSpec {
 }
 
 // GetServiceCache Retrieve the service cache
-func GetServiceCache(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
-	rv, err := c.GetObject(ctx, masheryServiceCacheSpec(id))
+func GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
+	rv, err := c.GetObject(ctx, masheryServiceCacheSpec(id.ServiceId))
 
 	if err != nil {
 		return nil, err
@@ -29,8 +29,8 @@ func GetServiceCache(ctx context.Context, id string, c *transport.V3Transport) (
 }
 
 // CreateServiceCache Create a new service cache
-func CreateServiceCache(ctx context.Context, id string, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
-	rawResp, err := c.CreateObject(ctx, service, masheryServiceCacheSpec(id))
+func CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
+	rawResp, err := c.CreateObject(ctx, service, masheryServiceCacheSpec(id.ServiceId))
 
 	if err == nil {
 		rv, _ := rawResp.(masherytypes.ServiceCache)
@@ -41,8 +41,8 @@ func CreateServiceCache(ctx context.Context, id string, service masherytypes.Ser
 }
 
 // UpdateServiceCache Update cache of this service
-func UpdateServiceCache(ctx context.Context, id string, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
-	if d, err := c.UpdateObject(ctx, service, masheryServiceCacheSpec(id)); err == nil {
+func UpdateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
+	if d, err := c.UpdateObject(ctx, service, masheryServiceCacheSpec(id.ServiceId)); err == nil {
 		rv, _ := d.(masherytypes.ServiceCache)
 		return &rv, nil
 	} else {
@@ -51,6 +51,6 @@ func UpdateServiceCache(ctx context.Context, id string, service masherytypes.Ser
 }
 
 // DeleteServiceCache Create a new service.
-func DeleteServiceCache(ctx context.Context, id string, c *transport.V3Transport) error {
-	return c.DeleteObject(ctx, masheryServiceCacheSpec(id))
+func DeleteServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error {
+	return c.DeleteObject(ctx, masheryServiceCacheSpec(id.ServiceId))
 }
