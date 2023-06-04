@@ -43,7 +43,8 @@ var MasheryPlanFields = []string{
 	"id", "created", "updated", "name", "description", "eav", "selfServiceKeyProvisioningEnabled",
 	"adminKeyProvisioningEnabled", "notes", "maxNumKeysAllowed", "numKeysBeforeReview", "qpsLimitCeiling", "qpsLimitExempt",
 	"qpsLimitKeyOverrideAllowed", "rateLimitCeiling", "rateLimitExempt", "rateLimitKeyOverrideAllowed", "rateLimitPeriod",
-	"responseFilterOverrideAllowed", "status", "emailTemplateSetId", "services.id", "services.endpoints",
+	"responseFilterOverrideAllowed", "status", "emailTemplateSetId", "adminEmailTemplateSetId",
+	"services.id", "services.endpoints", "roles",
 }
 
 var MasheryServiceFieldsWithEndpoinds = append(MasheryServiceFields, "endpoints")

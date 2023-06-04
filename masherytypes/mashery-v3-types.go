@@ -284,8 +284,11 @@ type Plan struct {
 	Status                            string `json:"status,omitempty"`
 	// Mashery's documentation erroneously quotes this field
 	// as int. It is actually UUID of the email template set Id.
-	EmailTemplateSetId string     `json:"emailTemplateSetId,omitempty"`
-	Services           *[]Service `json:"services,omitempty"`
+	// Null values are essential to disable notifications.
+	EmailTemplateSetId      *string           `json:"emailTemplateSetId"`
+	AdminEmailTemplateSetId *string           `json:"adminEmailTemplateSetId"`
+	Services                *[]Service        `json:"services,omitempty"`
+	Roles                   *[]RolePermission `json:"roles,omitempty"`
 
 	// Identity of the context object
 	ParentPackageId PackageIdentifier `json:"-"`
