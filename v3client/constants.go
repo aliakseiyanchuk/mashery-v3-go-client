@@ -51,7 +51,8 @@ var MasheryServiceFieldsWithEndpoinds = append(MasheryServiceFields, "endpoints"
 var MasheryPackageFields = []string{
 	"id", "name", "created", "updated", "description", "notifyDeveloperPeriod",
 	"notifyDeveloperNearQuota", "notifyDeveloperOverQuota", "notifyDeveloperOverThrottle", "notifyAdminNearQuota",
-	"notifyAdminOverQuota", "notifyAdminOverThrottle", "notifyAdminEmails", "nearQuotaThreshold", "eav", "keyAdapter", "keyLength",
+	"notifyAdminPeriod", "notifyAdminOverQuota", "notifyAdminOverThrottle", "notifyAdminEmails",
+	"nearQuotaThreshold", "eav", "keyAdapter", "keyLength",
 	"sharedSecretLength", "plans",
 }
 var MasheryPackageFieldsStr = strings.Join(MasheryPackageFields, ",")

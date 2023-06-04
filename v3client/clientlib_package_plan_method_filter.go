@@ -43,7 +43,7 @@ func CreatePackagePlanMethodFilter(ctx context.Context,
 	ident masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier,
 	c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
 
-	upsert := masherytypes.IdReferenced{IdRef: ident.MethodId}
+	upsert := masherytypes.IdReferenced{IdRef: ident.FilterId}
 
 	rawResp, err := c.CreateObject(ctx, upsert, transport.FetchSpec{
 		Pagination: transport.NotRequired,

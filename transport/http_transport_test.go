@@ -23,4 +23,9 @@ func TestCalculatingADelay(t *testing.T) {
 
 	time.Sleep(time.Second * 3)
 	assert.Equal(t, time.Duration(0), params.DelayBeforeCall(), "G")
+
+	time.Sleep(time.Second * 3)
+	assert.Equal(t, time.Duration(0), params.DelayBeforeCall(), "G")
+	time.Sleep(time.Second * 1)
+	assert.Equal(t, time.Duration(0), params.DelayBeforeCall(), "G")
 }

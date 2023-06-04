@@ -35,7 +35,7 @@ type PackagePlanServiceEndpointMethodIdentifier struct {
 }
 
 type PackagePlanServiceEndpointMethodFilterIdentifier struct {
-	PackagePlanServiceIdentifier
+	PackagePlanIdentifier
 	ServiceEndpointMethodFilterIdentifier
 }
 

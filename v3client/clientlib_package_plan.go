@@ -10,6 +10,7 @@ import (
 
 func CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error) {
 	ref := masherytypes.IdReferenced{IdRef: planService.ServiceId}
+
 	rv, err := c.CreateObject(ctx, ref, transport.FetchSpec{
 		Pagination:     transport.NotRequired,
 		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services", planService.PackageId, planService.PlanId),
@@ -29,9 +30,9 @@ func CreatePlanService(ctx context.Context, planService masherytypes.PackagePlan
 func CheckPlanServiceExists(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (bool, error) {
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
 		Pagination:     transport.NotRequired,
-		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services", planService.PackageId, planService.PlanId),
+		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s", planService.PackageId, planService.PlanId, planService.ServiceId),
 		Query:          nil,
-		AppContext:     "plan service",
+		AppContext:     "check plan service exists",
 		ResponseParser: masherytypes.ParseMasheryAddressableObject,
 	})
 
@@ -67,8 +68,8 @@ func CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanSe
 
 func CheckPlanEndpointExists(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (bool, error) {
 	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId),
-		AppContext:     "create plan endpoint",
+		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId, planEndp.EndpointId),
+		AppContext:     "check plan endpoint exists",
 		ResponseParser: masherytypes.ParseMasheryAddressableObject,
 	})
 
@@ -150,7 +151,7 @@ func GetPlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *t
 // CreatePlan Create a new service.
 func CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan, c *transport.V3Transport) (*masherytypes.Plan, error) {
 	rawResp, err := c.CreateObject(ctx, plan, transport.FetchSpec{
-		Resource:   fmt.Sprintf("/packages/%s/plans", packageId),
+		Resource:   fmt.Sprintf("/packages/%s/plans", packageId.PackageId),
 		AppContext: "plan",
 		Query: url.Values{
 			"fields": {MasheryPlanFieldsStr},
@@ -209,7 +210,7 @@ func CountPlans(ctx context.Context, packageId masherytypes.PackageIdentifier, c
 func ListPlans(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.V3Transport) ([]masherytypes.Plan, error) {
 	opCtx := transport.FetchSpec{
 		Pagination:     transport.PerPage,
-		Resource:       fmt.Sprintf("/packages/%s/plans", packageId),
+		Resource:       fmt.Sprintf("/packages/%s/plans", packageId.PackageId),
 		Query:          nil,
 		AppContext:     "list plans",
 		ResponseParser: masherytypes.ParseMasheryPlanArray,
@@ -225,6 +226,10 @@ func ListPlans(ctx context.Context, packageId masherytypes.PackageIdentifier, c 
 			if ok {
 				rv = append(rv, ms...)
 			}
+		}
+
+		for _, p := range rv {
+			p.ParentPackageId = packageId
 		}
 
 		return rv, nil

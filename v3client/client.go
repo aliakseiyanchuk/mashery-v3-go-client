@@ -149,10 +149,10 @@ type Client interface {
 	DeleteServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier) error
 
 	// Service cache
-	GetServiceCache(ctx context.Context, id string) (*masherytypes.ServiceCache, error)
-	CreateServiceCache(ctx context.Context, id string, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error)
-	UpdateServiceCache(ctx context.Context, id string, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error)
-	DeleteServiceCache(ctx context.Context, id string) error
+	GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.ServiceCache, error)
+	CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error)
+	UpdateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error)
+	DeleteServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) error
 
 	// GetServiceOAuthSecurityProfile Service OAuth
 	GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.MasheryOAuth, error)
@@ -315,10 +315,10 @@ type ClientMethodSchema struct {
 	DeleteServiceRoles func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error
 
 	// Service cache
-	GetServiceCache    func(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
-	CreateServiceCache func(ctx context.Context, id string, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
-	UpdateServiceCache func(ctx context.Context, id string, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
-	DeleteServiceCache func(ctx context.Context, id string, c *transport.V3Transport) error
+	GetServiceCache    func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
+	CreateServiceCache func(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
+	UpdateServiceCache func(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
+	DeleteServiceCache func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error
 
 	// Service OAuth
 	GetServiceOAuthSecurityProfile    func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
@@ -1116,7 +1116,7 @@ func (c *PluggableClient) CountServices(ctx context.Context, params map[string]s
 // --------------------------------
 // Service cache
 
-func (c *PluggableClient) GetServiceCache(ctx context.Context, id string) (*masherytypes.ServiceCache, error) {
+func (c *PluggableClient) GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.ServiceCache, error) {
 	if c.schema.GetServiceCache != nil {
 		return c.schema.GetServiceCache(ctx, id, c.transport)
 	} else {
@@ -1124,7 +1124,7 @@ func (c *PluggableClient) GetServiceCache(ctx context.Context, id string) (*mash
 	}
 }
 
-func (c *PluggableClient) CreateServiceCache(ctx context.Context, id string, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
+func (c *PluggableClient) CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
 	if c.schema.CreateServiceCache != nil {
 		return c.schema.CreateServiceCache(ctx, id, service, c.transport)
 	} else {
@@ -1132,7 +1132,7 @@ func (c *PluggableClient) CreateServiceCache(ctx context.Context, id string, ser
 	}
 }
 
-func (c *PluggableClient) UpdateServiceCache(ctx context.Context, id string, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
+func (c *PluggableClient) UpdateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
 	if c.schema.UpdateServiceCache != nil {
 		return c.schema.UpdateServiceCache(ctx, id, service, c.transport)
 	} else {
@@ -1140,7 +1140,7 @@ func (c *PluggableClient) UpdateServiceCache(ctx context.Context, id string, ser
 	}
 }
 
-func (c *PluggableClient) DeleteServiceCache(ctx context.Context, id string) error {
+func (c *PluggableClient) DeleteServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) error {
 	if c.schema.DeleteServiceCache != nil {
 		return c.schema.DeleteServiceCache(ctx, id, c.transport)
 	} else {

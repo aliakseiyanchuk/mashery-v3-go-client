@@ -127,7 +127,7 @@ type Endpoint struct {
 	SystemDomainCredentialKey                  *string                     `json:"systemDomainCredentialKey,omitempty"`
 	SystemDomainCredentialSecret               *string                     `json:"systemDomainCredentialSecret,omitempty"`
 
-	ParentServiceId ServiceIdentifier
+	ParentServiceId ServiceIdentifier `json:"-"`
 }
 
 func (e *Endpoint) Identifier() ServiceEndpointIdentifier {
@@ -256,7 +256,7 @@ func (s *Service) Identifier() ServiceIdentifier {
 }
 
 type ServiceCache struct {
-	CacheTtl int64 `json:"cacheTtl"`
+	CacheTtl float64 `json:"cacheTtl"`
 }
 
 // -----------------------------------------------------------------------------
@@ -288,7 +288,7 @@ type Plan struct {
 	Services           *[]Service `json:"services,omitempty"`
 
 	// Identity of the context object
-	ParentPackageId PackageIdentifier
+	ParentPackageId PackageIdentifier `json:"-"`
 }
 
 func (p *Plan) Identifier() PackagePlanIdentifier {
@@ -487,7 +487,7 @@ type BaseMethod struct {
 
 type ServiceEndpointMethod struct {
 	BaseMethod
-	ParentEndpointId ServiceEndpointIdentifier
+	ParentEndpointId ServiceEndpointIdentifier `json:"-"`
 }
 
 func (m *ServiceEndpointMethod) Identifier() ServiceEndpointMethodIdentifier {
@@ -499,7 +499,6 @@ func (m *ServiceEndpointMethod) Identifier() ServiceEndpointMethodIdentifier {
 
 type PackagePlanServiceEndpointMethod struct {
 	BaseMethod
-
 	PackagePlanServiceEndpoint PackagePlanServiceEndpointIdentifier
 }
 
@@ -546,23 +545,18 @@ type ResponseFilter struct {
 type ServiceEndpointMethodFilter struct {
 	ResponseFilter
 
-	ServiceEndpointMethod ServiceEndpointMethodIdentifier
+	ServiceEndpointMethod ServiceEndpointMethodIdentifier `json:"-"`
 }
 
 type PackagePlanServiceEndpointMethodFilter struct {
 	ResponseFilter
 
-	PackagePlanServiceEndpointMethod PackagePlanServiceEndpointMethodIdentifier
+	PackagePlanServiceEndpointMethod PackagePlanServiceEndpointMethodIdentifier `json:"-"`
 }
 
 func (ppsemf *PackagePlanServiceEndpointMethodFilter) Identifier() PackagePlanServiceEndpointMethodFilterIdentifier {
 	return PackagePlanServiceEndpointMethodFilterIdentifier{
-		PackagePlanServiceIdentifier: PackagePlanServiceIdentifier{
-			PackagePlanIdentifier: ppsemf.PackagePlanServiceEndpointMethod.PackagePlanIdentifier,
-			ServiceIdentifier: ServiceIdentifier{
-				ServiceId: ppsemf.PackagePlanServiceEndpointMethod.ServiceId,
-			},
-		},
+		PackagePlanIdentifier: ppsemf.PackagePlanServiceEndpointMethod.PackagePlanIdentifier,
 		ServiceEndpointMethodFilterIdentifier: ServiceEndpointMethodFilterIdentifier{
 			FilterId: ppsemf.Id,
 			ServiceEndpointMethodIdentifier: ServiceEndpointMethodIdentifier{

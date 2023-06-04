@@ -58,6 +58,10 @@ func ListEndpointsWithFullInfo(ctx context.Context, serviceId masherytypes.Servi
 			}
 		}
 
+		for _, endp := range rv {
+			endp.ParentServiceId = serviceId
+		}
+
 		return rv, nil
 	}
 }
@@ -75,6 +79,7 @@ func CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifie
 
 	if err == nil {
 		rv, _ := rawResp.(masherytypes.Endpoint)
+		rv.ParentServiceId = serviceId
 		return &rv, nil
 	} else {
 		return nil, err
@@ -119,6 +124,7 @@ func GetEndpoint(ctx context.Context, ident masherytypes.ServiceEndpointIdentifi
 		return nil, err
 	} else {
 		if rv, ok := raw.(masherytypes.Endpoint); ok {
+			rv.ParentServiceId = ident.ServiceIdentifier
 			return &rv, nil
 		} else {
 			return nil, errors.New("invalid return type")
