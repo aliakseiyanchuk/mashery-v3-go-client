@@ -179,7 +179,7 @@ type ErrorSet struct {
 	JSONPType     string                 `json:"jsonpType,omitempty"`
 	ErrorMessages *[]MasheryErrorMessage `json:"errorMessages,omitempty"`
 
-	ParentServiceId ServiceIdentifier
+	ParentServiceId ServiceIdentifier `json:"-"`
 }
 
 func (es *ErrorSet) Identifier() ErrorSetIdentifier {
@@ -247,6 +247,7 @@ type Service struct {
 	SecurityProfile   *MasherySecurityProfile `json:"securityProfile,omitempty"`
 	Version           string                  `json:"version,omitempty"`
 	Roles             *[]RolePermission       `json:"roles,omitempty"`
+	Organization      *Organization           `json:"organization"`
 }
 
 func (s *Service) Identifier() ServiceIdentifier {
@@ -732,6 +733,20 @@ func (t *TimedAccessTokenResponse) TimeLeft() int {
 	} else {
 		return 0
 	}
+}
+
+// --------------------------------------------
+// Organization
+
+type Organization struct {
+	AddressableV3Object
+	SubOrganizations []Organization `json:"suborganizations"`
+}
+
+func ParseMasheryOriganizationsArray(dat []byte) (interface{}, int, error) {
+	var rv []Organization
+	err := json.Unmarshal(dat, &rv)
+	return rv, len(rv), err
 }
 
 // --------------------------------------------

@@ -159,6 +159,11 @@ type Client interface {
 	CreateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error)
 	UpdateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error)
 	DeleteServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) error
+
+	// ListOrganizations list all organizations defined
+	ListOrganizations(ctx context.Context) ([]masherytypes.Organization, error)
+	// ListOrganizationsFiltered list organizations matching the query string.
+	ListOrganizationsFiltered(ctx context.Context, qs map[string]string) ([]masherytypes.Organization, error)
 }
 
 type PluggableClient struct {
@@ -325,6 +330,9 @@ type ClientMethodSchema struct {
 	CreateServiceOAuthSecurityProfile func(ctx context.Context, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
 	UpdateServiceOAuthSecurityProfile func(ctx context.Context, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
 	DeleteServiceOAuthSecurityProfile func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error
+
+	ListOrganizations         func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Organization, error)
+	ListOrganizationsFiltered func(ctx context.Context, qs map[string]string, c *transport.V3Transport) ([]masherytypes.Organization, error)
 }
 
 func (c *PluggableClient) ListErrorSets(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs url.Values) ([]masherytypes.ErrorSet, error) {
@@ -1178,5 +1186,23 @@ func (c *PluggableClient) DeleteServiceOAuthSecurityProfile(ctx context.Context,
 		return c.schema.DeleteServiceOAuthSecurityProfile(ctx, id, c.transport)
 	} else {
 		return c.notImplemented("DeleteServiceOAuthSecurityProfile")
+	}
+}
+
+// ListOrganizations list all organizations defined
+func (c *PluggableClient) ListOrganizations(ctx context.Context) ([]masherytypes.Organization, error) {
+	if c.schema.ListOrganizations != nil {
+		return c.schema.ListOrganizations(ctx, c.transport)
+	} else {
+		return []masherytypes.Organization{}, c.notImplemented("ListOrganizations")
+	}
+}
+
+// ListOrganizationsFiltered list organizations matching the query string.
+func (c *PluggableClient) ListOrganizationsFiltered(ctx context.Context, qs map[string]string) ([]masherytypes.Organization, error) {
+	if c.schema.ListOrganizations != nil {
+		return c.schema.ListOrganizationsFiltered(ctx, qs, c.transport)
+	} else {
+		return []masherytypes.Organization{}, c.notImplemented("ListOrganizationsFiltered")
 	}
 }

@@ -237,6 +237,10 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		CreateServiceOAuthSecurityProfile: CreateServiceOAuthSecurityProfile,
 		UpdateServiceOAuthSecurityProfile: UpdateServiceOAuthSecurityProfile,
 		DeleteServiceOAuthSecurityProfile: DeleteServiceOAuthSecurityProfile,
+
+		// List organizations
+		ListOrganizations:         ListOrganizations,
+		ListOrganizationsFiltered: ListOrganizationsFiltered,
 	}
 }
 
