@@ -37,6 +37,7 @@ var MasheryEndpointFields = []string{
 	"requestPathAlias", "requestProtocol", "oauthGrantTypes", "stringsToTrimFromApiKey", "supportedHttpMethods",
 	"systemDomainAuthentication", "systemDomains", "trafficManagerDomain", "updated", "useSystemDomainCredentials",
 	"systemDomainCredentialKey", "systemDomainCredentialSecret",
+	"errorSet", "userControlledErrorLocation", "userControlledErrorLocationKey",
 }
 
 var MasheryPlanFields = []string{

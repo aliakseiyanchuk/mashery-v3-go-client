@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -110,7 +109,7 @@ func (c *HttpTransport) httpExec(ctx context.Context, wrq *WrappedRequest) (*Wra
 	for i := 0; i < 10; i++ {
 		select {
 		case <-ctx.Done():
-			return nil, errors.New("context cancelled")
+			return nil, ctx.Err()
 		case <-time.After(c.DelayBeforeCall()):
 			if c.Authorizer != nil {
 				if tkn, err := c.Authorizer.HeaderAuthorization(); err != nil {

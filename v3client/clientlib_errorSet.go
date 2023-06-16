@@ -30,6 +30,10 @@ func ListErrorSets(ctx context.Context, serviceId masherytypes.ServiceIdentifier
 			}
 		}
 
+		for _, set := range rv {
+			set.ParentServiceId = serviceId
+		}
+
 		return rv, nil
 	}
 }
@@ -48,6 +52,7 @@ func GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *
 		return nil, err
 	} else {
 		if rv, ok := raw.(masherytypes.ErrorSet); ok {
+			rv.ParentServiceId = ident.ServiceIdentifier
 			return &rv, nil
 		} else {
 			return nil, errors.New("invalid return type")
@@ -55,9 +60,9 @@ func GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *
 	}
 }
 
-func CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet, c *transport.V3Transport) (*masherytypes.ErrorSet, error) {
+func CreateErrorSet(ctx context.Context, ident masherytypes.ServiceIdentifier, set masherytypes.ErrorSet, c *transport.V3Transport) (*masherytypes.ErrorSet, error) {
 	rawResp, err := c.CreateObject(ctx, set, transport.FetchSpec{
-		Resource:   fmt.Sprintf("/services/%s/errorSets", serviceId),
+		Resource:   fmt.Sprintf("/services/%s/errorSets", ident.ServiceId),
 		AppContext: "create errorSet",
 
 		Query: url.Values{
@@ -68,6 +73,7 @@ func CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifie
 
 	if err == nil {
 		rv, _ := rawResp.(masherytypes.ErrorSet)
+		rv.ParentServiceId = ident
 		return &rv, nil
 	} else {
 		return nil, err
@@ -90,6 +96,7 @@ func UpdateErrorSet(ctx context.Context, setData masherytypes.ErrorSet, c *trans
 
 	if d, err := c.UpdateObject(ctx, setData, opContext); err == nil {
 		rv, _ := d.(masherytypes.ErrorSet)
+		rv.ParentServiceId = setData.ParentServiceId
 		return &rv, nil
 	} else {
 		return nil, err

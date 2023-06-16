@@ -26,21 +26,33 @@ type DomainAddress struct {
 }
 
 type Cache struct {
-	ClientSurrogateControlEnabled bool     `json:"clientSurrogateControlEnabled"`
-	ContentCacheKeyHeaders        []string `json:"contentCacheKeyHeaders"`
+	CacheTTLOverride               float64  `json:"cacheTtlOverride"`
+	ContentCacheKeyHeaders         []string `json:"contentCacheKeyHeaders"`
+	ClientSurrogateControlEnabled  bool     `json:"clientSurrogateControlEnabled"`
+	IncludeApiKeyInContentCacheKey bool     `json:"includeApiKeyInContentCacheKey"`
+	RespondFromStaleCacheEnabled   bool     `json:"respondFromStaleCacheEnabled"`
+	ResponseCacheControlEnabled    bool     `json:"responseCacheControlEnabled"`
+	VaryHeaderEnabled              bool     `json:"varyHeaderEnabled"`
 }
 
 func (c *Cache) IsEmpty() bool {
-	if c != nil {
-		return len(c.ContentCacheKeyHeaders) == 0
-	} else {
-		return true
-	}
+	return c.CacheTTLOverride <= 0 &&
+		len(c.ContentCacheKeyHeaders) == 0 &&
+		!c.ClientSurrogateControlEnabled &&
+		!c.IncludeApiKeyInContentCacheKey &&
+		!c.RespondFromStaleCacheEnabled &&
+		!c.ResponseCacheControlEnabled &&
+		!c.VaryHeaderEnabled
 }
 
 type Cors struct {
-	AllDomainsEnabled bool `json:"allDomainsEnabled"`
-	MaxAge            int  `json:"maxAge"`
+	AllDomainsEnabled        bool     `json:"allDomainsEnabled"`
+	SubDomainMatchingAllowed bool     `json:"subDomainMatchingAllowed"`
+	MaxAge                   int      `json:"maxAge"`
+	CookiesAllowed           bool     `json:"cookiesAllowed"`
+	AllowedDomains           []string `json:"domainsAllowed"`
+	AllowedHeaders           []string `json:"headersAllowed"`
+	ExposedHeaders           []string `json:"headersExposed"`
 }
 
 type ScheduledMaintenanceEvent struct {
@@ -53,9 +65,9 @@ type ScheduledMaintenanceEvent struct {
 
 type SystemDomainAuthentication struct {
 	Type        string  `json:"type"`
-	Username    *string `json:"username,omitempty"`
-	Certificate *string `json:"certificate,omitempty"`
-	Password    *string `json:"password,omitempty"`
+	Username    *string `json:"username"`
+	Certificate *string `json:"certificate"`
+	Password    *string `json:"password"`
 }
 
 type Processor struct {
@@ -88,11 +100,11 @@ type Endpoint struct {
 	ApiKeyValueLocations                       []string                    `json:"apiKeyValueLocations"`
 	ApiMethodDetectionKey                      string                      `json:"apiMethodDetectionKey"`
 	ApiMethodDetectionLocations                []string                    `json:"apiMethodDetectionLocations,omitempty"`
-	Cache                                      *Cache                      `json:"cache,omitempty"`
+	Cache                                      *Cache                      `json:"cache"`
 	ConnectionTimeoutForSystemDomainRequest    int                         `json:"connectionTimeoutForSystemDomainRequest"`
 	ConnectionTimeoutForSystemDomainResponse   int                         `json:"connectionTimeoutForSystemDomainResponse"`
 	CookiesDuringHttpRedirectsEnabled          bool                        `json:"cookiesDuringHttpRedirectsEnabled"`
-	Cors                                       *Cors                       `json:"cors,omitempty"`
+	Cors                                       *Cors                       `json:"cors"`
 	CustomRequestAuthenticationAdapter         *string                     `json:"customRequestAuthenticationAdapter,omitempty"`
 	DropApiKeyFromIncomingCall                 bool                        `json:"dropApiKeyFromIncomingCall"`
 	ForceGzipOfBackendCall                     bool                        `json:"forceGzipOfBackendCall"`
@@ -120,12 +132,16 @@ type Endpoint struct {
 	OAuthGrantTypes                            []string                    `json:"oauthGrantTypes,omitempty"`
 	StringsToTrimFromApiKey                    string                      `json:"stringsToTrimFromApiKey,omitempty"`
 	SupportedHttpMethods                       []string                    `json:"supportedHttpMethods,omitempty"`
-	SystemDomainAuthentication                 *SystemDomainAuthentication `json:"systemDomainAuthentication,omitempty"`
+	SystemDomainAuthentication                 *SystemDomainAuthentication `json:"systemDomainAuthentication"`
 	SystemDomains                              []Domain                    `json:"systemDomains,omitempty"`
 	TrafficManagerDomain                       string                      `json:"trafficManagerDomain"`
 	UseSystemDomainCredentials                 bool                        `json:"useSystemDomainCredentials"`
-	SystemDomainCredentialKey                  *string                     `json:"systemDomainCredentialKey,omitempty"`
-	SystemDomainCredentialSecret               *string                     `json:"systemDomainCredentialSecret,omitempty"`
+	SystemDomainCredentialKey                  *string                     `json:"systemDomainCredentialKey"`
+	SystemDomainCredentialSecret               *string                     `json:"systemDomainCredentialSecret"`
+
+	ErrorSet                       *AddressableV3Object `json:"errorSet"`
+	UserControlledErrorLocation    string               `json:"userControlledErrorLocation"`
+	UserControlledErrorLocationKey string               `json:"userControlledErrorLocationKey"`
 
 	ParentServiceId ServiceIdentifier `json:"-"`
 }
@@ -322,7 +338,7 @@ type Package struct {
 	NotifyAdminOverThrottle     bool   `json:"notifyAdminOverThrottle"`
 	NotifyAdminEmails           string `json:"notifyAdminEmails,omitempty"`
 	NearQuotaThreshold          *int   `json:"nearQuotaThreshold,omitempty"`
-	Eav                         EAV    `json:"eav,omitempty"`
+	Eav                         *EAV   `json:"eav,omitempty"`
 	KeyAdapter                  string `json:"keyAdapter,omitempty"`
 	KeyLength                   *int   `json:"keyLength,omitempty"`
 	SharedSecretLength          *int   `json:"sharedSecretLength,omitempty"`
