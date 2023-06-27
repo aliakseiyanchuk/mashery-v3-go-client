@@ -327,22 +327,23 @@ type PlanFilter struct {
 
 type Package struct {
 	AddressableV3Object
-	Description                 string `json:"description,omitempty"`
-	NotifyDeveloperPeriod       string `json:"notifyDeveloperPeriod,omitempty"`
-	NotifyDeveloperNearQuota    bool   `json:"notifyDeveloperNearQuota"`
-	NotifyDeveloperOverQuota    bool   `json:"notifyDeveloperOverQuota"`
-	NotifyDeveloperOverThrottle bool   `json:"notifyDeveloperOverThrottle"`
-	NotifyAdminPeriod           string `json:"notifyAdminPeriod,omitempty"`
-	NotifyAdminNearQuota        bool   `json:"notifyAdminNearQuota"`
-	NotifyAdminOverQuota        bool   `json:"notifyAdminOverQuota"`
-	NotifyAdminOverThrottle     bool   `json:"notifyAdminOverThrottle"`
-	NotifyAdminEmails           string `json:"notifyAdminEmails,omitempty"`
-	NearQuotaThreshold          *int   `json:"nearQuotaThreshold,omitempty"`
-	Eav                         *EAV   `json:"eav,omitempty"`
-	KeyAdapter                  string `json:"keyAdapter,omitempty"`
-	KeyLength                   *int   `json:"keyLength,omitempty"`
-	SharedSecretLength          *int   `json:"sharedSecretLength,omitempty"`
-	Plans                       []Plan `json:"plans,omitempty"`
+	Description                 string        `json:"description,omitempty"`
+	NotifyDeveloperPeriod       string        `json:"notifyDeveloperPeriod,omitempty"`
+	NotifyDeveloperNearQuota    bool          `json:"notifyDeveloperNearQuota"`
+	NotifyDeveloperOverQuota    bool          `json:"notifyDeveloperOverQuota"`
+	NotifyDeveloperOverThrottle bool          `json:"notifyDeveloperOverThrottle"`
+	NotifyAdminPeriod           string        `json:"notifyAdminPeriod,omitempty"`
+	NotifyAdminNearQuota        bool          `json:"notifyAdminNearQuota"`
+	NotifyAdminOverQuota        bool          `json:"notifyAdminOverQuota"`
+	NotifyAdminOverThrottle     bool          `json:"notifyAdminOverThrottle"`
+	NotifyAdminEmails           string        `json:"notifyAdminEmails,omitempty"`
+	NearQuotaThreshold          *int          `json:"nearQuotaThreshold,omitempty"`
+	Eav                         *EAV          `json:"eav,omitempty"`
+	KeyAdapter                  string        `json:"keyAdapter,omitempty"`
+	KeyLength                   *int          `json:"keyLength,omitempty"`
+	SharedSecretLength          *int          `json:"sharedSecretLength,omitempty"`
+	Plans                       []Plan        `json:"plans,omitempty"`
+	Organization                *Organization `json:"organization"`
 }
 
 func (p *Package) Identifier() PackageIdentifier {
