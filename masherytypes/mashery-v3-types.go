@@ -96,9 +96,9 @@ type Endpoint struct {
 	AddressableV3Object
 
 	AllowMissingApiKey                         bool                        `json:"allowMissingApiKey"`
-	ApiKeyValueLocationKey                     string                      `json:"apiKeyValueLocationKey"`
-	ApiKeyValueLocations                       []string                    `json:"apiKeyValueLocations"`
-	ApiMethodDetectionKey                      string                      `json:"apiMethodDetectionKey"`
+	ApiKeyValueLocationKey                     string                      `json:"apiKeyValueLocationKey,omitempty"`
+	ApiKeyValueLocations                       []string                    `json:"apiKeyValueLocations,omitempty"`
+	ApiMethodDetectionKey                      string                      `json:"apiMethodDetectionKey,omitempty"`
 	ApiMethodDetectionLocations                []string                    `json:"apiMethodDetectionLocations,omitempty"`
 	Cache                                      *Cache                      `json:"cache"`
 	ConnectionTimeoutForSystemDomainRequest    int                         `json:"connectionTimeoutForSystemDomainRequest"`
