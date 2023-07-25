@@ -762,6 +762,7 @@ type Organization struct {
 
 type NilAddressableOrganization struct {
 	Id               *string                      `json:"id"`
+	Parent           *string                      `json:"parent"`
 	Name             string                       `json:"name,omitempty"`
 	Created          *MasheryJSONTime             `json:"created,omitempty"`
 	Updated          *MasheryJSONTime             `json:"updated,omitempty"`
