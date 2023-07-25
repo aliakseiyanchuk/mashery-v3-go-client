@@ -343,7 +343,7 @@ type Package struct {
 	KeyLength                   *int          `json:"keyLength,omitempty"`
 	SharedSecretLength          *int          `json:"sharedSecretLength,omitempty"`
 	Plans                       []Plan        `json:"plans,omitempty"`
-	Organization                *Organization `json:"organization"`
+	Organization                *Organization `json:"organization,omitempty"`
 }
 
 func (p *Package) Identifier() PackageIdentifier {
