@@ -1,15 +1,17 @@
 package v2client
 
+import "context"
+
 type V2Authorizer struct {
 	apiKey    string
 	signature string
 }
 
-func (v *V2Authorizer) HeaderAuthorization() (map[string]string, error) {
+func (v *V2Authorizer) HeaderAuthorization(_ context.Context) (map[string]string, error) {
 	return nil, nil
 }
 
-func (v *V2Authorizer) QueryStringAuthorization() (map[string]string, error) {
+func (v *V2Authorizer) QueryStringAuthorization(_ context.Context) (map[string]string, error) {
 	return map[string]string{
 		"apikey": v.apiKey,
 		"sig":    v.signature,
@@ -20,7 +22,7 @@ func (v *V2Authorizer) UpdateSignature(sig string) {
 	v.signature = sig
 }
 
-func (v V2Authorizer) Close() {
+func (v *V2Authorizer) Close() {
 	// Nothing to do
 }
 
