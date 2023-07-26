@@ -1,6 +1,7 @@
 package v3client
 
 import (
+	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"net/http"
 	"sync"
@@ -25,7 +26,7 @@ type V3AccessTokenProvider interface {
 	transport.Authorizer
 
 	// AccessToken Yields an access token to be used in the next API call to Mashery
-	AccessToken() (string, error)
+	AccessToken(context context.Context) (string, error)
 }
 
 func NewCustomClient(schema *ClientMethodSchema) Client {

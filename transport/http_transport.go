@@ -112,7 +112,7 @@ func (c *HttpTransport) httpExec(ctx context.Context, wrq *WrappedRequest) (*Wra
 			return nil, ctx.Err()
 		case <-time.After(c.DelayBeforeCall()):
 			if c.Authorizer != nil {
-				if tkn, err := c.Authorizer.HeaderAuthorization(); err != nil {
+				if tkn, err := c.Authorizer.HeaderAuthorization(ctx); err != nil {
 					return nil, err
 				} else if len(tkn) > 0 {
 					for k, v := range tkn {

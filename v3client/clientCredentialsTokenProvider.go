@@ -1,6 +1,7 @@
 package v3client
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
@@ -168,7 +169,7 @@ func (lcp *ClientCredentialsProvider) TokenData() (*masherytypes.TimedAccessToke
 	}
 }
 
-func (lcp *ClientCredentialsProvider) AccessToken() (string, error) {
+func (lcp *ClientCredentialsProvider) AccessToken(_ context.Context) (string, error) {
 	if dat, err := lcp.TokenData(); err != nil {
 		return "", err
 	} else if dat == nil {
@@ -178,19 +179,19 @@ func (lcp *ClientCredentialsProvider) AccessToken() (string, error) {
 	}
 }
 
-func (lcp *ClientCredentialsProvider) HeaderAuthorization() (map[string]string, error) {
+func (lcp *ClientCredentialsProvider) HeaderAuthorization(ctx context.Context) (map[string]string, error) {
 	var token string
 	var err error
 	var rv map[string]string
 
-	if token, err = lcp.AccessToken(); err == nil {
+	if token, err = lcp.AccessToken(ctx); err == nil {
 		rv["Authorization"] = token
 	}
 
 	return rv, err
 }
 
-func (lcp *ClientCredentialsProvider) QueryStringAuthorization() (map[string]string, error) {
+func (lcp *ClientCredentialsProvider) QueryStringAuthorization(_ context.Context) (map[string]string, error) {
 	var emptyMap map[string]string
 
 	return emptyMap, nil

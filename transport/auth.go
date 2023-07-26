@@ -1,7 +1,9 @@
 package transport
 
+import "context"
+
 type Authorizer interface {
-	HeaderAuthorization() (map[string]string, error)
-	QueryStringAuthorization() (map[string]string, error)
+	HeaderAuthorization(ctx context.Context) (map[string]string, error)
+	QueryStringAuthorization(ctx context.Context) (map[string]string, error)
 	Close()
 }
