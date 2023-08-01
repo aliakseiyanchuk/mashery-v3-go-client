@@ -53,7 +53,11 @@ func UpdatePackage(ctx context.Context, pack masherytypes.Package, c *transport.
 	}
 
 	opContext := transport.FetchSpec{
-		Resource:       fmt.Sprintf("/packages/%s", pack.Id),
+		Resource: fmt.Sprintf("/packages/%s", pack.Id),
+		Query: url.Values{
+			"fields": {MasheryPackageFieldsStr},
+		},
+
 		AppContext:     "package",
 		ResponseParser: masherytypes.ParseService,
 	}
