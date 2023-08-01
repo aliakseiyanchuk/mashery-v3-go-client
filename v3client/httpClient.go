@@ -198,6 +198,7 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		GetPackageKey:           GetPackageKey,
 		CreatePackageKey:        CreatePackageKey,
 		UpdatePackageKey:        UpdatePackageKey,
+		ResetPackageOwnership:   ResetPackageOwnership,
 		DeletePackageKey:        DeletePackageKey,
 		ListPackageKeysFiltered: ListPackageKeysFiltered,
 		ListPackageKeys:         ListPackageKeys,

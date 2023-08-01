@@ -82,6 +82,7 @@ type Client interface {
 	GetPackage(ctx context.Context, id masherytypes.PackageIdentifier) (*masherytypes.Package, error)
 	CreatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error)
 	UpdatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error)
+	ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier) (*masherytypes.Package, error)
 	DeletePackage(ctx context.Context, packId masherytypes.PackageIdentifier) error
 	ListPackages(ctx context.Context) ([]masherytypes.Package, error)
 
@@ -250,9 +251,11 @@ type ClientMethodSchema struct {
 	ListMembers   func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Member, error)
 
 	// Packages
-	GetPackage    func(ctx context.Context, id masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error)
-	CreatePackage func(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error)
-	UpdatePackage func(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error)
+	GetPackage            func(ctx context.Context, id masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error)
+	CreatePackage         func(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error)
+	UpdatePackage         func(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error)
+	ResetPackageOwnership func(ctx context.Context, pack masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error)
+
 	DeletePackage func(ctx context.Context, packId masherytypes.PackageIdentifier, c *transport.V3Transport) error
 	ListPackages  func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Package, error)
 
@@ -770,6 +773,14 @@ func (c *PluggableClient) CreatePackage(ctx context.Context, pack masherytypes.P
 func (c *PluggableClient) UpdatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error) {
 	if c.schema.UpdatePackage != nil {
 		return c.schema.UpdatePackage(ctx, pack, c.transport)
+	} else {
+		return nil, c.notImplemented("UpdatePackage")
+	}
+}
+
+func (c *PluggableClient) ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier) (*masherytypes.Package, error) {
+	if c.schema.UpdatePackage != nil {
+		return c.schema.ResetPackageOwnership(ctx, pack, c.transport)
 	} else {
 		return nil, c.notImplemented("UpdatePackage")
 	}
