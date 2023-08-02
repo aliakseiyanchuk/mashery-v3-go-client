@@ -46,6 +46,10 @@ func ContextWithAccessToken(ctx context.Context, token string) context.Context {
 	return context.WithValue(ctx, contextKey, token)
 }
 
+func AccessTokenFromContext(ctx context.Context) string {
+	return ctx.Value(contextKey).(string)
+}
+
 func NewContextTokenProvider() V3AccessTokenProvider {
 	return &ContextTokenProvider{
 		header: "Bearer",
