@@ -1,6 +1,7 @@
 package v3client_test
 
 import (
+	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"testing"
 )
@@ -12,7 +13,7 @@ func TestFixedTokenProvider(t *testing.T) {
 		t.FailNow()
 	}
 
-	if token, err := p.AccessToken(); err == nil {
+	if token, err := p.AccessToken(context.TODO()); err == nil {
 		if "ABCD" != token {
 			t.Errorf("Unexpected return token: %s", token)
 		}

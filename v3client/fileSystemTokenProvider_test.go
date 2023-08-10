@@ -1,6 +1,7 @@
 package v3client_test
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
@@ -41,7 +42,7 @@ func TestNewFileSystemTokenProvider(t *testing.T) {
 	}
 
 	p := v3client.NewFileSystemTokenProviderFrom(savedFileName)
-	token, tokenInvalidError := p.AccessToken()
+	token, tokenInvalidError := p.AccessToken(context.TODO())
 	if tokenInvalidError != nil {
 		t.Errorf("The token must be valid")
 	}
@@ -70,7 +71,7 @@ func TestNewFileSystemTokenProviderWithExpiredToken(t *testing.T) {
 	}
 
 	p := v3client.NewFileSystemTokenProviderFrom(savedFileName)
-	_, tokenInvalidError := p.AccessToken()
+	_, tokenInvalidError := p.AccessToken(context.TODO())
 	if tokenInvalidError == nil {
 		t.Errorf("Token MUST be declared invalid")
 	}

@@ -53,7 +53,8 @@ func UpdatePackage(ctx context.Context, pack masherytypes.Package, c *transport.
 	}
 
 	opContext := transport.FetchSpec{
-		Resource:       fmt.Sprintf("/packages/%s", pack.Id),
+		Resource: fmt.Sprintf("/packages/%s", pack.Id),
+
 		AppContext:     "package",
 		ResponseParser: masherytypes.ParseService,
 	}
@@ -61,6 +62,36 @@ func UpdatePackage(ctx context.Context, pack masherytypes.Package, c *transport.
 	if d, err := c.UpdateObject(ctx, pack, opContext); err == nil {
 		rv, _ := d.(masherytypes.Package)
 		return &rv, nil
+	} else {
+		return nil, err
+	}
+}
+
+type orgPutSchema struct {
+	Organization masherytypes.NilAddressableOrganization `json:"organization"`
+}
+
+func ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error) {
+	if len(pack.PackageId) == 0 {
+		return nil, errors.New("illegal argument: package Id must be set")
+	}
+
+	opContext := transport.FetchSpec{
+		Resource:       fmt.Sprintf("/packages/%s", pack.PackageId),
+		AppContext:     "package ownership reset",
+		ResponseParser: nil,
+	}
+
+	dat := orgPutSchema{
+		Organization: masherytypes.NilAddressableOrganization{
+			Id:     nil,
+			Parent: nil,
+			Name:   "Area Level",
+		},
+	}
+
+	if _, err := c.UpdateObject(ctx, dat, opContext); err == nil {
+		return GetPackage(ctx, pack, c)
 	} else {
 		return nil, err
 	}

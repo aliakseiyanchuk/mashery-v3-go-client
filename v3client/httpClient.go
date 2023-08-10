@@ -1,6 +1,7 @@
 package v3client
 
 import (
+	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"net/http"
 	"sync"
@@ -25,7 +26,7 @@ type V3AccessTokenProvider interface {
 	transport.Authorizer
 
 	// AccessToken Yields an access token to be used in the next API call to Mashery
-	AccessToken() (string, error)
+	AccessToken(context context.Context) (string, error)
 }
 
 func NewCustomClient(schema *ClientMethodSchema) Client {
@@ -70,6 +71,14 @@ func (p *Params) FillDefaults() {
 }
 
 func NewHttpClient(p Params) Client {
+	return newHttpClientWithSchema(p, StandardClientMethodSchema())
+}
+
+func NewHttpClientWithAutoRetries(p Params) Client {
+	return newHttpClientWithSchema(p, AutoRetryOnBadRequestMethodSchema())
+}
+
+func newHttpClientWithSchema(p Params, s *ClientMethodSchema) Client {
 	p.FillDefaults()
 
 	impl := transport.V3Transport{
@@ -78,7 +87,7 @@ func NewHttpClient(p Params) Client {
 
 	rv := FixedSchemeClient{
 		PluggableClient{
-			schema:    StandardClientMethodSchema(),
+			schema:    s,
 			transport: &impl,
 		},
 	}
@@ -98,6 +107,60 @@ func createHTTPTransport(p Params) transport.HttpTransport {
 
 		ExchangeListener: p.ExchangeListener,
 	}
+}
+
+func AutoRetryOnBadRequestMethodSchema() *ClientMethodSchema {
+	rv := StandardClientMethodSchema()
+
+	// Application methods that needs supporting
+	rv.GetApplicationContext = autoRetryBadRequest(GetApplication)
+	rv.GetApplicationPackageKeys = autoRetryBadRequest(GetApplicationPackageKeys)
+	rv.CountApplicationPackageKeys = autoRetryBadRequest(CountApplicationPackageKeys)
+	rv.GetFullApplication = autoRetryBadRequest(GetFullApplication)
+	rv.UpdateApplication = autoRetryBadRequest(UpdateApplication)
+
+	rv.UpdateEndpoint = autoRetryBadRequest(UpdateEndpoint)
+	rv.GetEndpoint = autoRetryBadRequest(GetEndpoint)
+
+	// Endpoint methods
+	rv.ListEndpointMethods = autoRetryBadRequest(ListEndpointMethods)
+	rv.CreateEndpointMethod = autoRetryBiBadRequest(CreateEndpointMethod)
+	rv.UpdateEndpointMethod = autoRetryBadRequest(UpdateEndpointMethod)
+	rv.GetEndpointMethod = autoRetryBadRequest(GetEndpointMethod)
+
+	// Endpoint method filters
+	rv.ListEndpointMethodFilters = autoRetryBadRequest(ListEndpointMethodFilters)
+	rv.CreateEndpointMethodFilter = autoRetryBiBadRequest(CreateEndpointMethodFilter)
+	rv.UpdateEndpointMethodFilter = autoRetryBadRequest(UpdateEndpointMethodFilter)
+	rv.GetEndpointMethodFilter = autoRetryBadRequest(GetEndpointMethodFilter)
+	rv.CountEndpointsMethodsFiltersOf = autoRetryBadRequest(CountEndpointsMethodsFiltersOf)
+
+	// Package plans
+	rv.CreatePlanService = autoRetryBadRequest(CreatePlanService)
+	rv.CheckPlanServiceExists = autoRetryBadRequest(CheckPlanServiceExists)
+	rv.CreatePlanEndpoint = autoRetryBadRequest(CreatePlanEndpoint)
+	rv.CheckPlanEndpointExists = autoRetryBadRequest(CheckPlanEndpointExists)
+	rv.ListPlanEndpoints = autoRetryBadRequest(ListPlanEndpoints)
+
+	rv.CountPlanEndpoints = autoRetryBadRequest(CountPlanEndpoints)
+	rv.CountPlanService = autoRetryBadRequest(CountPlanService)
+	rv.GetPlan = autoRetryBadRequest(GetPlan)
+	rv.CreatePlan = autoRetryBiBadRequest(CreatePlan)
+	rv.UpdatePlan = autoRetryBadRequest(UpdatePlan)
+	rv.CountPlans = autoRetryBadRequest(CountPlans)
+	rv.ListPlans = autoRetryBadRequest(ListPlans)
+	rv.ListPlanServices = autoRetryBadRequest(ListPlanServices)
+
+	// Plan methods
+	rv.ListPackagePlanMethods = autoRetryBadRequest(ListPackagePlanMethods)
+	rv.GetPackagePlanMethod = autoRetryBadRequest(GetPackagePlanMethod)
+	rv.CreatePackagePlanMethod = autoRetryBadRequest(CreatePackagePlanServiceEndpointMethod)
+
+	// Plan method filter
+	rv.GetPackagePlanMethodFilter = autoRetryBadRequest(GetPackagePlanMethodFilter)
+	rv.CreatePackagePlanMethodFilter = autoRetryBadRequest(CreatePackagePlanMethodFilter)
+
+	return rv
 }
 
 func StandardClientMethodSchema() *ClientMethodSchema {
@@ -197,6 +260,7 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		GetPackageKey:           GetPackageKey,
 		CreatePackageKey:        CreatePackageKey,
 		UpdatePackageKey:        UpdatePackageKey,
+		ResetPackageOwnership:   ResetPackageOwnership,
 		DeletePackageKey:        DeletePackageKey,
 		ListPackageKeysFiltered: ListPackageKeysFiltered,
 		ListPackageKeys:         ListPackageKeys,

@@ -55,7 +55,7 @@ var MasheryPackageFields = []string{
 	"notifyDeveloperNearQuota", "notifyDeveloperOverQuota", "notifyDeveloperOverThrottle", "notifyAdminNearQuota",
 	"notifyAdminPeriod", "notifyAdminOverQuota", "notifyAdminOverThrottle", "notifyAdminEmails",
 	"nearQuotaThreshold", "eav", "keyAdapter", "keyLength",
-	"sharedSecretLength", "plans",
+	"sharedSecretLength", "plans", "organization",
 }
 var MasheryPackageFieldsStr = strings.Join(MasheryPackageFields, ",")
 

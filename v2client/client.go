@@ -87,7 +87,7 @@ func (ci *ClientImpl) GetRawResponse(ctx context.Context, req V2Request) (*trans
 	// Implement rate-controls
 	time.Sleep(ci.transport.DelayBeforeCall())
 
-	m, _ := ci.transport.Authorizer.QueryStringAuthorization()
+	m, _ := ci.transport.Authorizer.QueryStringAuthorization(ctx)
 	qs := url.Values{}
 	for k, v := range m {
 		qs[k] = []string{v}

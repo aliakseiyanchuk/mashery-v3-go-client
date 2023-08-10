@@ -1,6 +1,7 @@
 package v3client
 
 import (
+	"context"
 	"errors"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"os"
@@ -20,7 +21,7 @@ type FileSystemTokenProvider struct {
 	syncInterval       time.Duration
 }
 
-func (f FileSystemTokenProvider) HeaderAuthorization() (map[string]string, error) {
+func (f *FileSystemTokenProvider) HeaderAuthorization(_ context.Context) (map[string]string, error) {
 	f.checkFileSync()
 
 	return map[string]string{
@@ -28,7 +29,7 @@ func (f FileSystemTokenProvider) HeaderAuthorization() (map[string]string, error
 	}, nil
 }
 
-func (f *FileSystemTokenProvider) AccessToken() (string, error) {
+func (f *FileSystemTokenProvider) AccessToken(ctx context.Context) (string, error) {
 	f.checkFileSync()
 
 	if f.Response == nil {
@@ -37,7 +38,7 @@ func (f *FileSystemTokenProvider) AccessToken() (string, error) {
 		return "", errors.New("saved token has already expired")
 	}
 
-	return f.FixedTokenProvider.AccessToken()
+	return f.FixedTokenProvider.AccessToken(ctx)
 }
 
 func (f *FileSystemTokenProvider) checkFileSync() {

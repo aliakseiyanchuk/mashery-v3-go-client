@@ -114,6 +114,10 @@ func (c *V3Transport) UpdateObject(ctx context.Context, objIn interface{}, opCtx
 
 		} else {
 			if resp.StatusCode == 200 {
+				if opCtx.ResponseParser == nil {
+					return nil, nil
+				}
+
 				// Ignoring page size when retrieving an object
 				if rv, _, jsonErr := opCtx.ResponseParser(dat); jsonErr != nil {
 					return nil, &errwrap.WrappedError{
