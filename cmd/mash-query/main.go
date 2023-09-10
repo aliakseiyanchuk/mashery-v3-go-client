@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 	"time"
@@ -14,11 +16,15 @@ const logHeader = "-------------------------------------------------------------
 
 const customTokenFileOpt = "token-file"
 const customNetTTLOpt = "net-ttl"
+const endpointOpt = "endpoint"
+const tokenEnvironmentOpt = "token-env"
 const qpsOps = "qps"
 
 var cmdTokenFile string
 var qps int64
 var travelTimeComp string
+var endpoint string
+var tokenEnv string
 var subCmd []string
 var jsonEncoder *json.Encoder
 
@@ -40,15 +46,14 @@ func init() {
 	jsonEncoder.SetIndent("", "  ")
 }
 
-func tokenProvider() (v3client.V3AccessTokenProvider, error) {
-	if envProp := os.Getenv(v3client.MasheryTokenSystemProperty); len(envProp) > 0 {
-		return v3client.NewFixedTokenProvider(envProp), nil
+func authorizer() (transport.Authorizer, error) {
+	if len(tokenEnv) > 0 {
+		if vaultToken := os.Getenv(tokenEnv); len(vaultToken) > 0 {
+			return transport.NewVaultAuthorizer(vaultToken), nil
+		}
 	}
 
-	fsProvider := v3client.NewFileSystemTokenProviderFrom(cmdTokenFile)
-	_, err := fsProvider.AccessToken()
-
-	return fsProvider, err
+	return nil, errors.New("no suitable authorization supplied")
 }
 
 func main() {
@@ -57,9 +62,14 @@ func main() {
 	flag.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.DefaultSavedAccessTokenFilePath(), "Use locally saved token file")
 	flag.Int64Var(&qps, qpsOps, 2, "Observe specified queries-per-second while querying")
 	flag.StringVar(&travelTimeComp, customNetTTLOpt, "173ms", "Consider specified network travel time")
+	flag.StringVar(&endpoint, endpointOpt, "", "A non-standard endpoint to connect to")
+	flag.StringVar(&tokenEnv, tokenEnvironmentOpt, "", "An environment ")
 	flag.Parse()
-	subCmd = flag.Args()
 
+	subCmd = flag.Args()
+	fmt.Println(subCmd)
+
+	fmt.Println(len(argParsers))
 	for _, p := range argParsers {
 		rec, err := p()
 		if rec {
@@ -75,11 +85,14 @@ func main() {
 
 	if handler == nil {
 		fmt.Println("Unrecognized command")
+		for _, p := range subCmd {
+			fmt.Println(p)
+		}
 		os.Exit(1)
 	}
 
 	// Arguments have been parsed correctly.
-	if tknProvider, err := tokenProvider(); err != nil {
+	if tknProvider, err := authorizer(); err != nil {
 		fmt.Printf("Access token provider is not ready: %s", err)
 		fmt.Println()
 		os.Exit(1)
@@ -92,6 +105,7 @@ func main() {
 		}
 
 		cl := v3client.NewHttpClient(v3client.Params{
+			MashEndpoint:  endpoint,
 			Authorizer:    tknProvider,
 			QPS:           qps,
 			AvgNetLatency: dur,

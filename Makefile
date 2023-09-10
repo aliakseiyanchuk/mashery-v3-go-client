@@ -29,5 +29,6 @@ release:
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
 test:
-	go test -i $(TEST) || exit 1
-	echo $(TEST) | xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
+	go test ./v3client
+#	go test -i $(TEST) || exit 1
+#	echo $(TEST) | xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4

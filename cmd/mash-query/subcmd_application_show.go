@@ -14,11 +14,13 @@ func showAppData(ctx context.Context, cl v3client.Client, rawIds interface{}) in
 
 	for _, idv := range ids {
 		id := masherytypes.ApplicationIdentifier{ApplicationId: idv}
-		if srv, err := cl.GetFullApplication(ctx, id); err == nil {
+		if srv, exist, err := cl.GetFullApplication(ctx, id); exist && err == nil {
 			fmt.Printf("Application %s (id=%s):", srv.Name, id)
 			fmt.Println()
 
 			_ = jsonEncoder.Encode(&srv)
+		} else if !exist && err == nil {
+			fmt.Printf("Application with identiifer %s is not found", id)
 		} else {
 			fmt.Printf("ERROR: Failed to retrieve service %s: %s", id, err)
 		}

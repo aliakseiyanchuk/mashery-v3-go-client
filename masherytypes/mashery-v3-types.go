@@ -186,6 +186,8 @@ type MasheryErrorMessage struct {
 	Status       string `json:"status"`
 	DetailHeader string `json:"detailHeader"`
 	ResponseBody string `json:"responseBody"`
+
+	ParentErrorSet ErrorSetIdentifier `json:"-"`
 }
 
 type ErrorSet struct {
@@ -274,6 +276,8 @@ func (s *Service) Identifier() ServiceIdentifier {
 
 type ServiceCache struct {
 	CacheTtl float64 `json:"cacheTtl"`
+
+	ParentServiceId ServiceIdentifier `json:"-"`
 }
 
 // -----------------------------------------------------------------------------

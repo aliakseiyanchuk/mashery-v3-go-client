@@ -1,7 +1,6 @@
 package v3client
 
 import (
-	"net/url"
 	"strings"
 )
 
@@ -10,7 +9,7 @@ const (
 	MasheryTokenEndpoint       = "https://api.mashery.com/v3/token"
 )
 
-var EmptyQuery url.Values = map[string][]string{}
+var EmptyQuery = map[string]string{}
 
 // MasheryServiceFields Usual mashery service fields without endpoints
 var MasheryServiceFields = []string{

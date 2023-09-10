@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
-	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 )
 
-const savedFileName = "./out/sampleSavedAccessToken.json"
+const savedFileName = "../out/sampleSavedAccessToken.json"
 
 func saveTestFile(inp *masherytypes.TimedAccessTokenResponse) bool {
 	if data, err := json.Marshal(inp); err == nil {
-		err = ioutil.WriteFile(savedFileName, data, 0644)
+		err = os.WriteFile(savedFileName, data, 0644)
 		return err == nil
 	} else {
 		return false

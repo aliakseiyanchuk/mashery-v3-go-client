@@ -24,80 +24,80 @@ type WildcardClient interface {
 
 type Client interface {
 	// GetPublicDomains Get public domains in this area
-	GetPublicDomains(ctx context.Context) ([]string, error)
-	GetSystemDomains(ctx context.Context) ([]string, error)
+	GetPublicDomains(ctx context.Context) ([]masherytypes.DomainAddress, error)
+	GetSystemDomains(ctx context.Context) ([]masherytypes.DomainAddress, error)
 
 	// GetApplication Retrieve the details of the application
-	GetApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier) (*masherytypes.Application, error)
+	GetApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier) (masherytypes.Application, bool, error)
 	GetApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) ([]masherytypes.PackageKey, error)
 	CountApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) (int64, error)
-	GetFullApplication(ctx context.Context, id masherytypes.ApplicationIdentifier) (*masherytypes.Application, error)
-	CreateApplication(ctx context.Context, app masherytypes.Application, memberId masherytypes.MemberIdentifier) (*masherytypes.Application, error)
-	UpdateApplication(ctx context.Context, app masherytypes.Application) (*masherytypes.Application, error)
+	GetFullApplication(ctx context.Context, id masherytypes.ApplicationIdentifier) (masherytypes.Application, bool, error)
+	CreateApplication(ctx context.Context, memberId masherytypes.MemberIdentifier, app masherytypes.Application) (masherytypes.Application, error)
+	UpdateApplication(ctx context.Context, app masherytypes.Application) (masherytypes.Application, error)
 	DeleteApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier) error
 	CountApplicationsOfMember(ctx context.Context, memberId masherytypes.MemberIdentifier) (int64, error)
 	ListApplications(ctx context.Context) ([]masherytypes.Application, error)
 
 	// Email template sets
-	GetEmailTemplateSet(ctx context.Context, id string) (*masherytypes.EmailTemplateSet, error)
+	GetEmailTemplateSet(ctx context.Context, id string) (masherytypes.EmailTemplateSet, bool, error)
 	ListEmailTemplateSets(ctx context.Context) ([]masherytypes.EmailTemplateSet, error)
-	ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.EmailTemplateSet, error)
+	ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string) ([]masherytypes.EmailTemplateSet, error)
 
 	// Endpoints
 	ListEndpoints(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.AddressableV3Object, error)
 	ListEndpointsWithFullInfo(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.Endpoint, error)
-	CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint) (*masherytypes.Endpoint, error)
-	UpdateEndpoint(ctx context.Context, endp masherytypes.Endpoint) (*masherytypes.Endpoint, error)
-	GetEndpoint(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) (*masherytypes.Endpoint, error)
+	CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint) (masherytypes.Endpoint, error)
+	UpdateEndpoint(ctx context.Context, endp masherytypes.Endpoint) (masherytypes.Endpoint, error)
+	GetEndpoint(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) (masherytypes.Endpoint, bool, error)
 	DeleteEndpoint(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) error
 	CountEndpointsOf(ctx context.Context, serviceId masherytypes.ServiceIdentifier) (int64, error)
 
 	// Endpoint methods
-	ListEndpointMethods(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) ([]masherytypes.ServiceEndpointMethod, error)
+	ListEndpointMethods(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) ([]masherytypes.AddressableV3Object, error)
 	ListEndpointMethodsWithFullInfo(ctx context.Context, dent masherytypes.ServiceEndpointIdentifier) ([]masherytypes.ServiceEndpointMethod, error)
-	CreateEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methodUpsert masherytypes.ServiceEndpointMethod) (*masherytypes.ServiceEndpointMethod, error)
-	UpdateEndpointMethod(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethod) (*masherytypes.ServiceEndpointMethod, error)
-	GetEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) (*masherytypes.ServiceEndpointMethod, error)
+	CreateEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methodUpsert masherytypes.ServiceEndpointMethod) (masherytypes.ServiceEndpointMethod, error)
+	UpdateEndpointMethod(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethod) (masherytypes.ServiceEndpointMethod, error)
+	GetEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) (masherytypes.ServiceEndpointMethod, bool, error)
 	DeleteEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) error
 	CountEndpointsMethodsOf(ctx context.Context, identifier masherytypes.ServiceEndpointIdentifier) (int64, error)
 
 	// Endpoint method filters
-	ListEndpointMethodFilters(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) ([]masherytypes.ServiceEndpointMethodFilter, error)
+	ListEndpointMethodFilters(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) ([]masherytypes.AddressableV3Object, error)
 	ListEndpointMethodFiltersWithFullInfo(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) ([]masherytypes.ServiceEndpointMethodFilter, error)
-	CreateEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter) (*masherytypes.ServiceEndpointMethodFilter, error)
-	UpdateEndpointMethodFilter(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethodFilter) (*masherytypes.ServiceEndpointMethodFilter, error)
-	GetEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodFilterIdentifier) (*masherytypes.ServiceEndpointMethodFilter, error)
+	CreateEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter) (masherytypes.ServiceEndpointMethodFilter, error)
+	UpdateEndpointMethodFilter(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethodFilter) (masherytypes.ServiceEndpointMethodFilter, error)
+	GetEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodFilterIdentifier) (masherytypes.ServiceEndpointMethodFilter, bool, error)
 	DeleteEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodFilterIdentifier) error
 	CountEndpointsMethodsFiltersOf(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) (int64, error)
 
 	// Member
-	GetMember(ctx context.Context, id masherytypes.MemberIdentifier) (*masherytypes.Member, error)
-	GetFullMember(ctx context.Context, id masherytypes.MemberIdentifier) (*masherytypes.Member, error)
-	CreateMember(ctx context.Context, member masherytypes.Member) (*masherytypes.Member, error)
-	UpdateMember(ctx context.Context, member masherytypes.Member) (*masherytypes.Member, error)
+	GetMember(ctx context.Context, id masherytypes.MemberIdentifier) (masherytypes.Member, bool, error)
+	GetFullMember(ctx context.Context, id masherytypes.MemberIdentifier) (masherytypes.Member, bool, error)
+	CreateMember(ctx context.Context, member masherytypes.Member) (masherytypes.Member, error)
+	UpdateMember(ctx context.Context, member masherytypes.Member) (masherytypes.Member, error)
 	DeleteMember(ctx context.Context, memberId masherytypes.MemberIdentifier) error
 	ListMembers(ctx context.Context) ([]masherytypes.Member, error)
 
 	// Packages
-	GetPackage(ctx context.Context, id masherytypes.PackageIdentifier) (*masherytypes.Package, error)
-	CreatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error)
-	UpdatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error)
-	ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier) (*masherytypes.Package, error)
+	GetPackage(ctx context.Context, id masherytypes.PackageIdentifier) (masherytypes.Package, bool, error)
+	CreatePackage(ctx context.Context, pack masherytypes.Package) (masherytypes.Package, error)
+	UpdatePackage(ctx context.Context, pack masherytypes.Package) (masherytypes.Package, error)
+	ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier) (masherytypes.Package, error)
 	DeletePackage(ctx context.Context, packId masherytypes.PackageIdentifier) error
 	ListPackages(ctx context.Context) ([]masherytypes.Package, error)
 
 	// Package plans
-	CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (*masherytypes.AddressableV3Object, error)
+	CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (masherytypes.AddressableV3Object, error)
 	CheckPlanServiceExists(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (bool, error)
 	DeletePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) error
-	CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (*masherytypes.AddressableV3Object, error)
+	CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (masherytypes.AddressableV3Object, error)
 	CheckPlanEndpointExists(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (bool, error)
 	DeletePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) error
 	ListPlanEndpoints(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) ([]masherytypes.AddressableV3Object, error)
 	CountPlanService(ctx context.Context, ident masherytypes.PackagePlanIdentifier) (int64, error)
-	GetPlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier) (*masherytypes.Plan, error)
-	CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan) (*masherytypes.Plan, error)
-	UpdatePlan(ctx context.Context, plan masherytypes.Plan) (*masherytypes.Plan, error)
+	GetPlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier) (masherytypes.Plan, bool, error)
+	CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan) (masherytypes.Plan, error)
+	UpdatePlan(ctx context.Context, plan masherytypes.Plan) (masherytypes.Plan, error)
 	DeletePlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier) error
 	CountPlans(ctx context.Context, packageId masherytypes.PackageIdentifier) (int64, error)
 	ListPlans(ctx context.Context, packageId masherytypes.PackageIdentifier) ([]masherytypes.Plan, error)
@@ -107,58 +107,58 @@ type Client interface {
 
 	// Plan methods
 	ListPackagePlanMethods(ctx context.Context, id masherytypes.PackagePlanServiceEndpointIdentifier) ([]masherytypes.PackagePlanServiceEndpointMethod, error)
-	GetPackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*masherytypes.PackagePlanServiceEndpointMethod, error)
-	CreatePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*masherytypes.PackagePlanServiceEndpointMethod, error)
+	GetPackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (masherytypes.PackagePlanServiceEndpointMethod, bool, error)
+	CreatePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (masherytypes.PackagePlanServiceEndpointMethod, error)
 	DeletePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) error
 
 	// PLan method filter
-	GetPackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error)
-	CreatePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error)
+	GetPackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (masherytypes.PackagePlanServiceEndpointMethodFilter, bool, error)
+	CreatePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier) (masherytypes.PackagePlanServiceEndpointMethodFilter, error)
 	DeletePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) error
 
 	// Package key
-	GetPackageKey(ctx context.Context, id masherytypes.PackageKeyIdentifier) (*masherytypes.PackageKey, error)
-	CreatePackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey) (*masherytypes.PackageKey, error)
-	UpdatePackageKey(ctx context.Context, packageKey masherytypes.PackageKey) (*masherytypes.PackageKey, error)
+	GetPackageKey(ctx context.Context, id masherytypes.PackageKeyIdentifier) (masherytypes.PackageKey, bool, error)
+	CreatePackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error)
+	UpdatePackageKey(ctx context.Context, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error)
 	DeletePackageKey(ctx context.Context, keyId masherytypes.PackageKeyIdentifier) error
-	ListPackageKeysFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.PackageKey, error)
+	ListPackageKeysFiltered(ctx context.Context, params map[string]string) ([]masherytypes.PackageKey, error)
 	ListPackageKeys(ctx context.Context) ([]masherytypes.PackageKey, error)
 
 	// Roles
-	GetRole(ctx context.Context, id string) (*masherytypes.Role, error)
+	GetRole(ctx context.Context, id string) (masherytypes.Role, bool, error)
 	ListRoles(ctx context.Context) ([]masherytypes.Role, error)
-	ListRolesFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.Role, error)
+	ListRolesFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Role, error)
 
 	// GetService retrieves service based on the service identifier
-	GetService(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.Service, error)
-	CreateService(ctx context.Context, service masherytypes.Service) (*masherytypes.Service, error)
-	UpdateService(ctx context.Context, service masherytypes.Service) (*masherytypes.Service, error)
+	GetService(ctx context.Context, id masherytypes.ServiceIdentifier) (masherytypes.Service, bool, error)
+	CreateService(ctx context.Context, service masherytypes.Service) (masherytypes.Service, error)
+	UpdateService(ctx context.Context, service masherytypes.Service) (masherytypes.Service, error)
 	DeleteService(ctx context.Context, serviceId masherytypes.ServiceIdentifier) error
-	ListServicesFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.Service, error)
+	ListServicesFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Service, error)
 	ListServices(ctx context.Context) ([]masherytypes.Service, error)
 	CountServices(ctx context.Context, params map[string]string) (int64, error)
 
-	ListErrorSets(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs url.Values) ([]masherytypes.ErrorSet, error)
-	GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) (*masherytypes.ErrorSet, error)
-	CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (*masherytypes.ErrorSet, error)
-	UpdateErrorSet(ctx context.Context, setData masherytypes.ErrorSet) (*masherytypes.ErrorSet, error)
+	ListErrorSets(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs map[string]string) ([]masherytypes.ErrorSet, error)
+	GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) (masherytypes.ErrorSet, bool, error)
+	CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (masherytypes.ErrorSet, error)
+	UpdateErrorSet(ctx context.Context, setData masherytypes.ErrorSet) (masherytypes.ErrorSet, error)
 	DeleteErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) error
-	UpdateErrorSetMessage(ctx context.Context, ident masherytypes.ErrorSetIdentifier, msg masherytypes.MasheryErrorMessage) (*masherytypes.MasheryErrorMessage, error)
+	UpdateErrorSetMessage(ctx context.Context, msg masherytypes.MasheryErrorMessage) (masherytypes.MasheryErrorMessage, error)
 
-	GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.RolePermission, error)
+	GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.RolePermission, bool, error)
 	SetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.RolePermission) error
 	DeleteServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier) error
 
 	// Service cache
-	GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.ServiceCache, error)
-	CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error)
-	UpdateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error)
+	GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (masherytypes.ServiceCache, bool, error)
+	CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (masherytypes.ServiceCache, error)
+	UpdateServiceCache(ctx context.Context, service masherytypes.ServiceCache) (masherytypes.ServiceCache, error)
 	DeleteServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) error
 
 	// GetServiceOAuthSecurityProfile Service OAuth
-	GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.MasheryOAuth, error)
-	CreateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error)
-	UpdateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error)
+	GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) (masherytypes.MasheryOAuth, bool, error)
+	CreateServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.MasheryOAuth) (masherytypes.MasheryOAuth, error)
+	UpdateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (masherytypes.MasheryOAuth, error)
 	DeleteServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) error
 
 	// ListOrganizations list all organizations defined
@@ -169,7 +169,7 @@ type Client interface {
 
 type PluggableClient struct {
 	schema    *ClientMethodSchema
-	transport *transport.V3Transport
+	transport *transport.HttpTransport
 }
 
 // FixedSchemeClient Fixed method scheme client that will not allow changing schema after it was created.
@@ -196,149 +196,149 @@ func (c *PluggableClient) notImplemented(meth string) error {
 
 type ClientMethodSchema struct {
 	// Public and System Domains
-	GetPublicDomains func(ctx context.Context, transport *transport.V3Transport) ([]string, error)
-	GetSystemDomains func(ctx context.Context, transport *transport.V3Transport) ([]string, error)
+	GetPublicDomains func(ctx context.Context, transport *transport.HttpTransport) ([]masherytypes.DomainAddress, error)
+	GetSystemDomains func(ctx context.Context, transport *transport.HttpTransport) ([]masherytypes.DomainAddress, error)
 
 	// Applications
-	GetApplicationContext       func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.V3Transport) (*masherytypes.Application, error)
-	GetApplicationPackageKeys   func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.V3Transport) ([]masherytypes.PackageKey, error)
-	CountApplicationPackageKeys func(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.V3Transport) (int64, error)
-	GetFullApplication          func(ctx context.Context, id masherytypes.ApplicationIdentifier, c *transport.V3Transport) (*masherytypes.Application, error)
-	CreateApplication           func(ctx context.Context, app masherytypes.Application, memberId masherytypes.MemberIdentifier, c *transport.V3Transport) (*masherytypes.Application, error)
-	UpdateApplication           func(ctx context.Context, app masherytypes.Application, c *transport.V3Transport) (*masherytypes.Application, error)
-	DeleteApplication           func(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.V3Transport) error
-	CountApplicationsOfMember   func(ctx context.Context, memberId masherytypes.MemberIdentifier, c *transport.V3Transport) (int64, error)
-	ListApplications            func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Application, error)
+	GetApplicationContext       func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) (masherytypes.Application, bool, error)
+	GetApplicationPackageKeys   func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) ([]masherytypes.PackageKey, error)
+	CountApplicationPackageKeys func(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.HttpTransport) (int64, error)
+	GetFullApplication          func(ctx context.Context, id masherytypes.ApplicationIdentifier, c *transport.HttpTransport) (masherytypes.Application, bool, error)
+	CreateApplication           func(ctx context.Context, memberId masherytypes.MemberIdentifier, app masherytypes.Application, c *transport.HttpTransport) (masherytypes.Application, error)
+	UpdateApplication           func(ctx context.Context, app masherytypes.Application, c *transport.HttpTransport) (masherytypes.Application, error)
+	DeleteApplication           func(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.HttpTransport) error
+	CountApplicationsOfMember   func(ctx context.Context, memberId masherytypes.MemberIdentifier, c *transport.HttpTransport) (int64, error)
+	ListApplications            func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Application, error)
 
 	// Email template set
-	GetEmailTemplateSet           func(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.EmailTemplateSet, error)
-	ListEmailTemplateSets         func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.EmailTemplateSet, error)
-	ListEmailTemplateSetsFiltered func(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.EmailTemplateSet, error)
+	GetEmailTemplateSet           func(ctx context.Context, id string, c *transport.HttpTransport) (masherytypes.EmailTemplateSet, bool, error)
+	ListEmailTemplateSets         func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.EmailTemplateSet, error)
+	ListEmailTemplateSetsFiltered func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.EmailTemplateSet, error)
 
 	// Endpoints
-	ListEndpoints             func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.AddressableV3Object, error)
-	ListEndpointsWithFullInfo func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.Endpoint, error)
-	CreateEndpoint            func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint, c *transport.V3Transport) (*masherytypes.Endpoint, error)
-	UpdateEndpoint            func(ctx context.Context, endpoint masherytypes.Endpoint, c *transport.V3Transport) (*masherytypes.Endpoint, error)
-	GetEndpoint               func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.V3Transport) (*masherytypes.Endpoint, error)
-	DeleteEndpoint            func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.V3Transport) error
-	CountEndpointsOf          func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) (int64, error)
+	ListEndpoints             func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.HttpTransport) ([]masherytypes.AddressableV3Object, error)
+	ListEndpointsWithFullInfo func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.HttpTransport) ([]masherytypes.Endpoint, error)
+	CreateEndpoint            func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint, c *transport.HttpTransport) (masherytypes.Endpoint, error)
+	UpdateEndpoint            func(ctx context.Context, endpoint masherytypes.Endpoint, c *transport.HttpTransport) (masherytypes.Endpoint, error)
+	GetEndpoint               func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.HttpTransport) (masherytypes.Endpoint, bool, error)
+	DeleteEndpoint            func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.HttpTransport) error
+	CountEndpointsOf          func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.HttpTransport) (int64, error)
 
 	// Endpoint Methods
-	ListEndpointMethods             func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.V3Transport) ([]masherytypes.ServiceEndpointMethod, error)
-	ListEndpointMethodsWithFullInfo func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.V3Transport) ([]masherytypes.ServiceEndpointMethod, error)
-	CreateEndpointMethod            func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methoUpsert masherytypes.ServiceEndpointMethod, c *transport.V3Transport) (*masherytypes.ServiceEndpointMethod, error)
-	UpdateEndpointMethod            func(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethod, c *transport.V3Transport) (*masherytypes.ServiceEndpointMethod, error)
-	GetEndpointMethod               func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.V3Transport) (*masherytypes.ServiceEndpointMethod, error)
-	DeleteEndpointMethod            func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.V3Transport) error
-	CountEndpointsMethodsOf         func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.V3Transport) (int64, error)
+	ListEndpointMethods             func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.HttpTransport) ([]masherytypes.AddressableV3Object, error)
+	ListEndpointMethodsWithFullInfo func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.HttpTransport) ([]masherytypes.ServiceEndpointMethod, error)
+	CreateEndpointMethod            func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methoUpsert masherytypes.ServiceEndpointMethod, c *transport.HttpTransport) (masherytypes.ServiceEndpointMethod, error)
+	UpdateEndpointMethod            func(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethod, c *transport.HttpTransport) (masherytypes.ServiceEndpointMethod, error)
+	GetEndpointMethod               func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.HttpTransport) (masherytypes.ServiceEndpointMethod, bool, error)
+	DeleteEndpointMethod            func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.HttpTransport) error
+	CountEndpointsMethodsOf         func(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, c *transport.HttpTransport) (int64, error)
 
 	// Endpoint method filters
-	ListEndpointMethodFilters             func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.V3Transport) ([]masherytypes.ServiceEndpointMethodFilter, error)
-	ListEndpointMethodFiltersWithFullInfo func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.V3Transport) ([]masherytypes.ServiceEndpointMethodFilter, error)
-	CreateEndpointMethodFilter            func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter, c *transport.V3Transport) (*masherytypes.ServiceEndpointMethodFilter, error)
-	UpdateEndpointMethodFilter            func(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethodFilter, c *transport.V3Transport) (*masherytypes.ServiceEndpointMethodFilter, error)
-	GetEndpointMethodFilter               func(ctx context.Context, ident masherytypes.ServiceEndpointMethodFilterIdentifier, c *transport.V3Transport) (*masherytypes.ServiceEndpointMethodFilter, error)
-	DeleteEndpointMethodFilter            func(ctx context.Context, dent masherytypes.ServiceEndpointMethodFilterIdentifier, c *transport.V3Transport) error
-	CountEndpointsMethodsFiltersOf        func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.V3Transport) (int64, error)
+	ListEndpointMethodFilters             func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.HttpTransport) ([]masherytypes.AddressableV3Object, error)
+	ListEndpointMethodFiltersWithFullInfo func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.HttpTransport) ([]masherytypes.ServiceEndpointMethodFilter, error)
+	CreateEndpointMethodFilter            func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter, c *transport.HttpTransport) (masherytypes.ServiceEndpointMethodFilter, error)
+	UpdateEndpointMethodFilter            func(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethodFilter, c *transport.HttpTransport) (masherytypes.ServiceEndpointMethodFilter, error)
+	GetEndpointMethodFilter               func(ctx context.Context, ident masherytypes.ServiceEndpointMethodFilterIdentifier, c *transport.HttpTransport) (masherytypes.ServiceEndpointMethodFilter, bool, error)
+	DeleteEndpointMethodFilter            func(ctx context.Context, dent masherytypes.ServiceEndpointMethodFilterIdentifier, c *transport.HttpTransport) error
+	CountEndpointsMethodsFiltersOf        func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.HttpTransport) (int64, error)
 
 	// Member
-	GetMember     func(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.V3Transport) (*masherytypes.Member, error)
-	GetFullMember func(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.V3Transport) (*masherytypes.Member, error)
-	CreateMember  func(ctx context.Context, member masherytypes.Member, c *transport.V3Transport) (*masherytypes.Member, error)
-	UpdateMember  func(ctx context.Context, member masherytypes.Member, c *transport.V3Transport) (*masherytypes.Member, error)
-	DeleteMember  func(ctx context.Context, memberId masherytypes.MemberIdentifier, c *transport.V3Transport) error
-	ListMembers   func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Member, error)
+	GetMember     func(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.HttpTransport) (masherytypes.Member, bool, error)
+	GetFullMember func(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.HttpTransport) (masherytypes.Member, bool, error)
+	CreateMember  func(ctx context.Context, member masherytypes.Member, c *transport.HttpTransport) (masherytypes.Member, error)
+	UpdateMember  func(ctx context.Context, member masherytypes.Member, c *transport.HttpTransport) (masherytypes.Member, error)
+	DeleteMember  func(ctx context.Context, memberId masherytypes.MemberIdentifier, c *transport.HttpTransport) error
+	ListMembers   func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Member, error)
 
 	// Packages
-	GetPackage            func(ctx context.Context, id masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error)
-	CreatePackage         func(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error)
-	UpdatePackage         func(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error)
-	ResetPackageOwnership func(ctx context.Context, pack masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error)
+	GetPackage            func(ctx context.Context, id masherytypes.PackageIdentifier, c *transport.HttpTransport) (masherytypes.Package, bool, error)
+	CreatePackage         func(ctx context.Context, pack masherytypes.Package, c *transport.HttpTransport) (masherytypes.Package, error)
+	UpdatePackage         func(ctx context.Context, pack masherytypes.Package, c *transport.HttpTransport) (masherytypes.Package, error)
+	ResetPackageOwnership func(ctx context.Context, pack masherytypes.PackageIdentifier, c *transport.HttpTransport) (masherytypes.Package, error)
 
-	DeletePackage func(ctx context.Context, packId masherytypes.PackageIdentifier, c *transport.V3Transport) error
-	ListPackages  func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Package, error)
+	DeletePackage func(ctx context.Context, packId masherytypes.PackageIdentifier, c *transport.HttpTransport) error
+	ListPackages  func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Package, error)
 
 	// Package plans
-	CreatePlanService       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error)
-	CheckPlanServiceExists  func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (bool, error)
-	DeletePlanService       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) error
-	CreatePlanEndpoint      func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error)
-	CheckPlanEndpointExists func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (bool, error)
-	DeletePlanEndpoint      func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) error
-	ListPlanEndpoints       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) ([]masherytypes.AddressableV3Object, error)
+	CreatePlanService       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) (masherytypes.AddressableV3Object, error)
+	CheckPlanServiceExists  func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) (bool, error)
+	DeletePlanService       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) error
+	CreatePlanEndpoint      func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.HttpTransport) (masherytypes.AddressableV3Object, error)
+	CheckPlanEndpointExists func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.HttpTransport) (bool, error)
+	DeletePlanEndpoint      func(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.HttpTransport) error
+	ListPlanEndpoints       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) ([]masherytypes.AddressableV3Object, error)
 
-	CountPlanEndpoints func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (int64, error)
-	CountPlanService   func(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.V3Transport) (int64, error)
-	GetPlan            func(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.V3Transport) (*masherytypes.Plan, error)
-	CreatePlan         func(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan, c *transport.V3Transport) (*masherytypes.Plan, error)
-	UpdatePlan         func(ctx context.Context, plan masherytypes.Plan, c *transport.V3Transport) (*masherytypes.Plan, error)
-	DeletePlan         func(ctx context.Context, dent masherytypes.PackagePlanIdentifier, c *transport.V3Transport) error
-	CountPlans         func(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.V3Transport) (int64, error)
-	ListPlans          func(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.V3Transport) ([]masherytypes.Plan, error)
-	ListPlanServices   func(ctx context.Context, dent masherytypes.PackagePlanIdentifier, c *transport.V3Transport) ([]masherytypes.Service, error)
+	CountPlanEndpoints func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) (int64, error)
+	CountPlanService   func(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.HttpTransport) (int64, error)
+	GetPlan            func(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.HttpTransport) (masherytypes.Plan, bool, error)
+	CreatePlan         func(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan, c *transport.HttpTransport) (masherytypes.Plan, error)
+	UpdatePlan         func(ctx context.Context, plan masherytypes.Plan, c *transport.HttpTransport) (masherytypes.Plan, error)
+	DeletePlan         func(ctx context.Context, dent masherytypes.PackagePlanIdentifier, c *transport.HttpTransport) error
+	CountPlans         func(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.HttpTransport) (int64, error)
+	ListPlans          func(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.HttpTransport) ([]masherytypes.Plan, error)
+	ListPlanServices   func(ctx context.Context, dent masherytypes.PackagePlanIdentifier, c *transport.HttpTransport) ([]masherytypes.Service, error)
 
 	// Plan methods
-	ListPackagePlanMethods  func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) ([]masherytypes.PackagePlanServiceEndpointMethod, error)
-	GetPackagePlanMethod    func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethod, error)
-	CreatePackagePlanMethod func(ctx context.Context, ident masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethod, error)
-	DeletePackagePlanMethod func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) error
+	ListPackagePlanMethods  func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.HttpTransport) ([]masherytypes.PackagePlanServiceEndpointMethod, error)
+	GetPackagePlanMethod    func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.HttpTransport) (masherytypes.PackagePlanServiceEndpointMethod, bool, error)
+	CreatePackagePlanMethod func(ctx context.Context, ident masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.HttpTransport) (masherytypes.PackagePlanServiceEndpointMethod, error)
+	DeletePackagePlanMethod func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.HttpTransport) error
 
 	// Plan method filter
-	GetPackagePlanMethodFilter    func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error)
-	CreatePackagePlanMethodFilter func(ctx context.Context, ident masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier, c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error)
-	DeletePackagePlanMethodFilter func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) error
+	GetPackagePlanMethodFilter    func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.HttpTransport) (masherytypes.PackagePlanServiceEndpointMethodFilter, bool, error)
+	CreatePackagePlanMethodFilter func(ctx context.Context, ident masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier, c *transport.HttpTransport) (masherytypes.PackagePlanServiceEndpointMethodFilter, error)
+	DeletePackagePlanMethodFilter func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.HttpTransport) error
 
 	// Package key
-	GetPackageKey           func(ctx context.Context, id masherytypes.PackageKeyIdentifier, c *transport.V3Transport) (*masherytypes.PackageKey, error)
-	CreatePackageKey        func(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey, c *transport.V3Transport) (*masherytypes.PackageKey, error)
-	UpdatePackageKey        func(ctx context.Context, packageKey masherytypes.PackageKey, c *transport.V3Transport) (*masherytypes.PackageKey, error)
-	DeletePackageKey        func(ctx context.Context, keyId masherytypes.PackageKeyIdentifier, c *transport.V3Transport) error
-	ListPackageKeysFiltered func(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.PackageKey, error)
-	ListPackageKeys         func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.PackageKey, error)
+	GetPackageKey           func(ctx context.Context, id masherytypes.PackageKeyIdentifier, c *transport.HttpTransport) (masherytypes.PackageKey, bool, error)
+	CreatePackageKey        func(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey, c *transport.HttpTransport) (masherytypes.PackageKey, error)
+	UpdatePackageKey        func(ctx context.Context, packageKey masherytypes.PackageKey, c *transport.HttpTransport) (masherytypes.PackageKey, error)
+	DeletePackageKey        func(ctx context.Context, keyId masherytypes.PackageKeyIdentifier, c *transport.HttpTransport) error
+	ListPackageKeysFiltered func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.PackageKey, error)
+	ListPackageKeys         func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.PackageKey, error)
 
 	// Roles
-	GetRole           func(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.Role, error)
-	ListRoles         func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Role, error)
-	ListRolesFiltered func(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.Role, error)
+	GetRole           func(ctx context.Context, id string, c *transport.HttpTransport) (masherytypes.Role, bool, error)
+	ListRoles         func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Role, error)
+	ListRolesFiltered func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.Role, error)
 
 	// Services
-	GetService           func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.Service, error)
-	CreateService        func(ctx context.Context, service masherytypes.Service, c *transport.V3Transport) (*masherytypes.Service, error)
-	UpdateService        func(ctx context.Context, service masherytypes.Service, c *transport.V3Transport) (*masherytypes.Service, error)
-	DeleteService        func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) error
-	ListServicesFiltered func(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.Service, error)
-	ListServices         func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Service, error)
-	CountServices        func(ctx context.Context, params map[string]string, c *transport.V3Transport) (int64, error)
+	GetService           func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.HttpTransport) (masherytypes.Service, bool, error)
+	CreateService        func(ctx context.Context, service masherytypes.Service, c *transport.HttpTransport) (masherytypes.Service, error)
+	UpdateService        func(ctx context.Context, service masherytypes.Service, c *transport.HttpTransport) (masherytypes.Service, error)
+	DeleteService        func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.HttpTransport) error
+	ListServicesFiltered func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.Service, error)
+	ListServices         func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Service, error)
+	CountServices        func(ctx context.Context, params map[string]string, c *transport.HttpTransport) (int64, error)
 
-	ListErrorSets         func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs url.Values, c *transport.V3Transport) ([]masherytypes.ErrorSet, error)
-	GetErrorSet           func(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *transport.V3Transport) (*masherytypes.ErrorSet, error)
-	CreateErrorSet        func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet, c *transport.V3Transport) (*masherytypes.ErrorSet, error)
-	UpdateErrorSet        func(ctx context.Context, setData masherytypes.ErrorSet, c *transport.V3Transport) (*masherytypes.ErrorSet, error)
-	DeleteErrorSet        func(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *transport.V3Transport) error
-	UpdateErrorSetMessage func(ctx context.Context, sident masherytypes.ErrorSetIdentifier, msg masherytypes.MasheryErrorMessage, c *transport.V3Transport) (*masherytypes.MasheryErrorMessage, error)
+	ListErrorSets         func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs map[string]string, c *transport.HttpTransport) ([]masherytypes.ErrorSet, error)
+	GetErrorSet           func(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *transport.HttpTransport) (masherytypes.ErrorSet, bool, error)
+	CreateErrorSet        func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet, c *transport.HttpTransport) (masherytypes.ErrorSet, error)
+	UpdateErrorSet        func(ctx context.Context, setData masherytypes.ErrorSet, c *transport.HttpTransport) (masherytypes.ErrorSet, error)
+	DeleteErrorSet        func(ctx context.Context, ident masherytypes.ErrorSetIdentifier, c *transport.HttpTransport) error
+	UpdateErrorSetMessage func(ctx context.Context, msg masherytypes.MasheryErrorMessage, c *transport.HttpTransport) (masherytypes.MasheryErrorMessage, error)
 
-	GetServiceRoles    func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.RolePermission, error)
-	SetServiceRoles    func(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.RolePermission, c *transport.V3Transport) error
-	DeleteServiceRoles func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error
+	GetServiceRoles    func(ctx context.Context, serviceId masherytypes.ServiceIdentifier, c *transport.HttpTransport) ([]masherytypes.RolePermission, bool, error)
+	SetServiceRoles    func(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.RolePermission, c *transport.HttpTransport) error
+	DeleteServiceRoles func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.HttpTransport) error
 
 	// Service cache
-	GetServiceCache    func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
-	CreateServiceCache func(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
-	UpdateServiceCache func(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error)
-	DeleteServiceCache func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error
+	GetServiceCache    func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.HttpTransport) (masherytypes.ServiceCache, bool, error)
+	CreateServiceCache func(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.HttpTransport) (masherytypes.ServiceCache, error)
+	UpdateServiceCache func(ctx context.Context, service masherytypes.ServiceCache, c *transport.HttpTransport) (masherytypes.ServiceCache, error)
+	DeleteServiceCache func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.HttpTransport) error
 
 	// Service OAuth
-	GetServiceOAuthSecurityProfile    func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
-	CreateServiceOAuthSecurityProfile func(ctx context.Context, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
-	UpdateServiceOAuthSecurityProfile func(ctx context.Context, service masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error)
-	DeleteServiceOAuthSecurityProfile func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error
+	GetServiceOAuthSecurityProfile    func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.HttpTransport) (masherytypes.MasheryOAuth, bool, error)
+	CreateServiceOAuthSecurityProfile func(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.MasheryOAuth, c *transport.HttpTransport) (masherytypes.MasheryOAuth, error)
+	UpdateServiceOAuthSecurityProfile func(ctx context.Context, service masherytypes.MasheryOAuth, c *transport.HttpTransport) (masherytypes.MasheryOAuth, error)
+	DeleteServiceOAuthSecurityProfile func(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.HttpTransport) error
 
-	ListOrganizations         func(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Organization, error)
-	ListOrganizationsFiltered func(ctx context.Context, qs map[string]string, c *transport.V3Transport) ([]masherytypes.Organization, error)
+	ListOrganizations         func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Organization, error)
+	ListOrganizationsFiltered func(ctx context.Context, qs map[string]string, c *transport.HttpTransport) ([]masherytypes.Organization, error)
 }
 
-func (c *PluggableClient) ListErrorSets(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs url.Values) ([]masherytypes.ErrorSet, error) {
+func (c *PluggableClient) ListErrorSets(ctx context.Context, serviceId masherytypes.ServiceIdentifier, qs map[string]string) ([]masherytypes.ErrorSet, error) {
 	if c.schema.ListErrorSets != nil {
 		return c.schema.ListErrorSets(ctx, serviceId, qs, c.transport)
 	} else {
@@ -346,27 +346,27 @@ func (c *PluggableClient) ListErrorSets(ctx context.Context, serviceId masheryty
 	}
 }
 
-func (c *PluggableClient) GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) (*masherytypes.ErrorSet, error) {
+func (c *PluggableClient) GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) (masherytypes.ErrorSet, bool, error) {
 	if c.schema.GetErrorSet != nil {
 		return c.schema.GetErrorSet(ctx, ident, c.transport)
 	} else {
-		return nil, c.notImplemented("GetErrorSet")
+		return masherytypes.ErrorSet{}, false, c.notImplemented("GetErrorSet")
 	}
 }
 
-func (c *PluggableClient) CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (*masherytypes.ErrorSet, error) {
+func (c *PluggableClient) CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (masherytypes.ErrorSet, error) {
 	if c.schema.CreateErrorSet != nil {
 		return c.schema.CreateErrorSet(ctx, serviceId, set, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateErrorSet")
+		return masherytypes.ErrorSet{}, c.notImplemented("CreateErrorSet")
 	}
 }
 
-func (c *PluggableClient) UpdateErrorSet(ctx context.Context, setData masherytypes.ErrorSet) (*masherytypes.ErrorSet, error) {
+func (c *PluggableClient) UpdateErrorSet(ctx context.Context, setData masherytypes.ErrorSet) (masherytypes.ErrorSet, error) {
 	if c.schema.UpdateErrorSet != nil {
 		return c.schema.UpdateErrorSet(ctx, setData, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateErrorSet")
+		return masherytypes.ErrorSet{}, c.notImplemented("UpdateErrorSet")
 	}
 }
 
@@ -378,19 +378,19 @@ func (c *PluggableClient) DeleteErrorSet(ctx context.Context, ident masherytypes
 	}
 }
 
-func (c *PluggableClient) UpdateErrorSetMessage(ctx context.Context, ident masherytypes.ErrorSetIdentifier, msg masherytypes.MasheryErrorMessage) (*masherytypes.MasheryErrorMessage, error) {
+func (c *PluggableClient) UpdateErrorSetMessage(ctx context.Context, msg masherytypes.MasheryErrorMessage) (masherytypes.MasheryErrorMessage, error) {
 	if c.schema.UpdateErrorSetMessage != nil {
-		return c.schema.UpdateErrorSetMessage(ctx, ident, msg, c.transport)
+		return c.schema.UpdateErrorSetMessage(ctx, msg, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateErrorSetMessage")
+		return masherytypes.MasheryErrorMessage{}, c.notImplemented("UpdateErrorSetMessage")
 	}
 }
 
-func (c *PluggableClient) GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.RolePermission, error) {
+func (c *PluggableClient) GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.RolePermission, bool, error) {
 	if c.schema.GetServiceRoles != nil {
 		return c.schema.GetServiceRoles(ctx, serviceId, c.transport)
 	} else {
-		return []masherytypes.RolePermission{}, c.notImplemented("GetServiceRoles")
+		return []masherytypes.RolePermission{}, false, c.notImplemented("GetServiceRoles")
 	}
 }
 
@@ -409,27 +409,27 @@ func (c *PluggableClient) DeleteServiceRoles(ctx context.Context, serviceId mash
 	}
 }
 
-func (c *PluggableClient) GetPublicDomains(ctx context.Context) ([]string, error) {
+func (c *PluggableClient) GetPublicDomains(ctx context.Context) ([]masherytypes.DomainAddress, error) {
 	if c.schema.GetPublicDomains != nil {
 		return c.schema.GetPublicDomains(ctx, c.transport)
 	} else {
-		return []string{}, c.notImplemented("GetPublicDomains")
+		return []masherytypes.DomainAddress{}, c.notImplemented("GetPublicDomains")
 	}
 }
 
-func (c *PluggableClient) GetSystemDomains(ctx context.Context) ([]string, error) {
+func (c *PluggableClient) GetSystemDomains(ctx context.Context) ([]masherytypes.DomainAddress, error) {
 	if c.schema.GetSystemDomains != nil {
 		return c.schema.GetSystemDomains(ctx, c.transport)
 	} else {
-		return []string{}, c.notImplemented("GetSystemDomains")
+		return []masherytypes.DomainAddress{}, c.notImplemented("GetSystemDomains")
 	}
 }
 
-func (c *PluggableClient) GetApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier) (*masherytypes.Application, error) {
+func (c *PluggableClient) GetApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier) (masherytypes.Application, bool, error) {
 	if c.schema.GetApplicationContext != nil {
 		return c.schema.GetApplicationContext(ctx, appId, c.transport)
 	} else {
-		return nil, c.notImplemented("GetApplication")
+		return masherytypes.Application{}, false, c.notImplemented("GetApplication")
 	}
 }
 
@@ -449,27 +449,27 @@ func (c *PluggableClient) CountApplicationPackageKeys(ctx context.Context, appId
 	}
 }
 
-func (c *PluggableClient) GetFullApplication(ctx context.Context, id masherytypes.ApplicationIdentifier) (*masherytypes.Application, error) {
+func (c *PluggableClient) GetFullApplication(ctx context.Context, id masherytypes.ApplicationIdentifier) (masherytypes.Application, bool, error) {
 	if c.schema.GetFullApplication != nil {
 		return c.schema.GetFullApplication(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetFullApplication")
+		return masherytypes.Application{}, false, c.notImplemented("GetFullApplication")
 	}
 }
 
-func (c *PluggableClient) CreateApplication(ctx context.Context, app masherytypes.Application, memberId masherytypes.MemberIdentifier) (*masherytypes.Application, error) {
+func (c *PluggableClient) CreateApplication(ctx context.Context, memberId masherytypes.MemberIdentifier, app masherytypes.Application) (masherytypes.Application, error) {
 	if c.schema.CreateApplication != nil {
-		return c.schema.CreateApplication(ctx, app, memberId, c.transport)
+		return c.schema.CreateApplication(ctx, memberId, app, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateApplication")
+		return masherytypes.Application{}, c.notImplemented("CreateApplication")
 	}
 }
 
-func (c *PluggableClient) UpdateApplication(ctx context.Context, app masherytypes.Application) (*masherytypes.Application, error) {
+func (c *PluggableClient) UpdateApplication(ctx context.Context, app masherytypes.Application) (masherytypes.Application, error) {
 	if c.schema.UpdateApplication != nil {
 		return c.schema.UpdateApplication(ctx, app, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateApplication")
+		return masherytypes.Application{}, c.notImplemented("UpdateApplication")
 	}
 }
 
@@ -501,11 +501,11 @@ func (c *PluggableClient) ListApplications(ctx context.Context) ([]masherytypes.
 // Email template set
 // -----------------------------------------------------------------------------------------------------------------
 
-func (c *PluggableClient) GetEmailTemplateSet(ctx context.Context, id string) (*masherytypes.EmailTemplateSet, error) {
+func (c *PluggableClient) GetEmailTemplateSet(ctx context.Context, id string) (masherytypes.EmailTemplateSet, bool, error) {
 	if c.schema.GetEmailTemplateSet != nil {
 		return c.schema.GetEmailTemplateSet(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetEmailTemplateSet")
+		return masherytypes.EmailTemplateSet{}, false, c.notImplemented("GetEmailTemplateSet")
 	}
 }
 
@@ -517,9 +517,9 @@ func (c *PluggableClient) ListEmailTemplateSets(ctx context.Context) ([]masheryt
 	}
 }
 
-func (c *PluggableClient) ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.EmailTemplateSet, error) {
+func (c *PluggableClient) ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string) ([]masherytypes.EmailTemplateSet, error) {
 	if c.schema.ListEmailTemplateSetsFiltered != nil {
-		return c.schema.ListEmailTemplateSetsFiltered(ctx, params, fields, c.transport)
+		return c.schema.ListEmailTemplateSetsFiltered(ctx, params, c.transport)
 	} else {
 		return nil, c.notImplemented("ListEmailTemplateSetsFiltered")
 	}
@@ -545,27 +545,27 @@ func (c *PluggableClient) ListEndpointsWithFullInfo(ctx context.Context, service
 	}
 }
 
-func (c *PluggableClient) CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint) (*masherytypes.Endpoint, error) {
+func (c *PluggableClient) CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint) (masherytypes.Endpoint, error) {
 	if c.schema.CreateEndpoint != nil {
 		return c.schema.CreateEndpoint(ctx, serviceId, endp, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateEndpoint")
+		return masherytypes.Endpoint{}, c.notImplemented("CreateEndpoint")
 	}
 }
 
-func (c *PluggableClient) UpdateEndpoint(ctx context.Context, endp masherytypes.Endpoint) (*masherytypes.Endpoint, error) {
+func (c *PluggableClient) UpdateEndpoint(ctx context.Context, endp masherytypes.Endpoint) (masherytypes.Endpoint, error) {
 	if c.schema.UpdateEndpoint != nil {
 		return c.schema.UpdateEndpoint(ctx, endp, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateEndpoint")
+		return masherytypes.Endpoint{}, c.notImplemented("UpdateEndpoint")
 	}
 }
 
-func (c *PluggableClient) GetEndpoint(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) (*masherytypes.Endpoint, error) {
+func (c *PluggableClient) GetEndpoint(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) (masherytypes.Endpoint, bool, error) {
 	if c.schema.GetEndpoint != nil {
 		return c.schema.GetEndpoint(ctx, ident, c.transport)
 	} else {
-		return nil, c.notImplemented("GetEndpoint")
+		return masherytypes.Endpoint{}, false, c.notImplemented("GetEndpoint")
 	}
 }
 
@@ -588,11 +588,11 @@ func (c *PluggableClient) CountEndpointsOf(ctx context.Context, serviceId masher
 // -------------------------------------
 // Endpoint methods
 
-func (c *PluggableClient) ListEndpointMethods(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) ([]masherytypes.ServiceEndpointMethod, error) {
+func (c *PluggableClient) ListEndpointMethods(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) ([]masherytypes.AddressableV3Object, error) {
 	if c.schema.ListEndpointMethods != nil {
 		return c.schema.ListEndpointMethods(ctx, ident, c.transport)
 	} else {
-		return []masherytypes.ServiceEndpointMethod{}, c.notImplemented("ListEndpointMethods")
+		return []masherytypes.AddressableV3Object{}, c.notImplemented("ListEndpointMethods")
 	}
 }
 
@@ -604,27 +604,27 @@ func (c *PluggableClient) ListEndpointMethodsWithFullInfo(ctx context.Context, i
 	}
 }
 
-func (c *PluggableClient) CreateEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methoUpsert masherytypes.ServiceEndpointMethod) (*masherytypes.ServiceEndpointMethod, error) {
+func (c *PluggableClient) CreateEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methoUpsert masherytypes.ServiceEndpointMethod) (masherytypes.ServiceEndpointMethod, error) {
 	if c.schema.CreateEndpointMethod != nil {
 		return c.schema.CreateEndpointMethod(ctx, ident, methoUpsert, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateEndpointMethod")
+		return masherytypes.ServiceEndpointMethod{}, c.notImplemented("CreateEndpointMethod")
 	}
 }
 
-func (c *PluggableClient) UpdateEndpointMethod(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethod) (*masherytypes.ServiceEndpointMethod, error) {
+func (c *PluggableClient) UpdateEndpointMethod(ctx context.Context, methUpsert masherytypes.ServiceEndpointMethod) (masherytypes.ServiceEndpointMethod, error) {
 	if c.schema.UpdateEndpointMethod != nil {
 		return c.schema.UpdateEndpointMethod(ctx, methUpsert, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateEndpointMethod")
+		return masherytypes.ServiceEndpointMethod{}, c.notImplemented("UpdateEndpointMethod")
 	}
 }
 
-func (c *PluggableClient) GetEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) (*masherytypes.ServiceEndpointMethod, error) {
+func (c *PluggableClient) GetEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) (masherytypes.ServiceEndpointMethod, bool, error) {
 	if c.schema.GetEndpointMethod != nil {
 		return c.schema.GetEndpointMethod(ctx, ident, c.transport)
 	} else {
-		return nil, c.notImplemented("GetEndpointMethod")
+		return masherytypes.ServiceEndpointMethod{}, false, c.notImplemented("GetEndpointMethod")
 	}
 }
 
@@ -647,7 +647,7 @@ func (c *PluggableClient) CountEndpointsMethodsOf(ctx context.Context, ident mas
 // -----------------------------------------------------------------------------------
 // Endpoint method filters.
 
-func (c *PluggableClient) ListEndpointMethodFilters(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) ([]masherytypes.ServiceEndpointMethodFilter, error) {
+func (c *PluggableClient) ListEndpointMethodFilters(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier) ([]masherytypes.AddressableV3Object, error) {
 	if c.schema.ListEndpointMethodFilters != nil {
 		return c.schema.ListEndpointMethodFilters(ctx, ident, c.transport)
 	} else {
@@ -663,27 +663,27 @@ func (c *PluggableClient) ListEndpointMethodFiltersWithFullInfo(ctx context.Cont
 	}
 }
 
-func (c *PluggableClient) CreateEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter) (*masherytypes.ServiceEndpointMethodFilter, error) {
+func (c *PluggableClient) CreateEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter) (masherytypes.ServiceEndpointMethodFilter, error) {
 	if c.schema.CreateEndpointMethodFilter != nil {
 		return c.schema.CreateEndpointMethodFilter(ctx, ident, filterUpsert, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateEndpointMethodFilter")
+		return masherytypes.ServiceEndpointMethodFilter{}, c.notImplemented("CreateEndpointMethodFilter")
 	}
 }
 
-func (c *PluggableClient) UpdateEndpointMethodFilter(ctx context.Context, filterUpsert masherytypes.ServiceEndpointMethodFilter) (*masherytypes.ServiceEndpointMethodFilter, error) {
+func (c *PluggableClient) UpdateEndpointMethodFilter(ctx context.Context, filterUpsert masherytypes.ServiceEndpointMethodFilter) (masherytypes.ServiceEndpointMethodFilter, error) {
 	if c.schema.UpdateEndpointMethodFilter != nil {
 		return c.schema.UpdateEndpointMethodFilter(ctx, filterUpsert, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateEndpointMethodFilter")
+		return masherytypes.ServiceEndpointMethodFilter{}, c.notImplemented("UpdateEndpointMethodFilter")
 	}
 }
 
-func (c *PluggableClient) GetEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodFilterIdentifier) (*masherytypes.ServiceEndpointMethodFilter, error) {
+func (c *PluggableClient) GetEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodFilterIdentifier) (masherytypes.ServiceEndpointMethodFilter, bool, error) {
 	if c.schema.GetEndpointMethodFilter != nil {
 		return c.schema.GetEndpointMethodFilter(ctx, ident, c.transport)
 	} else {
-		return nil, c.notImplemented("GetEndpointMethodFilter")
+		return masherytypes.ServiceEndpointMethodFilter{}, false, c.notImplemented("GetEndpointMethodFilter")
 	}
 }
 
@@ -703,35 +703,35 @@ func (c *PluggableClient) CountEndpointsMethodsFiltersOf(ctx context.Context, id
 	}
 }
 
-func (c *PluggableClient) GetMember(ctx context.Context, id masherytypes.MemberIdentifier) (*masherytypes.Member, error) {
+func (c *PluggableClient) GetMember(ctx context.Context, id masherytypes.MemberIdentifier) (masherytypes.Member, bool, error) {
 	if c.schema.GetMember != nil {
 		return c.schema.GetMember(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetMember")
+		return masherytypes.Member{}, false, c.notImplemented("GetMember")
 	}
 }
 
-func (c *PluggableClient) GetFullMember(ctx context.Context, id masherytypes.MemberIdentifier) (*masherytypes.Member, error) {
+func (c *PluggableClient) GetFullMember(ctx context.Context, id masherytypes.MemberIdentifier) (masherytypes.Member, bool, error) {
 	if c.schema.GetFullMember != nil {
 		return c.schema.GetFullMember(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetFullMember")
+		return masherytypes.Member{}, false, c.notImplemented("GetFullMember")
 	}
 }
 
-func (c *PluggableClient) CreateMember(ctx context.Context, member masherytypes.Member) (*masherytypes.Member, error) {
+func (c *PluggableClient) CreateMember(ctx context.Context, member masherytypes.Member) (masherytypes.Member, error) {
 	if c.schema.CreateMember != nil {
 		return c.schema.CreateMember(ctx, member, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateMember")
+		return masherytypes.Member{}, c.notImplemented("CreateMember")
 	}
 }
 
-func (c *PluggableClient) UpdateMember(ctx context.Context, member masherytypes.Member) (*masherytypes.Member, error) {
+func (c *PluggableClient) UpdateMember(ctx context.Context, member masherytypes.Member) (masherytypes.Member, error) {
 	if c.schema.UpdateMember != nil {
 		return c.schema.UpdateMember(ctx, member, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateMember")
+		return masherytypes.Member{}, c.notImplemented("UpdateMember")
 	}
 }
 
@@ -754,35 +754,35 @@ func (c *PluggableClient) ListMembers(ctx context.Context) ([]masherytypes.Membe
 // ---------------------------------------------
 // Packages
 
-func (c *PluggableClient) GetPackage(ctx context.Context, id masherytypes.PackageIdentifier) (*masherytypes.Package, error) {
+func (c *PluggableClient) GetPackage(ctx context.Context, id masherytypes.PackageIdentifier) (masherytypes.Package, bool, error) {
 	if c.schema.GetPackage != nil {
 		return c.schema.GetPackage(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetPackage")
+		return masherytypes.Package{}, false, c.notImplemented("GetPackage")
 	}
 }
 
-func (c *PluggableClient) CreatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error) {
+func (c *PluggableClient) CreatePackage(ctx context.Context, pack masherytypes.Package) (masherytypes.Package, error) {
 	if c.schema.CreatePackage != nil {
 		return c.schema.CreatePackage(ctx, pack, c.transport)
 	} else {
-		return nil, c.notImplemented("CreatePackage")
+		return masherytypes.Package{}, c.notImplemented("CreatePackage")
 	}
 }
 
-func (c *PluggableClient) UpdatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error) {
+func (c *PluggableClient) UpdatePackage(ctx context.Context, pack masherytypes.Package) (masherytypes.Package, error) {
 	if c.schema.UpdatePackage != nil {
 		return c.schema.UpdatePackage(ctx, pack, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdatePackage")
+		return masherytypes.Package{}, c.notImplemented("UpdatePackage")
 	}
 }
 
-func (c *PluggableClient) ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier) (*masherytypes.Package, error) {
+func (c *PluggableClient) ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier) (masherytypes.Package, error) {
 	if c.schema.UpdatePackage != nil {
 		return c.schema.ResetPackageOwnership(ctx, pack, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdatePackage")
+		return masherytypes.Package{}, c.notImplemented("UpdatePackage")
 	}
 }
 
@@ -805,11 +805,11 @@ func (c *PluggableClient) ListPackages(ctx context.Context) ([]masherytypes.Pack
 // --------------------------------------
 // Package plans
 
-func (c *PluggableClient) CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (*masherytypes.AddressableV3Object, error) {
+func (c *PluggableClient) CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (masherytypes.AddressableV3Object, error) {
 	if c.schema.CreatePlanService != nil {
 		return c.schema.CreatePlanService(ctx, planService, c.transport)
 	} else {
-		return nil, c.notImplemented("CreatePlanService")
+		return masherytypes.AddressableV3Object{}, c.notImplemented("CreatePlanService")
 	}
 }
 
@@ -829,11 +829,11 @@ func (c *PluggableClient) DeletePlanService(ctx context.Context, planService mas
 	}
 }
 
-func (c *PluggableClient) CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (*masherytypes.AddressableV3Object, error) {
+func (c *PluggableClient) CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (masherytypes.AddressableV3Object, error) {
 	if c.schema.CreatePlanEndpoint != nil {
 		return c.schema.CreatePlanEndpoint(ctx, planEndp, c.transport)
 	} else {
-		return nil, c.notImplemented("CreatePlanEndpoint")
+		return masherytypes.AddressableV3Object{}, c.notImplemented("CreatePlanEndpoint")
 	}
 }
 
@@ -893,27 +893,27 @@ func (c *PluggableClient) DeletePlan(ctx context.Context, ident masherytypes.Pac
 	}
 }
 
-func (c *PluggableClient) UpdatePlan(ctx context.Context, plan masherytypes.Plan) (*masherytypes.Plan, error) {
+func (c *PluggableClient) UpdatePlan(ctx context.Context, plan masherytypes.Plan) (masherytypes.Plan, error) {
 	if c.schema.UpdatePlan != nil {
 		return c.schema.UpdatePlan(ctx, plan, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdatePlan")
+		return masherytypes.Plan{}, c.notImplemented("UpdatePlan")
 	}
 }
 
-func (c *PluggableClient) CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan) (*masherytypes.Plan, error) {
+func (c *PluggableClient) CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan) (masherytypes.Plan, error) {
 	if c.schema.CreatePlan != nil {
 		return c.schema.CreatePlan(ctx, packageId, plan, c.transport)
 	} else {
-		return nil, c.notImplemented("CreatePlan")
+		return masherytypes.Plan{}, c.notImplemented("CreatePlan")
 	}
 }
 
-func (c *PluggableClient) GetPlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier) (*masherytypes.Plan, error) {
+func (c *PluggableClient) GetPlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier) (masherytypes.Plan, bool, error) {
 	if c.schema.GetPlan != nil {
 		return c.schema.GetPlan(ctx, ident, c.transport)
 	} else {
-		return nil, c.notImplemented("GetPlan")
+		return masherytypes.Plan{}, false, c.notImplemented("GetPlan")
 	}
 }
 
@@ -944,19 +944,19 @@ func (c *PluggableClient) ListPackagePlanMethods(ctx context.Context, id mashery
 	}
 }
 
-func (c *PluggableClient) GetPackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*masherytypes.PackagePlanServiceEndpointMethod, error) {
+func (c *PluggableClient) GetPackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (masherytypes.PackagePlanServiceEndpointMethod, bool, error) {
 	if c.schema.GetPackagePlanMethod != nil {
 		return c.schema.GetPackagePlanMethod(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetPackagePlanMethod")
+		return masherytypes.PackagePlanServiceEndpointMethod{}, false, c.notImplemented("GetPackagePlanMethod")
 	}
 }
 
-func (c *PluggableClient) CreatePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*masherytypes.PackagePlanServiceEndpointMethod, error) {
+func (c *PluggableClient) CreatePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (masherytypes.PackagePlanServiceEndpointMethod, error) {
 	if c.schema.CreatePackagePlanMethod != nil {
 		return c.schema.CreatePackagePlanMethod(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("CreatePackagePlanServiceEndpointMethod")
+		return masherytypes.PackagePlanServiceEndpointMethod{}, c.notImplemented("CreatePackagePlanServiceEndpointMethod")
 	}
 }
 
@@ -971,19 +971,19 @@ func (c *PluggableClient) DeletePackagePlanMethod(ctx context.Context, id masher
 // ----------------------------------------
 // Plan method filter
 
-func (c *PluggableClient) GetPackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
+func (c *PluggableClient) GetPackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (masherytypes.PackagePlanServiceEndpointMethodFilter, bool, error) {
 	if c.schema.GetPackagePlanMethodFilter != nil {
 		return c.schema.GetPackagePlanMethodFilter(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetPackagePlanMethodFilter")
+		return masherytypes.PackagePlanServiceEndpointMethodFilter{}, false, c.notImplemented("GetPackagePlanMethodFilter")
 	}
 }
 
-func (c *PluggableClient) CreatePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
+func (c *PluggableClient) CreatePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier) (masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
 	if c.schema.CreatePackagePlanMethodFilter != nil {
 		return c.schema.CreatePackagePlanMethodFilter(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("CreatePackagePlanMethodFilter")
+		return masherytypes.PackagePlanServiceEndpointMethodFilter{}, c.notImplemented("CreatePackagePlanMethodFilter")
 	}
 }
 
@@ -998,27 +998,27 @@ func (c *PluggableClient) DeletePackagePlanMethodFilter(ctx context.Context, id 
 // ------------------------------------------------------------
 // Package key
 
-func (c *PluggableClient) GetPackageKey(ctx context.Context, id masherytypes.PackageKeyIdentifier) (*masherytypes.PackageKey, error) {
+func (c *PluggableClient) GetPackageKey(ctx context.Context, id masherytypes.PackageKeyIdentifier) (masherytypes.PackageKey, bool, error) {
 	if c.schema.GetPackageKey != nil {
 		return c.schema.GetPackageKey(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetPackageKey")
+		return masherytypes.PackageKey{}, false, c.notImplemented("GetPackageKey")
 	}
 }
 
-func (c *PluggableClient) CreatePackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey) (*masherytypes.PackageKey, error) {
+func (c *PluggableClient) CreatePackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error) {
 	if c.schema.CreatePackageKey != nil {
 		return c.schema.CreatePackageKey(ctx, appId, packageKey, c.transport)
 	} else {
-		return nil, c.notImplemented("CreatePackageKey")
+		return masherytypes.PackageKey{}, c.notImplemented("CreatePackageKey")
 	}
 }
 
-func (c *PluggableClient) UpdatePackageKey(ctx context.Context, packageKey masherytypes.PackageKey) (*masherytypes.PackageKey, error) {
+func (c *PluggableClient) UpdatePackageKey(ctx context.Context, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error) {
 	if c.schema.UpdatePackageKey != nil {
 		return c.schema.UpdatePackageKey(ctx, packageKey, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdatePackageKey")
+		return masherytypes.PackageKey{}, c.notImplemented("UpdatePackageKey")
 	}
 }
 
@@ -1030,9 +1030,9 @@ func (c *PluggableClient) DeletePackageKey(ctx context.Context, keyId masherytyp
 	}
 }
 
-func (c *PluggableClient) ListPackageKeysFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.PackageKey, error) {
+func (c *PluggableClient) ListPackageKeysFiltered(ctx context.Context, params map[string]string) ([]masherytypes.PackageKey, error) {
 	if c.schema.ListPackageKeysFiltered != nil {
-		return c.schema.ListPackageKeysFiltered(ctx, params, fields, c.transport)
+		return c.schema.ListPackageKeysFiltered(ctx, params, c.transport)
 	} else {
 		return []masherytypes.PackageKey{}, c.notImplemented("ListPackageKeysFiltered")
 	}
@@ -1049,11 +1049,11 @@ func (c *PluggableClient) ListPackageKeys(ctx context.Context) ([]masherytypes.P
 // ---------------------
 // Roles
 
-func (c *PluggableClient) GetRole(ctx context.Context, id string) (*masherytypes.Role, error) {
+func (c *PluggableClient) GetRole(ctx context.Context, id string) (masherytypes.Role, bool, error) {
 	if c.schema.GetRole != nil {
 		return c.schema.GetRole(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetRole")
+		return masherytypes.Role{}, false, c.notImplemented("GetRole")
 	}
 }
 
@@ -1065,9 +1065,9 @@ func (c *PluggableClient) ListRoles(ctx context.Context) ([]masherytypes.Role, e
 	}
 }
 
-func (c *PluggableClient) ListRolesFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.Role, error) {
+func (c *PluggableClient) ListRolesFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Role, error) {
 	if c.schema.ListRolesFiltered != nil {
-		return c.schema.ListRolesFiltered(ctx, params, fields, c.transport)
+		return c.schema.ListRolesFiltered(ctx, params, c.transport)
 	} else {
 		return []masherytypes.Role{}, c.notImplemented("ListRolesFiltered")
 	}
@@ -1076,27 +1076,27 @@ func (c *PluggableClient) ListRolesFiltered(ctx context.Context, params map[stri
 // ------------------------------
 // Service
 
-func (c *PluggableClient) GetService(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.Service, error) {
+func (c *PluggableClient) GetService(ctx context.Context, id masherytypes.ServiceIdentifier) (masherytypes.Service, bool, error) {
 	if c.schema.GetService != nil {
 		return c.schema.GetService(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetService")
+		return masherytypes.Service{}, false, c.notImplemented("GetService")
 	}
 }
 
-func (c *PluggableClient) CreateService(ctx context.Context, service masherytypes.Service) (*masherytypes.Service, error) {
+func (c *PluggableClient) CreateService(ctx context.Context, service masherytypes.Service) (masherytypes.Service, error) {
 	if c.schema.CreateService != nil {
 		return c.schema.CreateService(ctx, service, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateService")
+		return masherytypes.Service{}, c.notImplemented("CreateService")
 	}
 }
 
-func (c *PluggableClient) UpdateService(ctx context.Context, service masherytypes.Service) (*masherytypes.Service, error) {
+func (c *PluggableClient) UpdateService(ctx context.Context, service masherytypes.Service) (masherytypes.Service, error) {
 	if c.schema.UpdateService != nil {
 		return c.schema.UpdateService(ctx, service, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateService")
+		return masherytypes.Service{}, c.notImplemented("UpdateService")
 	}
 }
 
@@ -1108,9 +1108,9 @@ func (c *PluggableClient) DeleteService(ctx context.Context, serviceId masheryty
 	}
 }
 
-func (c *PluggableClient) ListServicesFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.Service, error) {
+func (c *PluggableClient) ListServicesFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Service, error) {
 	if c.schema.ListServicesFiltered != nil {
-		return c.schema.ListServicesFiltered(ctx, params, fields, c.transport)
+		return c.schema.ListServicesFiltered(ctx, params, c.transport)
 	} else {
 		return []masherytypes.Service{}, c.notImplemented("ListServicesFiltered")
 	}
@@ -1135,27 +1135,27 @@ func (c *PluggableClient) CountServices(ctx context.Context, params map[string]s
 // --------------------------------
 // Service cache
 
-func (c *PluggableClient) GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.ServiceCache, error) {
+func (c *PluggableClient) GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (masherytypes.ServiceCache, bool, error) {
 	if c.schema.GetServiceCache != nil {
 		return c.schema.GetServiceCache(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetServiceCache")
+		return masherytypes.ServiceCache{}, false, c.notImplemented("GetServiceCache")
 	}
 }
 
-func (c *PluggableClient) CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
+func (c *PluggableClient) CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (masherytypes.ServiceCache, error) {
 	if c.schema.CreateServiceCache != nil {
 		return c.schema.CreateServiceCache(ctx, id, service, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateServiceCache")
+		return masherytypes.ServiceCache{}, c.notImplemented("CreateServiceCache")
 	}
 }
 
-func (c *PluggableClient) UpdateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
+func (c *PluggableClient) UpdateServiceCache(ctx context.Context, service masherytypes.ServiceCache) (masherytypes.ServiceCache, error) {
 	if c.schema.UpdateServiceCache != nil {
-		return c.schema.UpdateServiceCache(ctx, id, service, c.transport)
+		return c.schema.UpdateServiceCache(ctx, service, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateServiceCache")
+		return masherytypes.ServiceCache{}, c.notImplemented("UpdateServiceCache")
 	}
 }
 
@@ -1168,27 +1168,27 @@ func (c *PluggableClient) DeleteServiceCache(ctx context.Context, id masherytype
 }
 
 // Service OAtuh
-func (c *PluggableClient) GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.MasheryOAuth, error) {
+func (c *PluggableClient) GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier) (masherytypes.MasheryOAuth, bool, error) {
 	if c.schema.GetServiceOAuthSecurityProfile != nil {
 		return c.schema.GetServiceOAuthSecurityProfile(ctx, id, c.transport)
 	} else {
-		return nil, c.notImplemented("GetServiceOAuthSecurityProfile")
+		return masherytypes.MasheryOAuth{}, false, c.notImplemented("GetServiceOAuthSecurityProfile")
 	}
 }
 
-func (c *PluggableClient) CreateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
+func (c *PluggableClient) CreateServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier, oauth masherytypes.MasheryOAuth) (masherytypes.MasheryOAuth, error) {
 	if c.schema.CreateServiceOAuthSecurityProfile != nil {
-		return c.schema.CreateServiceOAuthSecurityProfile(ctx, service, c.transport)
+		return c.schema.CreateServiceOAuthSecurityProfile(ctx, id, oauth, c.transport)
 	} else {
-		return nil, c.notImplemented("CreateServiceOAuthSecurityProfile")
+		return masherytypes.MasheryOAuth{}, c.notImplemented("CreateServiceOAuthSecurityProfile")
 	}
 }
 
-func (c *PluggableClient) UpdateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
+func (c *PluggableClient) UpdateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (masherytypes.MasheryOAuth, error) {
 	if c.schema.UpdateServiceOAuthSecurityProfile != nil {
 		return c.schema.UpdateServiceOAuthSecurityProfile(ctx, service, c.transport)
 	} else {
-		return nil, c.notImplemented("UpdateServiceOAuthSecurityProfile")
+		return masherytypes.MasheryOAuth{}, c.notImplemented("UpdateServiceOAuthSecurityProfile")
 	}
 }
 

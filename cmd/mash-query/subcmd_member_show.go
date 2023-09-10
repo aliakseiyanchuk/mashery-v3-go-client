@@ -14,11 +14,13 @@ func showMemberData(ctx context.Context, cl v3client.Client, rawIds interface{})
 
 	for _, idv := range ids {
 		id := masherytypes.MemberIdentifier{MemberId: idv}
-		if srv, err := cl.GetMember(ctx, id); err == nil {
-			fmt.Printf("Member %s:", id)
-			fmt.Println()
+		if srv, exists, err := cl.GetMember(ctx, id); err == nil {
+			if exists {
+				fmt.Printf("Member %s:", id)
+				fmt.Println()
 
-			_ = jsonEncoder.Encode(&srv)
+				_ = jsonEncoder.Encode(&srv)
+			}
 		} else {
 			fmt.Printf("ERROR: Failed to retrieve member %s: %s", id, err)
 		}

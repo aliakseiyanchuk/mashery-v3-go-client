@@ -8,74 +8,104 @@ import (
 	"net/url"
 )
 
-const PackagePlanMethodFilterAppCtx = "package plan method filter"
+var packagePlanServiceEndpointMethodFilterCRUDDecorator *GenericCRUDDecorator[masherytypes.PackagePlanServiceEndpointMethodIdentifier,
+	masherytypes.PackagePlanServiceEndpointMethodIdentifier,
+	masherytypes.PackagePlanServiceEndpointMethodFilter]
 
-func packagePlanEndpointMethodFilter(id masherytypes.PackagePlanServiceEndpointMethodIdentifier) string {
-	return fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s/methods/%s/responseFilter", id.PackageId, id.PlanId, id.ServiceId, id.EndpointId, id.MethodId)
-}
+var packagePlanServiceEndpointMethodFilterCRUD *GenericCRUD[masherytypes.PackagePlanServiceEndpointMethodIdentifier,
+	masherytypes.PackagePlanServiceEndpointMethodIdentifier,
+	masherytypes.PackagePlanServiceEndpointMethodFilter,
+]
 
-// GetPackagePlanMethodFilter Retrieve the information about a package plan method.
-func GetPackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
-	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Pagination: transport.PerItem,
-		Resource:   packagePlanEndpointMethodFilter(id),
-		Query: url.Values{
-			"fields": {MasheryResponseFilterFieldsStr},
+func init() {
+	packagePlanServiceEndpointMethodFilterCRUDDecorator = &GenericCRUDDecorator[masherytypes.PackagePlanServiceEndpointMethodIdentifier,
+		masherytypes.PackagePlanServiceEndpointMethodIdentifier,
+		masherytypes.PackagePlanServiceEndpointMethodFilter]{
+
+		ValueSupplier: func() masherytypes.PackagePlanServiceEndpointMethodFilter {
+			return masherytypes.PackagePlanServiceEndpointMethodFilter{}
 		},
-		AppContext:     PackagePlanMethodFilterAppCtx,
-		ResponseParser: masherytypes.ParsePackagePlanServiceEndpointMethodFilter,
-	})
+		ValueArraySupplier: func() []masherytypes.PackagePlanServiceEndpointMethodFilter {
+			return []masherytypes.PackagePlanServiceEndpointMethodFilter{}
+		},
 
-	if err != nil {
-		return nil, err
-	} else {
-		retServ, _ := rv.(masherytypes.PackagePlanServiceEndpointMethodFilter)
-		retServ.PackagePlanServiceEndpointMethod = masherytypes.PackagePlanServiceEndpointMethodIdentifier{
-			ServiceEndpointMethodIdentifier: id.ServiceEndpointMethodIdentifier,
-			PackagePlanIdentifier:           id.PackagePlanIdentifier,
-		}
-		return &retServ, nil
+		AcceptIdentFrom: func(t1 masherytypes.PackagePlanServiceEndpointMethodFilter, t2 *masherytypes.PackagePlanServiceEndpointMethodFilter) {
+			t2.PackagePlanServiceEndpointMethod = t1.PackagePlanServiceEndpointMethod
+		},
+		AcceptObjectIdent: func(t1 masherytypes.PackagePlanServiceEndpointMethodIdentifier, t2 *masherytypes.PackagePlanServiceEndpointMethodFilter) {
+			t2.PackagePlanServiceEndpointMethod = t1
+		},
+		AcceptParentIdent: func(t1 masherytypes.PackagePlanServiceEndpointMethodIdentifier, t2 *masherytypes.PackagePlanServiceEndpointMethodFilter) {
+			t2.PackagePlanServiceEndpointMethod = t1
+		},
+
+		ResourceFor: func(id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (string, error) {
+			return fmt.Sprintf(
+					"/packages/%s/plans/%s/services/%s/endpoints/%s/methods/%s/responseFilter",
+					id.PackageId,
+					id.PlanId,
+					id.ServiceId,
+					id.EndpointId,
+					id.MethodId),
+				nil
+		},
+
+		ResourceForUpsert: func(id masherytypes.PackagePlanServiceEndpointMethodFilter) (string, error) {
+			return fmt.Sprintf(
+					"/packages/%s/plans/%s/services/%s/endpoints/%s/methods/%s/responseFilter",
+					id.PackagePlanServiceEndpointMethod.PackageId,
+					id.PackagePlanServiceEndpointMethod.PlanId,
+					id.PackagePlanServiceEndpointMethod.ServiceId,
+					id.PackagePlanServiceEndpointMethod.EndpointId,
+					id.Id),
+				nil
+		},
+
+		ResourceForParent: func(id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (string, error) {
+			return fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s/methods/%s/responseFilter",
+					id.PackageId,
+					id.PlanId,
+					id.ServiceId,
+					id.EndpointId,
+					id.MethodId),
+				nil
+		},
+
+		DefaultFields: MasheryResponseFilterFields,
+		Pagination:    transport.NotRequired,
 	}
+	packagePlanServiceEndpointMethodFilterCRUD = NewCRUD[masherytypes.PackagePlanServiceEndpointMethodIdentifier,
+		masherytypes.PackagePlanServiceEndpointMethodIdentifier,
+		masherytypes.PackagePlanServiceEndpointMethodFilter,
+	]("package plan method filter", packagePlanServiceEndpointMethodFilterCRUDDecorator)
 }
+
+const PackagePlanMethodFilterAppCtx = "package plan method filter"
 
 // CreatePackagePlanMethodFilter Create a new service cache
 func CreatePackagePlanMethodFilter(ctx context.Context,
 	ident masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier,
-	c *transport.V3Transport) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
+	c *transport.HttpTransport) (masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
 
 	upsert := masherytypes.IdReferenced{IdRef: ident.FilterId}
 
-	rawResp, err := c.CreateObject(ctx, upsert, transport.FetchSpec{
-		Pagination: transport.NotRequired,
-		Resource: packagePlanEndpointMethodFilter(masherytypes.PackagePlanServiceEndpointMethodIdentifier{
-			ServiceEndpointMethodIdentifier: ident.ServiceEndpointMethodIdentifier,
-			PackagePlanIdentifier:           ident.PackagePlanIdentifier,
-		}),
-		Query: url.Values{
+	builder := transport.ObjectExchangeSpecBuilder[masherytypes.IdReferenced, masherytypes.PackagePlanServiceEndpointMethodFilter]{}
+	builder.
+		WithBody(upsert).
+		WithValueFactory(func() masherytypes.PackagePlanServiceEndpointMethodFilter {
+			return masherytypes.PackagePlanServiceEndpointMethodFilter{}
+		}).
+		WithResource("/packages/%s/plans/%s/services/%s/endpoints/%s/methods/%s/responseFilter", ident.PackageId, ident.PlanId, ident.ServiceId, ident.EndpointId, ident.MethodId).
+		WithQuery(url.Values{
 			"fields": {MasheryResponseFilterFieldsStr},
-		},
-		AppContext:     PackagePlanMethodFilterAppCtx,
-		ResponseParser: masherytypes.ParsePackagePlanServiceEndpointMethodFilter,
-	})
+		}).
+		WithAppContext(PackagePlanMethodFilterAppCtx)
 
-	if err == nil {
-		rv, _ := rawResp.(masherytypes.PackagePlanServiceEndpointMethodFilter)
-		rv.PackagePlanServiceEndpointMethod = masherytypes.PackagePlanServiceEndpointMethodIdentifier{
-			ServiceEndpointMethodIdentifier: ident.ServiceEndpointMethodIdentifier,
-			PackagePlanIdentifier:           ident.PackagePlanIdentifier,
-		}
-
-		return &rv, nil
+	if rv, err := transport.ExchangeObject(ctx, builder.Build(), "post", c); err != nil {
+		return masherytypes.PackagePlanServiceEndpointMethodFilter{}, err
 	} else {
-		return nil, err
-	}
-}
+		rv.PackagePlanServiceEndpointMethod = ident.AsPackagePlanServiceEndpointMethodIdentifier()
 
-// DeletePackagePlanMethodFilter Create a new service.
-func DeletePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.V3Transport) error {
-	return c.DeleteObject(ctx, transport.FetchSpec{
-		Pagination: transport.NotRequired,
-		Resource:   packagePlanEndpointMethodFilter(id),
-		AppContext: PackagePlanMethodFilterAppCtx,
-	})
+		return rv, nil
+	}
 }

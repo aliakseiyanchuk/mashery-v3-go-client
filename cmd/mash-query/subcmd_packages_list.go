@@ -25,6 +25,8 @@ func listPackages(ctx context.Context, cl v3client.Client, rawArg interface{}) i
 }
 
 func listPackageArgParser() (bool, error) {
+	fmt.Printf(argAt(0))
+	fmt.Printf(argAt(1))
 	if argAt(0) == "package" && argAt(1) == "list" {
 		handler = listPackages
 		return true, nil

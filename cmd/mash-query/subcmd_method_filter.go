@@ -18,9 +18,11 @@ type ShowEndpointMethodData struct {
 func showMethodFilter(ctx context.Context, cl v3client.Client, args interface{}) int {
 	p, _ := args.(ShowEndpointMethodData)
 
-	if srv, gerr := cl.GetEndpointMethodFilter(ctx, masherytypes.ServiceEndpointMethodFilterIdentityFrom(p.serviceId, p.endpointId, p.methodId, p.filterId)); gerr == nil {
+	if srv, exists, gerr := cl.GetEndpointMethodFilter(ctx, masherytypes.ServiceEndpointMethodFilterIdentityFrom(p.serviceId, p.endpointId, p.methodId, p.filterId)); gerr == nil {
 		fmt.Println()
-		_ = jsonEncoder.Encode(&srv)
+		if exists {
+			_ = jsonEncoder.Encode(&srv)
+		}
 
 		return 0
 	} else {

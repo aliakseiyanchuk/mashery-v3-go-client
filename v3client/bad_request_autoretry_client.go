@@ -9,11 +9,12 @@ import (
 	"time"
 )
 
-type ExchangeFunc[TRequest, TResponse any] func(ctx context.Context, req TRequest, c *transport.V3Transport) (TResponse, error)
-type BiExchangeFunc[TRequest1, TRequest2, TResponse any] func(ctx context.Context, req1 TRequest1, req TRequest2, c *transport.V3Transport) (TResponse, error)
+type ExchangeFunc[TRequest, TResponse any] func(ctx context.Context, req TRequest, c *transport.HttpTransport) (TResponse, error)
+type ExchangeBoolFunc[TRequest, TResponse any] func(ctx context.Context, req TRequest, c *transport.HttpTransport) (TResponse, bool, error)
+type BiExchangeFunc[TRequest1, TRequest2, TResponse any] func(ctx context.Context, req1 TRequest1, req TRequest2, c *transport.HttpTransport) (TResponse, error)
 
 func autoRetryBadRequest[TRequest, TResponse any](rawFunc ExchangeFunc[TRequest, TResponse]) ExchangeFunc[TRequest, TResponse] {
-	return func(ctx context.Context, req TRequest, c *transport.V3Transport) (TResponse, error) {
+	return func(ctx context.Context, req TRequest, c *transport.HttpTransport) (TResponse, error) {
 		var resp TResponse
 		var err error
 
@@ -34,8 +35,53 @@ func autoRetryBadRequest[TRequest, TResponse any](rawFunc ExchangeFunc[TRequest,
 	}
 }
 
+func autoRetryBadBiRequest[TIdent, TRequest, TResponse any](rawFunc BiExchangeFunc[TIdent, TRequest, TResponse]) BiExchangeFunc[TIdent, TRequest, TResponse] {
+	return func(ctx context.Context, ident TIdent, req TRequest, c *transport.HttpTransport) (TResponse, error) {
+		var resp TResponse
+		var err error
+
+		for i := 0; i < 5; i++ {
+			if resp, err = rawFunc(ctx, ident, req, c); err != nil {
+				if we, ok := unwrapUndeterminedError(err); ok {
+					if we.Code == 400 {
+						time.Sleep(time.Second*3 + time.Duration(i*2))
+						continue
+					}
+				}
+			} else if err == nil {
+				break
+			}
+		}
+
+		return resp, err
+	}
+}
+
+func autoRetryBadGetRequest[TRequest, TResponse any](rawFunc ExchangeBoolFunc[TRequest, TResponse]) ExchangeBoolFunc[TRequest, TResponse] {
+	return func(ctx context.Context, req TRequest, c *transport.HttpTransport) (TResponse, bool, error) {
+		var resp TResponse
+		var err error
+		var exists bool
+
+		for i := 0; i < 5; i++ {
+			if resp, exists, err = rawFunc(ctx, req, c); err != nil {
+				if we, ok := unwrapUndeterminedError(err); ok {
+					if we.Code == 400 {
+						time.Sleep(time.Second*3 + time.Duration(i*2))
+						continue
+					}
+				}
+			} else if err == nil {
+				break
+			}
+		}
+
+		return resp, exists, err
+	}
+}
+
 func autoRetryBiBadRequest[TRequest1, TRequest2, TResponse any](rawFunc BiExchangeFunc[TRequest1, TRequest2, TResponse]) BiExchangeFunc[TRequest1, TRequest2, TResponse] {
-	return func(ctx context.Context, req1 TRequest1, req2 TRequest2, c *transport.V3Transport) (TResponse, error) {
+	return func(ctx context.Context, req1 TRequest1, req2 TRequest2, c *transport.HttpTransport) (TResponse, error) {
 		var resp TResponse
 		var err error
 

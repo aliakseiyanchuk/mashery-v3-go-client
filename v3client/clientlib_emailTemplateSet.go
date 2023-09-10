@@ -1,60 +1,41 @@
 package v3client
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
-	"net/url"
 )
 
-func GetEmailTemplateSet(ctx context.Context, id string, c *transport.V3Transport) (*masherytypes.EmailTemplateSet, error) {
-	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource: fmt.Sprintf("/emailTemplateSets/%s", id),
-		Query: url.Values{
-			"fields": {MasheryEmailTemplateSetFieldsStr},
-		},
-		AppContext:     "email template set",
-		ResponseParser: masherytypes.ParseMasheryEmailTemplateSet,
-	})
+var emailTemplateSetCRUDDecorator *GenericCRUDDecorator[int, string, masherytypes.EmailTemplateSet]
+var emailTemplateSetCRUD *GenericCRUD[int, string, masherytypes.EmailTemplateSet]
 
-	if err != nil {
-		return nil, err
-	} else {
-		retServ, _ := rv.(masherytypes.EmailTemplateSet)
-		return &retServ, nil
-	}
-}
-
-func ListEmailTemplateSets(ctx context.Context, c *transport.V3Transport) ([]masherytypes.EmailTemplateSet, error) {
-	return listEmailTemplateSet(ctx, nil, c)
-}
-
-func ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string, fields []string, c *transport.V3Transport) ([]masherytypes.EmailTemplateSet, error) {
-	return listEmailTemplateSet(ctx, c.V3FilteringParams(params, fields), c)
-}
-
-func listEmailTemplateSet(ctx context.Context, qs url.Values, c *transport.V3Transport) ([]masherytypes.EmailTemplateSet, error) {
-	opCtx := transport.FetchSpec{
-		Pagination:     transport.PerPage,
-		Resource:       "/emailTemplateSets",
-		Query:          qs,
-		AppContext:     "all email template sets",
-		ResponseParser: masherytypes.ParseMasheryEmailTemplateSetArray,
-	}
-
-	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.EmailTemplateSet{}, nil
-	} else {
-		// Convert individual fetches into the array of elements
-		var rv []masherytypes.EmailTemplateSet
-		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.EmailTemplateSet)
-			if ok {
-				rv = append(rv, ms...)
+func init() {
+	emailTemplateSetCRUDDecorator = &GenericCRUDDecorator[int, string, masherytypes.EmailTemplateSet]{
+		ValueSupplier:      func() masherytypes.EmailTemplateSet { return masherytypes.EmailTemplateSet{} },
+		ValueArraySupplier: func() []masherytypes.EmailTemplateSet { return []masherytypes.EmailTemplateSet{} },
+		ResourceFor: func(ident string) (string, error) {
+			if len(ident) == 0 {
+				return "", errors.New("empty identifier is not allowed")
 			}
-		}
-
-		return rv, nil
+			return fmt.Sprintf("/emailTemplateSets/%s", ident), nil
+		},
+		ResourceForUpsert: func(t masherytypes.EmailTemplateSet) (string, error) {
+			if len(t.Id) > 0 {
+				return fmt.Sprintf("/emailTemplateSets/%s", t.Id), nil
+			} else {
+				return "", errors.New("insufficient identifier")
+			}
+		},
+		ResourceForParent: func(ident int) (string, error) {
+			return "/emailTemplateSets", nil
+		},
+		DefaultFields: MasheryEmailTemplateSetFields,
+		Pagination:    transport.PerPage,
 	}
+	emailTemplateSetCRUD = NewCRUD[int, string, masherytypes.EmailTemplateSet](
+		"email template set",
+		emailTemplateSetCRUDDecorator,
+	)
+
 }

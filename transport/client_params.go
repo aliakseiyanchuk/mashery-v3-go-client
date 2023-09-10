@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+type HttpExecutor interface {
+	Do(r *http.Request) (*http.Response, error)
+	CloseIdleConnections()
+}
+
 type HTTPClientParams struct {
 	TLSConfig               *tls.Config
 	TLSConfigDelegateSystem bool
@@ -18,6 +23,8 @@ type HTTPClientParams struct {
 	ProxyAuthCredentials string
 
 	ExchangeListener ExchangeListener
+
+	ExplicitHttpExecutor HttpExecutor
 }
 
 type httpProxyFunction func(*http.Request) (*url.URL, error)
@@ -45,7 +52,12 @@ func (p *HTTPClientParams) yieldFixedProxyServer(_ *http.Request) (*url.URL, err
 	return p.ProxyServer, nil
 }
 
-func (p *HTTPClientParams) CreateClient() *http.Client {
+func (p *HTTPClientParams) CreateHttpExecutor() HttpExecutor {
+	// If the parameters object has requested a specific HTTP client
+	if p.ExplicitHttpExecutor != nil {
+		return p.ExplicitHttpExecutor
+	}
+
 	return &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig:    p.TLSConfig,

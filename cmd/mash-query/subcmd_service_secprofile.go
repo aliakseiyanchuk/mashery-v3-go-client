@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 )
@@ -12,11 +13,13 @@ func showServiceSecurityProfileData(ctx context.Context, cl v3client.Client, raw
 	ids, _ := rawIds.([]string)
 
 	for _, id := range ids {
-		if srv, err := cl.GetServiceOAuthSecurityProfile(ctx, id); err == nil {
+		if srv, exists, err := cl.GetServiceOAuthSecurityProfile(ctx, masherytypes.ServiceIdentifier{ServiceId: id}); err == nil {
 			fmt.Printf("OAuth Security Profile for Service %s:", id)
 			fmt.Println()
 
-			_ = jsonEncoder.Encode(&srv)
+			if exists {
+				_ = jsonEncoder.Encode(&srv)
+			}
 		} else {
 			fmt.Printf("ERROR: Failed to retrieve OAuth proile for service %s: %s", id, err)
 		}

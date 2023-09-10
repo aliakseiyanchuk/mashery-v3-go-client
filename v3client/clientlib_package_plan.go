@@ -2,261 +2,170 @@ package v3client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
-	"net/url"
 )
 
-func CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error) {
+var packagePlanCRUDDecorator *GenericCRUDDecorator[masherytypes.PackageIdentifier, masherytypes.PackagePlanIdentifier, masherytypes.Plan]
+var packagePlanCRDU *GenericCRUD[masherytypes.PackageIdentifier, masherytypes.PackagePlanIdentifier, masherytypes.Plan]
+
+func init() {
+	packagePlanCRUDDecorator = &GenericCRUDDecorator[masherytypes.PackageIdentifier, masherytypes.PackagePlanIdentifier, masherytypes.Plan]{
+		ValueSupplier:      func() masherytypes.Plan { return masherytypes.Plan{} },
+		ValueArraySupplier: func() []masherytypes.Plan { return []masherytypes.Plan{} },
+
+		AcceptParentIdent: func(t1 masherytypes.PackageIdentifier, t2 *masherytypes.Plan) {
+			t2.ParentPackageId = t1
+		},
+		AcceptObjectIdent: func(t1 masherytypes.PackagePlanIdentifier, t2 *masherytypes.Plan) {
+			t2.ParentPackageId = t1.PackageIdentifier
+		},
+		AcceptIdentFrom: func(t1 masherytypes.Plan, t2 *masherytypes.Plan) {
+			t2.ParentPackageId = t1.ParentPackageId
+		},
+
+		ResourceFor: func(ident masherytypes.PackagePlanIdentifier) (string, error) {
+			return fmt.Sprintf("/packages/%s/plans/%s", ident.PackageId, ident.PlanId), nil
+		},
+		ResourceForUpsert: func(t masherytypes.Plan) (string, error) {
+			if len(t.Id) > 0 {
+				return fmt.Sprintf("/packages/%s/plans/%s", t.ParentPackageId.PackageId, t.Id), nil
+			}
+			return "", errors.New("insufficient identification")
+		},
+		ResourceForParent: func(ident masherytypes.PackageIdentifier) (string, error) {
+			return fmt.Sprintf("/packages/%s/plans", ident.PackageId), nil
+		},
+		DefaultFields: MasheryPlanFields,
+		Pagination:    transport.PerPage,
+	}
+	packagePlanCRDU = NewCRUD[masherytypes.PackageIdentifier, masherytypes.PackagePlanIdentifier, masherytypes.Plan]("package plan", packagePlanCRUDDecorator)
+}
+
+func addressableV3ObjectFactory() masherytypes.AddressableV3Object {
+	return masherytypes.AddressableV3Object{}
+}
+func addressableV3ObjectArrayFactory() []masherytypes.AddressableV3Object {
+	return []masherytypes.AddressableV3Object{}
+}
+
+func CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) (masherytypes.AddressableV3Object, error) {
 	ref := masherytypes.IdReferenced{IdRef: planService.ServiceId}
 
-	rv, err := c.CreateObject(ctx, ref, transport.FetchSpec{
-		Pagination:     transport.NotRequired,
-		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services", planService.PackageId, planService.PlanId),
-		Query:          nil,
-		AppContext:     "plan service",
-		ResponseParser: masherytypes.ParseMasheryAddressableObject,
-	})
+	builder := transport.ObjectExchangeSpecBuilder[masherytypes.IdReferenced, masherytypes.AddressableV3Object]{}
+	builder.
+		WithBody(ref).
+		WithValueFactory(addressableV3ObjectFactory).
+		WithResource("/packages/%s/plans/%s/services", planService.PackageId, planService.PlanId).
+		WithAppContext("plan service")
 
-	if err != nil {
-		return nil, err
-	} else {
-		rvc := rv.(masherytypes.AddressableV3Object)
-		return &rvc, nil
-	}
+	return transport.ExchangeObject(ctx, builder.Build(), "post", c)
 }
 
-func CheckPlanServiceExists(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (bool, error) {
-	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Pagination:     transport.NotRequired,
-		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s", planService.PackageId, planService.PlanId, planService.ServiceId),
-		Query:          nil,
-		AppContext:     "check plan service exists",
-		ResponseParser: masherytypes.ParseMasheryAddressableObject,
-	})
+func CheckPlanServiceExists(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) (bool, error) {
+	builder := transport.ObjectListFetchSpecBuilder[masherytypes.AddressableV3Object]{}
+	builder.
+		WithValueFactory(addressableV3ObjectArrayFactory).
+		WithResource("/packages/%s/plans/%s/services/%s", planService.PackageId, planService.PlanId, planService.ServiceId).
+		WithAppContext("check plan service exists").
+		WithReturn404AsNil(true)
 
-	if err != nil {
-		return false, err
-	} else {
-		return rv != nil, nil
-	}
+	return transport.Exists(ctx, builder.Build().AsObjectFetchSpec(), c)
 }
 
-func DeletePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) error {
-	return c.DeleteObject(ctx, transport.FetchSpec{
-		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services/%s", planService.PackageId, planService.PlanId, planService.ServiceId),
-		AppContext: "plan service",
-	})
+func DeletePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) error {
+	builder := transport.ObjectFetchSpecBuilder[masherytypes.AddressableV3Object]{}
+	builder.
+		WithValueFactory(addressableV3ObjectFactory).
+		WithResource("/packages/%s/plans/%s/services/%s", planService.PackageId, planService.PlanId, planService.ServiceId).
+		WithAppContext("delete plan service").
+		WithIgnoreResponse(true)
+
+	return transport.DeleteObject(ctx, builder.Build(), c)
 }
 
-func CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (*masherytypes.AddressableV3Object, error) {
+func CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.HttpTransport) (masherytypes.AddressableV3Object, error) {
 	ref := masherytypes.IdReferenced{IdRef: planEndp.EndpointId}
-	rv, err := c.CreateObject(ctx, ref, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId),
-		AppContext:     "create plan endpoint",
-		ResponseParser: masherytypes.ParseMasheryAddressableObject,
-	})
 
-	if err != nil {
-		return nil, err
-	} else {
-		rvc := rv.(masherytypes.AddressableV3Object)
-		return &rvc, nil
-	}
+	builder := transport.ObjectExchangeSpecBuilder[masherytypes.IdReferenced, masherytypes.AddressableV3Object]{}
+	builder.
+		WithBody(ref).
+		WithValueFactory(addressableV3ObjectFactory).
+		WithResource("/packages/%s/plans/%s/services/%s/endpoints", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId).
+		WithAppContext("create plan endpoint")
+
+	return transport.ExchangeObject(ctx, builder.Build(), "post", c)
 }
 
-func CheckPlanEndpointExists(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) (bool, error) {
-	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId, planEndp.EndpointId),
-		AppContext:     "check plan endpoint exists",
-		ResponseParser: masherytypes.ParseMasheryAddressableObject,
-	})
+func CheckPlanEndpointExists(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.HttpTransport) (bool, error) {
+	builder := transport.ObjectFetchSpecBuilder[masherytypes.AddressableV3Object]{}
+	builder.
+		WithValueFactory(addressableV3ObjectFactory).
+		WithResource("/packages/%s/plans/%s/services/%s/endpoints/%s", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId, planEndp.EndpointId).
+		WithAppContext("check plan endpoint exists").
+		WithReturn404AsNil(true)
 
-	if err != nil {
-		return false, err
-	} else {
-		return rv != nil, nil
-	}
+	return transport.Exists(ctx, builder.Build(), c)
 }
 
-func DeletePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.V3Transport) error {
-	return c.DeleteObject(ctx, transport.FetchSpec{
-		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints/%s", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId, planEndp.EndpointId),
-		AppContext: "plan endpoint",
-	})
+func DeletePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier, c *transport.HttpTransport) error {
+	builder := transport.ObjectFetchSpecBuilder[masherytypes.AddressableV3Object]{}
+	builder.
+		WithValueFactory(addressableV3ObjectFactory).
+		WithResource("/packages/%s/plans/%s/services/%s/endpoints/%s", planEndp.PackageId, planEndp.PlanId, planEndp.ServiceId, planEndp.EndpointId).
+		WithAppContext("delete plan endpoint").
+		WithReturn404AsNil(false).
+		WithIgnoreResponse(true)
+
+	return transport.DeleteObject(ctx, builder.Build(), c)
 }
 
-func ListPlanEndpoints(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) ([]masherytypes.AddressableV3Object, error) {
-	rv, err := c.FetchAll(ctx, transport.FetchSpec{
-		Pagination:     transport.PerItem,
-		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints", planService.PackageId, planService.PlanId, planService.ServiceId),
-		Query:          nil,
-		AppContext:     "list plan service endpoints",
-		ResponseParser: masherytypes.ParseMasheryAddressableObjectsArray,
-	})
+func ListPlanEndpoints(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) ([]masherytypes.AddressableV3Object, error) {
+	builder := transport.ObjectListFetchSpecBuilder[masherytypes.AddressableV3Object]{}
+	builder.
+		WithValueFactory(addressableV3ObjectArrayFactory).
+		WithPagination(transport.PerItem).
+		WithResource("/packages/%s/plans/%s/services/%s/endpoints", planService.PackageId, planService.PlanId, planService.ServiceId).
+		WithAppContext("list plan service endpoints")
 
-	if err != nil {
-		return []masherytypes.AddressableV3Object{}, err
-	} else {
-		rvCast := make([]masherytypes.AddressableV3Object, len(rv))
-		for i, v := range rv {
-			rvCast[i] = v.(masherytypes.AddressableV3Object)
-		}
-
-		return rvCast, nil
-	}
+	return transport.FetchAll(ctx, builder.Build(), c)
 }
 
-func CountPlanEndpoints(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.V3Transport) (int64, error) {
-	opCtx := transport.FetchSpec{
-		Pagination: transport.NotRequired,
-		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services/%s/endpoints", planService.PackageId, planService.PlanId, planService.ServiceId),
-		AppContext: "count plan service endpoints",
-	}
+func CountPlanEndpoints(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) (int64, error) {
+	builder := transport.ObjectListFetchSpecBuilder[masherytypes.PackagePlanServiceIdentifier]{}
+	builder.
+		WithValueFactory(func() []masherytypes.PackagePlanServiceIdentifier {
+			return []masherytypes.PackagePlanServiceIdentifier{}
+		}).
+		WithResource("/packages/%s/plans/%s/services/%s/endpoints", planService.PackageId, planService.PlanId, planService.ServiceId).
+		WithAppContext("count plan service endpoints")
 
-	return c.Count(ctx, opCtx)
+	return transport.Count(ctx, builder.Build(), c)
 }
 
-func CountPlanService(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.V3Transport) (int64, error) {
-	opCtx := transport.FetchSpec{
-		Pagination: transport.NotRequired,
-		Resource:   fmt.Sprintf("/packages/%s/plans/%s/services", ident.PackageId, ident.PlanId),
-		AppContext: "count plans services",
-	}
+func CountPlanService(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.HttpTransport) (int64, error) {
+	builder := transport.ObjectListFetchSpecBuilder[masherytypes.PackagePlanIdentifier]{}
+	builder.
+		WithValueFactory(func() []masherytypes.PackagePlanIdentifier {
+			return []masherytypes.PackagePlanIdentifier{}
+		}).
+		WithResource("/packages/%s/plans/%s/services", ident.PackageId, ident.PlanId).
+		WithAppContext("count plans services")
 
-	return c.Count(ctx, opCtx)
+	return transport.Count(ctx, builder.Build(), c)
 }
 
-func GetPlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.V3Transport) (*masherytypes.Plan, error) {
-	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource: fmt.Sprintf("/packages/%s/plans/%s", ident.PackageId, ident.PlanId),
-		Query: url.Values{
-			"fields": {MasheryPlanFieldsStr},
-		},
-		AppContext:     "plan",
-		ResponseParser: masherytypes.ParseMasheryPlan,
-	})
+func ListPlanServices(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.HttpTransport) ([]masherytypes.Service, error) {
+	builder := transport.ObjectListFetchSpecBuilder[masherytypes.Service]{}
+	builder.
+		WithValueFactory(func() []masherytypes.Service {
+			return []masherytypes.Service{}
+		}).
+		WithResource("/packages/%s/plans/%s/services", ident.PackageId, ident.PlanId).
+		WithPagination(transport.PerPage).
+		WithAppContext("list plan service")
 
-	if err != nil {
-		return nil, err
-	} else {
-		retServ, _ := rv.(masherytypes.Plan)
-		retServ.ParentPackageId = ident.PackageIdentifier
-
-		return &retServ, nil
-	}
-}
-
-// CreatePlan Create a new service.
-func CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan, c *transport.V3Transport) (*masherytypes.Plan, error) {
-	rawResp, err := c.CreateObject(ctx, plan, transport.FetchSpec{
-		Resource:   fmt.Sprintf("/packages/%s/plans", packageId.PackageId),
-		AppContext: "plan",
-		Query: url.Values{
-			"fields": {MasheryPlanFieldsStr},
-		},
-		ResponseParser: masherytypes.ParseMasheryPlan,
-	})
-
-	if err == nil {
-		rv, _ := rawResp.(masherytypes.Plan)
-		rv.ParentPackageId = packageId
-		return &rv, nil
-	} else {
-		return nil, err
-	}
-}
-
-// UpdatePlan Create a new service.
-func UpdatePlan(ctx context.Context, plan masherytypes.Plan, c *transport.V3Transport) (*masherytypes.Plan, error) {
-	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/packages/%s/plans/%s", plan.ParentPackageId.PackageId, plan.Id),
-		AppContext: "plan",
-		Query: url.Values{
-			"fields": {MasheryPlanFieldsStr},
-		},
-		ResponseParser: masherytypes.ParseMasheryPlan,
-	}
-
-	if d, err := c.UpdateObject(ctx, plan, opContext); err == nil {
-		rv, _ := d.(masherytypes.Plan)
-		rv.ParentPackageId = plan.ParentPackageId
-		return &rv, nil
-	} else {
-		return nil, err
-	}
-}
-
-func DeletePlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.V3Transport) error {
-	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/packages/%s/plans/%s", ident.PackageId, ident.PlanId),
-		AppContext: "plan",
-	}
-
-	return c.DeleteObject(ctx, opContext)
-}
-
-func CountPlans(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.V3Transport) (int64, error) {
-	opCtx := transport.FetchSpec{
-		Pagination: transport.NotRequired,
-		Resource:   fmt.Sprintf("/packages/%s/plans", packageId.PackageId),
-		AppContext: "count plans",
-	}
-
-	return c.Count(ctx, opCtx)
-}
-
-func ListPlans(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.V3Transport) ([]masherytypes.Plan, error) {
-	opCtx := transport.FetchSpec{
-		Pagination:     transport.PerPage,
-		Resource:       fmt.Sprintf("/packages/%s/plans", packageId.PackageId),
-		Query:          nil,
-		AppContext:     "list plans",
-		ResponseParser: masherytypes.ParseMasheryPlanArray,
-	}
-
-	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.Plan{}, nil
-	} else {
-		// Convert individual fetches into the array of elements
-		var rv []masherytypes.Plan
-		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.Plan)
-			if ok {
-				rv = append(rv, ms...)
-			}
-		}
-
-		for _, p := range rv {
-			p.ParentPackageId = packageId
-		}
-
-		return rv, nil
-	}
-}
-
-func ListPlanServices(ctx context.Context, ident masherytypes.PackagePlanIdentifier, c *transport.V3Transport) ([]masherytypes.Service, error) {
-	opCtx := transport.FetchSpec{
-		Pagination:     transport.PerPage,
-		Resource:       fmt.Sprintf("/packages/%s/plans/%s/services", ident.PackageId, ident.PlanId),
-		Query:          nil,
-		AppContext:     "list plan service",
-		ResponseParser: masherytypes.ParseMasheryServiceArray,
-	}
-
-	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.Service{}, nil
-	} else {
-		// Convert individual fetches into the array of elements
-		var rv []masherytypes.Service
-		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.Service)
-			if ok {
-				rv = append(rv, ms...)
-			}
-		}
-
-		return rv, nil
-	}
+	return transport.FetchAll(ctx, builder.Build(), c)
 }

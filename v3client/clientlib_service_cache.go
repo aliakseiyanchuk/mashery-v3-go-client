@@ -1,56 +1,57 @@
 package v3client
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 )
 
-func masheryServiceCacheSpec(id string) transport.FetchSpec {
-	return transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/cache", id),
-		Query:          nil,
-		AppContext:     "service cache",
-		ResponseParser: masherytypes.ParseServiceCache,
+var serviceCacheCRUDDecorator *GenericCRUDDecorator[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.ServiceCache]
+var serviceCacheCRUD *GenericCRUD[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.ServiceCache]
+
+func init() {
+	serviceCacheCRUDDecorator = &GenericCRUDDecorator[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.ServiceCache]{
+		ValueSupplier:      func() masherytypes.ServiceCache { return masherytypes.ServiceCache{} },
+		ValueArraySupplier: func() []masherytypes.ServiceCache { return []masherytypes.ServiceCache{} },
+
+		AcceptIdentFrom: func(t1 masherytypes.ServiceCache, t2 *masherytypes.ServiceCache) {
+			t2.ParentServiceId = t1.ParentServiceId
+		},
+		AcceptObjectIdent: func(t1 masherytypes.ServiceIdentifier, t2 *masherytypes.ServiceCache) {
+			t2.ParentServiceId = t1
+		},
+		AcceptParentIdent: func(t1 masherytypes.ServiceIdentifier, t2 *masherytypes.ServiceCache) {
+			t2.ParentServiceId = t1
+		},
+
+		ResourceFor: func(ident masherytypes.ServiceIdentifier) (string, error) {
+			if len(ident.ServiceId) == 0 {
+				return "", errors.New("insufficient identifier")
+			}
+			return fmt.Sprintf("/services/%s/cache", ident.ServiceId), nil
+		},
+
+		ResourceForUpsert: func(t masherytypes.ServiceCache) (string, error) {
+			if len(t.ParentServiceId.ServiceId) > 0 {
+				return fmt.Sprintf("/services/%s/cache", t.ParentServiceId.ServiceId), nil
+			}
+
+			return "", errors.New("insufficient identification")
+		},
+
+		ResourceForParent: func(ident masherytypes.ServiceIdentifier) (string, error) {
+			if len(ident.ServiceId) > 0 {
+				return fmt.Sprintf("/services/%s/cache", ident.ServiceId), nil
+			}
+
+			return fmt.Sprintf("/services/%s/cache", ident.ServiceId), nil
+		},
+
+		Pagination: transport.NotRequired,
 	}
-}
-
-// GetServiceCache Retrieve the service cache
-func GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
-	rv, err := c.GetObject(ctx, masheryServiceCacheSpec(id.ServiceId))
-
-	if err != nil {
-		return nil, err
-	} else {
-		retServ, _ := rv.(masherytypes.ServiceCache)
-		return &retServ, nil
-	}
-}
-
-// CreateServiceCache Create a new service cache
-func CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
-	rawResp, err := c.CreateObject(ctx, service, masheryServiceCacheSpec(id.ServiceId))
-
-	if err == nil {
-		rv, _ := rawResp.(masherytypes.ServiceCache)
-		return &rv, nil
-	} else {
-		return nil, err
-	}
-}
-
-// UpdateServiceCache Update cache of this service
-func UpdateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache, c *transport.V3Transport) (*masherytypes.ServiceCache, error) {
-	if d, err := c.UpdateObject(ctx, service, masheryServiceCacheSpec(id.ServiceId)); err == nil {
-		rv, _ := d.(masherytypes.ServiceCache)
-		return &rv, nil
-	} else {
-		return nil, err
-	}
-}
-
-// DeleteServiceCache Create a new service.
-func DeleteServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error {
-	return c.DeleteObject(ctx, masheryServiceCacheSpec(id.ServiceId))
+	serviceCacheCRUD = NewCRUD[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.ServiceCache](
+		"service cache",
+		serviceCacheCRUDDecorator,
+	)
 }

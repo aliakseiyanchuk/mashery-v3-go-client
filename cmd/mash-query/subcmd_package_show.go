@@ -13,11 +13,13 @@ func showPackageData(ctx context.Context, cl v3client.Client, rawIds interface{}
 	ids, _ := rawIds.([]string)
 
 	for _, id := range ids {
-		if srv, err := cl.GetPackage(ctx, masherytypes.PackageIdentityFrom(id)); err == nil {
+		if srv, exists, err := cl.GetPackage(ctx, masherytypes.PackageIdentityFrom(id)); err == nil {
 			fmt.Printf("Package %s:", id)
 			fmt.Println()
 
-			_ = jsonEncoder.Encode(&srv)
+			if exists {
+				_ = jsonEncoder.Encode(&srv)
+			}
 		} else {
 			fmt.Println(logHeader)
 			fmt.Printf("ERROR: Failed to retrieve package %s: %s", id, err)

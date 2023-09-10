@@ -33,8 +33,10 @@ func showServiceEndpoints(ctx context.Context, cl v3client.Client, args interfac
 			return 1
 		}
 	} else {
-		if endp, gerr := cl.GetEndpoint(ctx, masherytypes.ServiceEndpointIdentityFrom(p.serviceId, p.endpointId)); gerr == nil {
-			_ = jsonEncoder.Encode(&endp)
+		if endp, exists, gerr := cl.GetEndpoint(ctx, masherytypes.ServiceEndpointIdentityFrom(p.serviceId, p.endpointId)); gerr == nil {
+			if exists {
+				_ = jsonEncoder.Encode(&endp)
+			}
 		} else {
 			fmt.Println(gerr)
 			return 1

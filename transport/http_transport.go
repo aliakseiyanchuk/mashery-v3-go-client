@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -15,7 +15,7 @@ type HttpTransport struct {
 	MashEndpoint  string
 	Authorizer    Authorizer
 	AvgNetLatency time.Duration
-	HttpClient    *http.Client
+	HttpExecutor  HttpExecutor
 
 	PlannedSecond  int64
 	AllocatedCalls int64
@@ -79,8 +79,12 @@ func (c *HttpTransport) Put(ctx context.Context, res string, body interface{}) (
 
 func (c *HttpTransport) Send(ctx context.Context, meth string, res string, body interface{}) (*WrappedResponse, error) {
 	if dat, err := json.Marshal(body); err == nil {
-		req, _ := http.NewRequest(meth, fmt.Sprintf("%s%s", c.MashEndpoint, res), bytes.NewReader(dat))
+		req, reqCreteErr := http.NewRequest(meth, fmt.Sprintf("%s%s", c.MashEndpoint, res), bytes.NewReader(dat))
+		if reqCreteErr != nil {
+			return nil, reqCreteErr
+		}
 
+		defer req.Body.Close()
 		// With the client, only JSON is sent up and down.
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Content-Type", "application/json")
@@ -91,7 +95,6 @@ func (c *HttpTransport) Send(ctx context.Context, meth string, res string, body 
 		}
 
 		rv, rvErr := c.httpExec(ctx, wr)
-		_ = req.Body.Close()
 
 		return rv, rvErr
 	} else {
@@ -104,61 +107,44 @@ func (c *HttpTransport) httpExec(ctx context.Context, wrq *WrappedRequest) (*Wra
 		return nil, ctx.Err()
 	}
 
-	var lastErr error
-
-	for i := 0; i < 10; i++ {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(c.DelayBeforeCall()):
-			if c.Authorizer != nil {
-				if tkn, err := c.Authorizer.HeaderAuthorization(ctx); err != nil {
-					return nil, err
-				} else if len(tkn) > 0 {
-					for k, v := range tkn {
-						wrq.Request.Header.Add(k, v)
-					}
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-time.After(c.DelayBeforeCall()):
+		if c.Authorizer != nil {
+			if tkn, err := c.Authorizer.HeaderAuthorization(ctx); err != nil {
+				return nil, err
+			} else if len(tkn) > 0 {
+				for k, v := range tkn {
+					wrq.Request.Header.Add(k, v)
 				}
 			}
-
-			var wrs *WrappedResponse
-			resp, lastErr := c.HttpClient.Do(wrq.Request)
-			if lastErr == nil {
-				wrs = &WrappedResponse{
-					Response:   resp,
-					StatusCode: resp.StatusCode,
-					Header:     resp.Header,
-				}
-			}
-
-			if c.ExchangeListener != nil {
-				c.ExchangeListener(ctx, wrq, wrs, lastErr)
-			}
-
-			// If, for whatever reason, the request still gets over QPS, re-try with progressive
-			// back-offs could be tried.
-			if lastErr == nil && resp.StatusCode == 403 {
-				if str := resp.Header.Get("X-Mashery-Error-Code"); str == "ERR_403_DEVELOPER_OVER_QPS" {
-					d := time.Duration(1+i) * time.Second
-					time.Sleep(d)
-					continue
-				}
-			}
-
-			// Where the response is successful or cannot be re-tried, the both
-			// are returned to the caller
-			return wrs, lastErr
 		}
 
-	}
+		var wrs *WrappedResponse
+		resp, lastErr := c.HttpExecutor.Do(wrq.Request)
+		if lastErr == nil {
+			wrs = &WrappedResponse{
+				Response:   resp,
+				StatusCode: resp.StatusCode,
+				Header:     resp.Header,
+			}
+		}
 
-	return nil, lastErr
+		if c.ExchangeListener != nil {
+			c.ExchangeListener(ctx, wrq, wrs, lastErr)
+		}
+
+		// Where the response is successful or cannot be re-tried, the both
+		// are returned to the caller
+		return wrs, lastErr
+	}
 }
 
 // ReadResponseBody Reads the response body of the response
 func ReadResponseBody(r *http.Response) ([]byte, error) {
 	if r.Body != nil {
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
 
 		return b, err

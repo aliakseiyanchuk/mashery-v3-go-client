@@ -13,7 +13,7 @@ func showServiceData(ctx context.Context, cl v3client.Client, rawIds interface{}
 	ids, _ := rawIds.([]string)
 
 	for _, id := range ids {
-		if srv, err := cl.GetService(ctx, masherytypes.ServiceIdentityFrom(id)); err == nil {
+		if srv, exists, err := cl.GetService(ctx, masherytypes.ServiceIdentityFrom(id)); exists && err == nil {
 			fmt.Printf("Service %s:", id)
 			fmt.Println()
 
@@ -24,15 +24,18 @@ func showServiceData(ctx context.Context, cl v3client.Client, rawIds interface{}
 			for v, idx := range errorSets {
 				fmt.Printf("%d. %s type=%s, jsonp: %t, jsonpType=%s (id=%s)", v+1, idx.Name, idx.Type, idx.JSONP, idx.JSONPType, idx.Id)
 
-				if es, err := cl.GetErrorSet(ctx, idx.Identifier()); err != nil {
-					fmt.Printf("Can't retrieve error set: %s", err)
+				if es, errorSetExists, errorSetFetchErr := cl.GetErrorSet(ctx, idx.Identifier()); errorSetFetchErr != nil {
+					fmt.Printf("Can't retrieve error set: %s", errorSetFetchErr)
 				} else {
-					for idx, v := range *es.ErrorMessages {
-						fmt.Printf("%d. %s\n", idx+1, v.Id)
+					if errorSetExists {
+						for idx, v := range *es.ErrorMessages {
+							fmt.Printf("%d. %s\n", idx+1, v.Id)
+						}
 					}
 				}
 			}
-
+		} else if !exists && err == nil {
+			fmt.Println("Service with this identifier is not found")
 		} else {
 			fmt.Printf("ERROR: Failed to retrieve service %s: %s", id, err)
 		}
