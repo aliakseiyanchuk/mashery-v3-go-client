@@ -1,7 +1,7 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
 HOSTNAME=github.com
 NAMESPACE=aliakseiyanchuk
-NAME=mashery
+NAME=mashery-v3-go-client
 
 TRGT_GOOS?=windows
 TRGT_GOARCH?=amd64
