@@ -2,49 +2,66 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
-	"fmt"
+	"flag"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
-	"os"
 )
 
-func showPackageData(ctx context.Context, cl v3client.Client, rawIds interface{}) int {
-	ids, _ := rawIds.([]string)
-
-	for _, id := range ids {
-		if srv, exists, err := cl.GetPackage(ctx, masherytypes.PackageIdentityFrom(id)); err == nil {
-			fmt.Printf("Package %s:", id)
-			fmt.Println()
-
-			if exists {
-				_ = jsonEncoder.Encode(&srv)
-			}
-		} else {
-			fmt.Println(logHeader)
-			fmt.Printf("ERROR: Failed to retrieve package %s: %s", id, err)
-			fmt.Println(logHeader)
-		}
-		fmt.Println()
+func validatePackageShowArg(arg *masherytypes.PackageIdentifier) error {
+	if len(arg.PackageId) == 0 {
+		return errors.New("package identifier required")
 	}
 
-	return 0
+	return nil
 }
 
-func showSPackageDataArgParser() (bool, error) {
-	if argAt(0) == "package" && argAt(1) == "show" {
-		if len(os.Args) > 2 {
-			handler = showPackageData
-			handlerArgs = os.Args[3:]
-			return true, nil
+func execPackageShow(ctx context.Context, cl v3client.Client, id masherytypes.PackageIdentifier) (ObjectWithExists[masherytypes.PackageIdentifier, masherytypes.Package], error) {
+	rv, packageExists, err := cl.GetPackage(ctx, id)
+
+	if packageExists {
+		if plans, plansErr := cl.ListPlans(ctx, id); plansErr != nil {
+			err = plansErr
 		} else {
-			return true, errors.New("package show requires at least once package Id parameter")
+			rv.Plans = plans
 		}
 	}
 
-	return false, nil
+	return ObjectWithExists[masherytypes.PackageIdentifier, masherytypes.Package]{
+		Identifier: id,
+		Object:     rv,
+		Exists:     packageExists,
+	}, err
+}
+
+//go:embed templates/package_show.tmpl
+var packageShowTemplate string
+var subCmdPackageShow *SubcommandTemplate[masherytypes.PackageIdentifier, ObjectWithExists[masherytypes.PackageIdentifier, masherytypes.Package]]
+
+func initPackageShowFlagSet(arg *masherytypes.PackageIdentifier, fs *flag.FlagSet) {
+	fs.StringVar(&arg.PackageId, "package-id", "", "Package identifier")
+}
+
+func initPackageShowEnvFlagSet(arg *masherytypes.PackageIdentifier) []EnvFlag {
+	return []EnvFlag{
+		{
+			Dest:   &arg.PackageId,
+			EnvVar: "MASH_PACKAGE_ID",
+			Option: "package-id",
+		},
+	}
 }
 
 func init() {
-	argParsers = append(argParsers, showSPackageDataArgParser)
+	subCmdPackageShow = &SubcommandTemplate[masherytypes.PackageIdentifier, ObjectWithExists[masherytypes.PackageIdentifier, masherytypes.Package]]{
+		Command:        []string{"package", "show"},
+		FlagSetInit:    initPackageShowFlagSet,
+		EnvFlagSetInit: initPackageShowEnvFlagSet,
+		Validator:      validatePackageShowArg,
+		Executor:       execPackageShow,
+		Template:       mustTemplate(packageShowTemplate),
+	}
+
+	enableSubcommand(subCmdPackageShow.Finder())
 }

@@ -102,7 +102,7 @@ func (rmb *RequestMatcher) MockReturned404() (Client, *WireMock) {
 }
 
 func (rmb *RequestMatcher) MockReturned403() (Client, *WireMock) {
-	resp404 := http.Response{
+	resp403 := http.Response{
 		Status:     "Not Authorized",
 		StatusCode: 403,
 		Body:       io.NopCloser(strings.NewReader("<h1>Not Authorized</h1>")),
@@ -111,7 +111,7 @@ func (rmb *RequestMatcher) MockReturned403() (Client, *WireMock) {
 	wm := WireMock{}
 	wm.
 		On("Do", mock.MatchedBy(rmb.Match)).
-		Return(&resp404, nil).
+		Return(&resp403, nil).
 		Once()
 
 	return rmb.clientForMock(&wm)

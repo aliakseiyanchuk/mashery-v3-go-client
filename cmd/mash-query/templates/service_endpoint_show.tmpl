@@ -1,0 +1,62 @@
+{{if .Exists }}
+{{- with .Object}}
+Service Endpoint {{ .Name }} (ID={{ .Id }})
+------------------------------------------------+----------------------
+Allow Missing Api Key                           | {{.AllowMissingApiKey}}
+Api Key Value Location Key                      | {{.ApiKeyValueLocationKey}}
+Api Key Value Locations                         | {{.ApiKeyValueLocations}}
+Api Method Detection Key                        | {{.ApiMethodDetectionKey}}
+Api Method Detection Locations                  | {{.ApiMethodDetectionLocations}}
+
+Cache  | {{.Cache}}
+
+Connection Timeout For System Domain Request    |{{.ConnectionTimeoutForSystemDomainRequest}}
+Connection Timeout For System Domain Response   | {{.ConnectionTimeoutForSystemDomainResponse}}
+Cookies During Http Redirects Enabled           | {{.CookiesDuringHttpRedirectsEnabled}}
+
+Cors | {{.Cors}}
+
+Custom Request Authentication Adapter           | {{.CustomRequestAuthenticationAdapter}}
+Drop Api Key From Incoming Call                 | {{.DropApiKeyFromIncomingCall}}
+Force Gzip Of Backend Call                      | {{.ForceGzipOfBackendCall}}
+Gzip Passthrough Support Enabled                | {{.GzipPassthroughSupportEnabled}}
+Headers To Exclude From Incoming Call           | {{.HeadersToExcludeFromIncomingCall}}
+High Security                                   | {{.HighSecurity}}
+Host Passthrough Included InBackend Call Header | {{.HostPassthroughIncludedInBackendCallHeader}}
+Inbound Ssl Required                            | {{.InboundSslRequired}}
+Inbound Mutual Ssl Required                     | {{.InboundMutualSslRequired}}
+Jsonp Callback Parameter                        | {{.JsonpCallbackParameter}}
+Jsonp Callback Parameter Value                  | {{.JsonpCallbackParameterValue}}
+Forwarded Headers                               | {{.ForwardedHeaders}}
+Returned Headers                                | {{.ReturnedHeaders}}
+Number Of Http Redirects To Follow              | {{.NumberOfHttpRedirectsToFollow}}
+Outbound Request Target Path                    | {{.OutboundRequestTargetPath}}
+Outbound Request Target Query Parameters        | {{.OutboundRequestTargetQueryParameters}}
+Outbound Transport Protocol                     | {{.OutboundTransportProtocol}}
+
+Processor | {{.Processor}}
+
+Public Domains                                  | {{.PublicDomains}}
+Request Authentication Type                     | {{.RequestAuthenticationType}}
+Request Path Alias                              | {{.RequestPathAlias}}
+Request Protocol                                | {{.RequestProtocol}}
+OAuth Grant Types                               | {{.OAuthGrantTypes}}
+Strings To Trim From ApiKey                     | {{.StringsToTrimFromApiKey}}
+Supported Http Methods                          | {{.SupportedHttpMethods}}
+System Domain Authentication                    | {{.SystemDomainAuthentication}}
+System Domains                                  | {{.SystemDomains}}
+Traffic Manager Domain                          | {{.TrafficManagerDomain}}
+Use System Domain Credentials                   | {{.UseSystemDomainCredentials}}
+System Domain Credential Key                    | {{.SystemDomainCredentialKey}}
+System Domain Credential Secret                 | {{.SystemDomainCredentialSecret}}
+User Controlled Error Location Key              | {{.UserControlledErrorLocationKey}}
+------------------------------------------------+----------------------
+* Methods and error set are omitted from this display. Use `service endpoint method show`
+  end `service endpoint errorset show` sub-commands to print the respective endpoint
+  configuration
+* Scheduled maintenance event display is not supported by this client version.
+
+{{- end}}
+{{else}}
+Endpoint {{ .Identifier.EndpointId }} of service {{  .Identifier.ServiceId }} does not exist
+{{end}}

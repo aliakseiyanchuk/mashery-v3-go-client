@@ -45,7 +45,7 @@ func autoTestCreateOn404[TParent, TPayload any](t *testing.T, pIdent TParent, up
 
 	_, err := f(context.TODO(), pIdent, upsertPayload)
 	assert.NotNil(t, err)
-	assert.True(t, strings.Index(err.Error(), "error code 404 is not an expected response to this request") > 0)
+	assert.True(t, strings.Index(err.Error(), "error code 404 is not an expected response to this request") >= 0)
 	//assert.Nil(t, rvVal)
 
 	wm.AssertExpectations(t)
@@ -58,7 +58,7 @@ func autoTestCreateOn403[TParent, TPayload any](t *testing.T, pIdent TParent, up
 	_, err := f(context.TODO(), pIdent, upsertPayload)
 	assert.NotNil(t, err)
 	assert.True(t, len(err.Error()) > 0)
-	assert.True(t, strings.Index(err.Error(), "not authorized") > 0)
+	assert.True(t, strings.Index(err.Error(), "Not Authorized") > 0)
 	//assert.Nil(t, rvVal)
 
 	wm.AssertExpectations(t)

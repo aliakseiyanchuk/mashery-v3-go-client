@@ -1,0 +1,47 @@
+{{if .Exists }}
+{{- with .Object}}
+Application {{ .Name }} (ID={{ .Id }})
+-------------------+----------------------
+Username           | {{ .Username }}
+Description        | {{ .Description }}
+Type               | {{ .Type }}
+Commercial         | {{ .Commercial }}
+Ads                | {{ .Ads }}
+Ads System         | {{ .AdsSystem }}
+Usage Model        | {{ .UsageModel }}
+Tags               | {{ .Tags }}
+Notes              | {{ .Notes }}
+How Did You Hear   | {{ .HowDidYouHear }}
+Preferred Protocol | {{ .PreferredProtocol }}
+Preferred Output   | {{ .PreferredOutput }}
+External Id        | {{ .ExternalId }}
+Uri                | {{ .Uri }}
+OAuth Redirect Uri | {{ .OAuthRedirectUri }}
+{{- if .Eav }}
+Eav:               | {{- $eav_len := len (.Eav) }}{{- if gt $eav_len 0 }} <set to:>
+{{- range $k, $v := .Eav }}
+                   | - {{ $k }} = {{ $v }}
+{{- end}}
+{{- else}} None{{end}}
+{{ else }}
+Eav:               | None
+{{- end}}
+
+Package Keys:
+---------------------
+{{- range $key := .PackageKeys }}
+ - {{ $key.Status }} key {{ $key.Apikey }} granting access to:
+   ~ package {{ $key.Package.Name }} (Id={{ $key.Package.Id }})
+   ~ plan {{ $key.Plan.Name }} (Id={{ $key.Plan.Id }})
+   ~ rate ceiling: {{ $key.RateLimitCeiling }}
+   ~ qps ceiling: {{ $key.QpsLimitCeiling }}
+   ~ rate limit exempt: {{ $key.RateLimitExempt }}
+   ~ qps limit exempt: {{ $key.QpsLimitExempt }}
+   {{- range $limit := $key.Limits }}
+   > with limit of {{ $limit.Ceiling }} for {{ $limit.Period}} defined in {{ $limit.Source }}
+   {{- end }}
+{{- end }}
+{{- end}}
+{{else}}
+Application with identifier {{  .Identifier.ApplicationId }} does not exist
+{{end}}

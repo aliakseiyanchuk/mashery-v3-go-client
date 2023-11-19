@@ -1,0 +1,31 @@
+{{if .Exists }}
+{{- with .Object}}
+Package {{ .Name }} (ID={{ .Id }})
+-------------------------------+----------------------
+Description                            | {{ .Description }}
+Self Service Key Provisioning Enabled  | {{ .SelfServiceKeyProvisioningEnabled }}
+Admin Key Provisioning Enabled         | {{ .AdminKeyProvisioningEnabled }}
+Notes                                  | {{ .Notes }}
+Max Num Keys Allowed                   | {{ .MaxNumKeysAllowed }}
+Qps Limit Ceiling                      | {{ .QpsLimitCeiling }}
+Qps Limit Exempt                       | {{ .QpsLimitExempt }}
+Qps Limit Key Override Allowed         | {{ .QpsLimitKeyOverrideAllowed }}
+Rate Limit Exempt                      | {{ .RateLimitExempt }}
+Rate Limit Key Override Allowed        | {{ .RateLimitKeyOverrideAllowed }}
+Rate Limit Period                      | {{ .RateLimitPeriod }}
+Response Filter Override Allowed       | {{ .ResponseFilterOverrideAllowed }}
+Status                                 | {{ .Status }}
+Email Template Set Id                  | {{ .EmailTemplateSetId }}
+Admin Email Template Set Id            | {{ .AdminEmailTemplateSetId }}
+Eav:                                   | {{- $eav_len := len (.Eav) }}{{- if gt $eav_len 0 }} <set to:>
+{{- range $k, $v := .Eav }}
+                                       | - {{ $k }} = {{ $v }}
+{{- end}}
+{{- else}} None{{end}}
+
+{{end}}
+
+{{else}}
+Package plan with package identifier {{  .Identifier.PackageId }} and service identifier
+{{ .Identifier.PlanId }} does not exist
+{{end}}

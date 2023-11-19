@@ -31,7 +31,7 @@ func autoTestCountOn404[TId any](t *testing.T, id TId, rmv BuildVisitor, locator
 
 	rvVal, err := f(context.TODO(), id)
 	assert.NotNil(t, err)
-	assert.True(t, strings.Index(err.Error(), "->no such resource") > 0)
+	assert.True(t, strings.Index(err.Error(), "error code 404 is not an expected response to this request") >= 0)
 	assert.Equal(t, int64(-1), rvVal)
 
 	wm.AssertExpectations(t)
@@ -44,7 +44,7 @@ func autoTestCountOn403[TId any](t *testing.T, id TId, rmv BuildVisitor, locator
 	rvVal, err := f(context.TODO(), id)
 	assert.NotNil(t, err)
 	assert.True(t, len(err.Error()) > 0)
-	assert.True(t, strings.Index(err.Error(), "not authorized") > 0)
+	assert.True(t, strings.Index(err.Error(), "Not Authorized") > 0)
 	assert.Equal(t, int64(-1), rvVal)
 
 	wm.AssertExpectations(t)

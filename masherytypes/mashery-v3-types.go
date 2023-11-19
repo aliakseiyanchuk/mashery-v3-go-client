@@ -307,7 +307,7 @@ type Plan struct {
 	// as int. It is actually UUID of the email template set Id.
 	// Null values are essential to disable notifications.
 	EmailTemplateSetId      *string           `json:"emailTemplateSetId"`
-	AdminEmailTemplateSetId *string           `json:"adminEmailTemplateSetId"`
+	AdminEmailTemplateSetId *int              `json:"adminEmailTemplateSetId"`
 	Services                *[]Service        `json:"services,omitempty"`
 	Roles                   *[]RolePermission `json:"roles,omitempty"`
 

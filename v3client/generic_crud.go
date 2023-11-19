@@ -297,7 +297,7 @@ func (crud *GenericCRUD[TParent, TIdent, T]) toFilterQuery(filter map[string]str
 
 		var idx = 0
 		for k, v := range filter {
-			srchAtoms[idx] = fmt.Sprintf("%s=%s", k, v)
+			srchAtoms[idx] = fmt.Sprintf("%s:%s", k, v)
 			idx++
 		}
 

@@ -2,39 +2,25 @@ package main
 
 import (
 	"context"
-	"fmt"
+	_ "embed"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 )
 
-func listServices(ctx context.Context, cl v3client.Client, rawArg interface{}) int {
-	if dat, err := cl.ListServices(ctx); err == nil {
-		fmt.Printf("Found %d services", len(dat))
-		fmt.Println()
+//go:embed templates/service_list.tmpl
+var serviceListTemplate string
+var subCmdServiceList *SubcommandTemplate[int, []masherytypes.Service]
 
-		for idx, srv := range dat {
-			fmt.Printf("%d. Service %s, id=%s, created=%s", idx, srv.Name, srv.Id, srv.Created.ToString())
-			fmt.Println()
-		}
-	} else {
-		fmt.Printf("Could not have services listed: %s", err)
-		fmt.Println()
-		return 1
-	}
-
-	return 0
-}
-
-func listServiceArgParser() (bool, error) {
-	if argAt(0) == "service" {
-		if argAt(1) == "list" {
-			handler = listServices
-			return true, nil
-		}
-	}
-
-	return false, nil
+func execServiceList(ctx context.Context, cl v3client.Client, _ int) ([]masherytypes.Service, error) {
+	return cl.ListServices(ctx)
 }
 
 func init() {
-	argParsers = append(argParsers, listServiceArgParser)
+	subCmdServiceList = &SubcommandTemplate[int, []masherytypes.Service]{
+		Command:  []string{"service", "list"},
+		Executor: execServiceList,
+		Template: mustTemplate(serviceListTemplate),
+	}
+
+	enableSubcommand(subCmdServiceList.Finder())
 }

@@ -23,17 +23,28 @@ type CommonFetchSpec struct {
 	// TODO: This needs to be renamed into Return404AsError
 	Return404AsNil bool
 	IgnoreResponse bool
+
+	FetchMiddleware []ChainedMiddlewareFunc
 }
 
 func (cfs *CommonFetchSpec) ToBuilder() CommonFetchSpecBuilder {
 	return CommonFetchSpecBuilder{
 		Pagination:     cfs.Pagination,
 		Resource:       cfs.Resource,
-		Query:          cfs.Query,
+		Query:          cloneQueryString(cfs.Query),
 		AppContext:     cfs.AppContext,
 		Return404AsNil: cfs.Return404AsNil,
 		IgnoreResponse: cfs.IgnoreResponse,
 	}
+}
+
+func cloneQueryString(in url.Values) url.Values {
+	rv := url.Values{}
+	for k, v := range in {
+		rv[k] = v
+	}
+
+	return rv
 }
 
 // FetchSpec Operation context
@@ -112,6 +123,7 @@ func (ctx *CommonFetchSpec) DestResource() string {
 	if ctx.Query == nil {
 		return ctx.Resource
 	} else {
+		//fmt.Println(ctx.Query.Encode())
 		return fmt.Sprintf("%s?%s", ctx.Resource, ctx.Query.Encode())
 	}
 }

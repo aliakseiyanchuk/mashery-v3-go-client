@@ -57,7 +57,7 @@ func autoTestGetOn403[TId, TPayload any](t *testing.T, id TId, rmv BuildVisitor,
 	_, exist, err := f(context.TODO(), id)
 	assert.NotNil(t, err)
 	assert.True(t, len(err.Error()) > 0)
-	assert.True(t, strings.Index(err.Error(), "not authorized") > 0)
+	assert.True(t, strings.Index(err.Error(), "Not Authorized") > 0)
 	assert.False(t, exist)
 
 	wm.AssertExpectations(t)

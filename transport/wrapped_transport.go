@@ -7,6 +7,7 @@ import (
 
 // WrappedResponse Wraps the response so that calling applications can safely read the body multiple times.
 type WrappedResponse struct {
+	Request    *WrappedRequest
 	Response   *http.Response
 	StatusCode int
 	Header     http.Header
@@ -28,4 +29,9 @@ func (wr *WrappedResponse) Body() ([]byte, error) {
 	})
 
 	return wr.readBody, wr.readError
+}
+
+func (wr *WrappedResponse) MustBody() []byte {
+	rv, _ := wr.Body()
+	return rv
 }

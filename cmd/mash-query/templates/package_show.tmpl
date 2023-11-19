@@ -1,0 +1,37 @@
+{{if .Exists }}
+{{- with .Object}}
+Package {{ .Name }} (ID={{ .Id }})
+-------------------------------+----------------------
+Description                    | {{ .Description }}
+Notify Developer Period        | {{ .NotifyDeveloperPeriod }}
+Notify Developer Near Quota    | {{ .NotifyDeveloperNearQuota }}
+Notify Developer Over Quota    | {{ .NotifyDeveloperOverQuota }}
+Notify Developer Over Throttle | {{ .NotifyDeveloperOverThrottle }}
+Notify Admin Period            | {{ .NotifyAdminPeriod }}
+Notify Admin Near Quota        | {{ .NotifyAdminOverQuota }}
+Notify Admin Over Throttle     | {{ .NotifyAdminOverThrottle }}
+Notify Admin Emails            | {{ .NotifyAdminEmails }}
+Near Quota Threshold           | {{ .NearQuotaThreshold }}
+Eav:                           | {{- $eav_len := len (.Eav) }}{{- if gt $eav_len 0 }} <set to:>
+{{- range $k, $v := .Eav }}
+                               | - {{ $k }} = {{ $v }}
+{{- end}}
+{{- else}} None{{end}}
+Key Adapter                    | {{ .KeyAdapter }}
+Key Length                     | {{ .KeyLength }}
+Shared Secret Length           | {{ .SharedSecretLength }}
+Organization                   | {{ if .Organization }}
+    {{- .Organization.Name }} (Id={{.Organization.Id}})
+    {{- else}}Area Level{{- end}}
+
+Plans:
+---------------------------------
+{{- range $plan := .Plans }}
+ - {{ $plan.Name }} (Id={{ $plan.Id }})
+   > export MASH_PACKAGE_PLAN_ID={{ $plan.Id }}
+{{- end }}
+{{end}}
+
+{{else}}
+Package with identifier {{  .Identifier.PackageId }} does not exist
+{{end}}

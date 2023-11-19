@@ -31,7 +31,7 @@ func init() {
 			return "/packages", nil
 		},
 		DefaultFields: MasheryPackageFields,
-		Pagination:    transport.PerPage,
+		Pagination:    transport.PerItem,
 	}
 	packageCRUD = NewCRUD[int, masherytypes.PackageIdentifier, masherytypes.Package]("package", packageCRUDDecorator)
 }

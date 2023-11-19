@@ -47,6 +47,8 @@ type Params struct {
 	Authorizer    transport.Authorizer
 	QPS           int64
 	AvgNetLatency time.Duration
+
+	Pipeline []transport.ChainedMiddlewareFunc
 }
 
 func (p *Params) FillDefaults() {
@@ -68,6 +70,18 @@ func (p *Params) FillDefaults() {
 	// to delegate the trust to the system settings.
 	if p.TLSConfig == nil && !p.TLSConfigDelegateSystem {
 		p.TLSConfig = transport.DefaultTLSConfig()
+	}
+
+	if len(p.Pipeline) == 0 {
+		p.Pipeline = []transport.ChainedMiddlewareFunc{
+			transport.ThrottleFunc,
+			transport.BreakOnDeveloperOverRateFunc,
+			transport.BackOffOnDeveloperOverQPSFunc,
+			transport.ErrorOn404Func,
+			transport.RetryOn400Func,
+			transport.EnsureBodyWasRead,
+			transport.UnmarshalServerError,
+		}
 	}
 }
 
@@ -106,6 +120,7 @@ func createHTTPTransport(p Params) transport.HttpTransport {
 		HttpExecutor: p.CreateHttpExecutor(),
 
 		ExchangeListener: p.ExchangeListener,
+		Pipeline:         p.Pipeline,
 	}
 }
 
@@ -180,6 +195,9 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		CountApplicationsOfMember:   applicationCRUD.Count,
 		ListApplications: func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Application, error) {
 			return applicationCRUD.FetchAll(ctx, masherytypes.MemberIdentifier{}, c)
+		},
+		ListApplicationsFiltered: func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.Application, error) {
+			return applicationCRUD.FetchFiltered(ctx, masherytypes.MemberIdentifier{}, params, c)
 		},
 
 		// Email sets

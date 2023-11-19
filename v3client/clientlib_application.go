@@ -66,7 +66,7 @@ func init() {
 		},
 		DefaultFields: applicationFields,
 		GetFields:     DefaultGetFieldsFromContext(applicationFields),
-		Pagination:    transport.PerItem,
+		Pagination:    transport.PerPage,
 	}
 
 	applicationCRUD = NewCRUD[masherytypes.MemberIdentifier, masherytypes.ApplicationIdentifier, masherytypes.Application]("application", applicationCRUDDecorator)

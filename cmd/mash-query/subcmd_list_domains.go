@@ -2,61 +2,54 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
-	"fmt"
+	"flag"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 )
 
-func showPublicDomains(ctx context.Context, cl v3client.Client, args interface{}) int {
-	if domains, err := cl.GetPublicDomains(ctx); err != nil {
-		fmt.Println(err)
-		return 1
+//go:embed templates/domain_list.tmpl
+var domainListTemplate string
+var subCmdDomainList *SubcommandTemplate[DomainType, []masherytypes.DomainAddress]
+
+type DomainType struct {
+	SysDomain bool
+	PubDomain bool
+}
+
+func execDomainListList(ctx context.Context, cl v3client.Client, dt DomainType) ([]masherytypes.DomainAddress, error) {
+	if dt.PubDomain {
+		return cl.GetPublicDomains(ctx)
 	} else {
-		fmt.Printf("There are %d public domains", len(domains))
-		fmt.Println()
-
-		for idx, d := range domains {
-			fmt.Printf("%d. %s", (idx + 1), d)
-			fmt.Println()
-		}
-
-		return 0
+		return cl.GetSystemDomains(ctx)
 	}
 }
 
-func showSystemDomains(ctx context.Context, cl v3client.Client, args interface{}) int {
-	if domains, err := cl.GetSystemDomains(ctx); err != nil {
-		fmt.Println(err)
-		return 1
-	} else {
-		fmt.Printf("There are %d system domains", len(domains))
-		fmt.Println()
-
-		for idx, d := range domains {
-			fmt.Printf("%d. %s", (idx + 1), d)
-			fmt.Println()
-		}
-
-		return 0
-	}
+func initDomainListFlagSet(arg *DomainType, fs *flag.FlagSet) {
+	fs.BoolVar(&arg.PubDomain, "public", false, "Show public domains")
+	fs.BoolVar(&arg.SysDomain, "system", false, "Show system domains")
 }
 
-func showDomainsParser() (bool, error) {
-	if argAt(0) == "domains" && argAt(1) == "list" {
-		if argAt(2) == "public" {
-			handler = showPublicDomains
-			return true, nil
-		} else if argAt(2) == "system" {
-			handler = showSystemDomains
-			return true, nil
-		} else {
-			return true, errors.New("domain list requires domain type to list, either public or system")
-		}
+func validateDomainList(arg *DomainType) error {
+	if arg.SysDomain && arg.PubDomain {
+		return errors.New("system and public domains are mutually exclusive")
+	} else if !arg.SysDomain && !arg.PubDomain {
+		return errors.New("either -system or -public is required for this command")
+	} else {
+		return nil
 	}
-
-	return false, nil
 }
 
 func init() {
-	argParsers = append(argParsers, showDomainsParser)
+	subCmdDomainList = &SubcommandTemplate[DomainType, []masherytypes.DomainAddress]{
+		Command:     []string{"domain", "list"},
+		Arg:         DomainType{},
+		FlagSetInit: initDomainListFlagSet,
+		Validator:   validateDomainList,
+		Executor:    execDomainListList,
+		Template:    mustTemplate(domainListTemplate),
+	}
+
+	enableSubcommand(subCmdDomainList.Finder())
 }

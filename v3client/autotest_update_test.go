@@ -33,7 +33,7 @@ func autoTestUpdateOn404[TPayload any](t *testing.T, upsertPayload TPayload, rmv
 
 	_, err := f(context.TODO(), upsertPayload)
 	assert.NotNil(t, err)
-	assert.True(t, strings.Index(err.Error(), "error code 404 is not an expected response to this request") > 0)
+	assert.True(t, strings.Index(err.Error(), "error code 404 is not an expected response to this request") >= 0)
 	//assert.Nil(t, rvVal)
 
 	wm.AssertExpectations(t)
@@ -46,7 +46,7 @@ func autoTestUpdateOn403[TPayload any](t *testing.T, upsertPayload TPayload, rmv
 	_, err := f(context.TODO(), upsertPayload)
 	assert.NotNil(t, err)
 	assert.True(t, len(err.Error()) > 0)
-	assert.True(t, strings.Index(err.Error(), "not authorized") > 0)
+	assert.True(t, strings.Index(err.Error(), "Not Authorized") > 0)
 	//assert.Nil(t, rvVal)
 
 	wm.AssertExpectations(t)

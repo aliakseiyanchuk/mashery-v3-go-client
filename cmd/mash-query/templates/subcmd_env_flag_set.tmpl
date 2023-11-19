@@ -1,0 +1,6 @@
+
+The following options can be used instead of command-line switches
+{{- range $opt := . }}
+- {{ $opt.EnvVar }} can be used same as -{{ $opt.Option }} option
+{{- end}}
+

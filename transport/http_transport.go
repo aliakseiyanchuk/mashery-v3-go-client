@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+type MiddlewareFuncPipeline struct {
+	f     MiddlewareFunc
+	order int
+}
 type HttpTransport struct {
 	MashEndpoint  string
 	Authorizer    Authorizer
@@ -24,6 +28,7 @@ type HttpTransport struct {
 	Mutex *sync.Mutex
 
 	ExchangeListener ExchangeListener
+	Pipeline         []ChainedMiddlewareFunc
 }
 
 func (c *HttpTransport) DelayBeforeCall() time.Duration {
@@ -107,38 +112,34 @@ func (c *HttpTransport) httpExec(ctx context.Context, wrq *WrappedRequest) (*Wra
 		return nil, ctx.Err()
 	}
 
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-time.After(c.DelayBeforeCall()):
-		if c.Authorizer != nil {
-			if tkn, err := c.Authorizer.HeaderAuthorization(ctx); err != nil {
-				return nil, err
-			} else if len(tkn) > 0 {
-				for k, v := range tkn {
-					wrq.Request.Header.Add(k, v)
-				}
+	if c.Authorizer != nil {
+		if tkn, err := c.Authorizer.HeaderAuthorization(ctx); err != nil {
+			return nil, err
+		} else if len(tkn) > 0 {
+			for k, v := range tkn {
+				wrq.Request.Header.Add(k, v)
 			}
 		}
-
-		var wrs *WrappedResponse
-		resp, lastErr := c.HttpExecutor.Do(wrq.Request)
-		if lastErr == nil {
-			wrs = &WrappedResponse{
-				Response:   resp,
-				StatusCode: resp.StatusCode,
-				Header:     resp.Header,
-			}
-		}
-
-		if c.ExchangeListener != nil {
-			c.ExchangeListener(ctx, wrq, wrs, lastErr)
-		}
-
-		// Where the response is successful or cannot be re-tried, the both
-		// are returned to the caller
-		return wrs, lastErr
 	}
+
+	var wrs *WrappedResponse
+	resp, lastErr := c.HttpExecutor.Do(wrq.Request)
+	if lastErr == nil {
+		wrs = &WrappedResponse{
+			Request:    wrq,
+			Response:   resp,
+			StatusCode: resp.StatusCode,
+			Header:     resp.Header,
+		}
+	}
+
+	if c.ExchangeListener != nil {
+		c.ExchangeListener(ctx, wrq, wrs, lastErr)
+	}
+
+	// Where the response is successful or cannot be re-tried, the both
+	// are returned to the caller
+	return wrs, lastErr
 }
 
 // ReadResponseBody Reads the response body of the response

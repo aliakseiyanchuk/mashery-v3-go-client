@@ -1,0 +1,8 @@
+{{- $srv_cnt := len (.) }} {{- if gt $srv_cnt 0}}
+There are {{ $srv_cnt }} roles defined
+{{- range $srv := . }}
+- Role {{ $srv.Name }} (id={{ $srv.Id}})
+{{- end}}
+{{- else }}
+There are no roles defined in this area.
+{{ end }}

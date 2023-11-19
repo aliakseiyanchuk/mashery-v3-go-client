@@ -37,6 +37,7 @@ type Client interface {
 	DeleteApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier) error
 	CountApplicationsOfMember(ctx context.Context, memberId masherytypes.MemberIdentifier) (int64, error)
 	ListApplications(ctx context.Context) ([]masherytypes.Application, error)
+	ListApplicationsFiltered(ctx context.Context, p map[string]string) ([]masherytypes.Application, error)
 
 	// Email template sets
 	GetEmailTemplateSet(ctx context.Context, id string) (masherytypes.EmailTemplateSet, bool, error)
@@ -209,6 +210,7 @@ type ClientMethodSchema struct {
 	DeleteApplication           func(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.HttpTransport) error
 	CountApplicationsOfMember   func(ctx context.Context, memberId masherytypes.MemberIdentifier, c *transport.HttpTransport) (int64, error)
 	ListApplications            func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Application, error)
+	ListApplicationsFiltered    func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.Application, error)
 
 	// Email template set
 	GetEmailTemplateSet           func(ctx context.Context, id string, c *transport.HttpTransport) (masherytypes.EmailTemplateSet, bool, error)
@@ -494,6 +496,14 @@ func (c *PluggableClient) ListApplications(ctx context.Context) ([]masherytypes.
 		return c.schema.ListApplications(ctx, c.transport)
 	} else {
 		return []masherytypes.Application{}, c.notImplemented("ListApplications")
+	}
+}
+
+func (c *PluggableClient) ListApplicationsFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Application, error) {
+	if c.schema.ListApplicationsFiltered != nil {
+		return c.schema.ListApplicationsFiltered(ctx, params, c.transport)
+	} else {
+		return []masherytypes.Application{}, c.notImplemented("ListApplicationsFiltered")
 	}
 }
 
