@@ -267,7 +267,7 @@ func (rmb *RequestMatcher) FilteringUsing(filters map[string]string) *RequestMat
 			parsedFilters := map[string]string{}
 
 			for _, filter := range strings.Split(filterStr, ",") {
-				kv := strings.Split(filter, "=")
+				kv := strings.Split(filter, ":")
 				parsedFilters[kv[0]] = kv[1]
 			}
 			return reflect.DeepEqual(filters, parsedFilters)
