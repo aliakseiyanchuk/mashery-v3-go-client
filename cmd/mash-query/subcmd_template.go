@@ -77,8 +77,20 @@ func (st *SubcommandTemplate[TArg, TOut]) Finder() *SubcommandFinder {
 	}
 }
 
+func joinStrings(str []string, sem string) string {
+	if str == nil {
+		return "Not set"
+	} else if len(str) == 0 {
+		return "Empty"
+	} else {
+		return strings.Join(str, sem)
+	}
+}
+
 func mustTemplate(str string) *template.Template {
-	if t, err := template.New("templ").Parse(str); err != nil {
+	if t, err := template.New("templ").
+		Funcs(template.FuncMap{"StringsJoin": joinStrings}).
+		Parse(str); err != nil {
 		panic(err.Error())
 	} else {
 		return t
