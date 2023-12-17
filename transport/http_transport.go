@@ -28,7 +28,7 @@ type HttpTransport struct {
 	Mutex *sync.Mutex
 
 	ExchangeListener ExchangeListener
-	Pipeline         []ChainedMiddlewareFunc
+	Pipeline         MiddlewareFunc
 }
 
 func (c *HttpTransport) DelayBeforeCall() time.Duration {

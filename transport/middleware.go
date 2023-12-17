@@ -10,6 +10,7 @@ import (
 const (
 	SendErrorOn404 = ".send.error.on.404"
 	RetryOn400     = ".retry.on.400"
+	LeafExecutor   = ".leaf.executor"
 )
 
 func ThrottleFunc(ctx context.Context, c *HttpTransport, next MiddlewareFunc) (*WrappedResponse, error) {
@@ -117,4 +118,14 @@ func EnsureBodyWasRead(ctx context.Context, c *HttpTransport, next MiddlewareFun
 	} else {
 		return wr, err
 	}
+}
+
+func ExecuteFunction(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+	if f := ctx.Value(LeafExecutor); f != nil {
+		if mf, ok := f.(MiddlewareFunc); ok {
+			return mf(ctx, c)
+		}
+	}
+
+	return nil, errors.New("no executable function in this context")
 }

@@ -120,7 +120,7 @@ func FetchAllWithExists[T any](ctx context.Context, opCtx ObjectListFetchSpec[T]
 	}
 
 	totalCountHdr := firstPageResponse.Header.Get("X-Total-Count")
-	fmt.Println(totalCountHdr)
+	//fmt.Println(totalCountHdr)
 
 	if len(totalCountHdr) > 0 {
 		totalCount, _ := strconv.ParseInt(totalCountHdr, 10, 0)
@@ -179,7 +179,8 @@ func performGenericObjectCRUD[T any](ctx context.Context, c *HttpTransport, opCt
 	return rv, err
 }
 
-func buildPipeline(mf MiddlewareFunc, funcs []ChainedMiddlewareFunc) MiddlewareFunc {
+// BuildPipeline builds a call execution pipeline from the supplied chained middleware functions.
+func BuildPipeline(mf MiddlewareFunc, funcs []ChainedMiddlewareFunc) MiddlewareFunc {
 	rv := mf
 	for _, cmf := range funcs {
 		rv = wrapMiddleware(cmf, rv)
@@ -195,8 +196,9 @@ func wrapMiddleware(p1 ChainedMiddlewareFunc, mf MiddlewareFunc) MiddlewareFunc 
 }
 
 func executeCallPipeline(ctx context.Context, c *HttpTransport, execFunc MiddlewareFunc) (*WrappedResponse, error) {
-	f := buildPipeline(execFunc, c.Pipeline)
-	return f(ctx, c)
+	cCtx := context.WithValue(ctx, LeafExecutor, execFunc)
+
+	return c.Pipeline(cCtx, c)
 }
 
 func performGenericObjectCRUDWithResponse[T any](entryCtx context.Context, c *HttpTransport, opCtx ObjectFetchSpec[T], f MiddlewareFunc) (T, *WrappedResponse, error) {

@@ -120,7 +120,7 @@ func createHTTPTransport(p Params) transport.HttpTransport {
 		HttpExecutor: p.CreateHttpExecutor(),
 
 		ExchangeListener: p.ExchangeListener,
-		Pipeline:         p.Pipeline,
+		Pipeline:         transport.BuildPipeline(transport.ExecuteFunction, p.Pipeline),
 	}
 }
 
