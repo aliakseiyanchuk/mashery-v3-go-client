@@ -18,6 +18,8 @@ const customNetTTLOpt = "net-ttl"
 const endpointOpt = "endpoint"
 const bearerEnvironmentOpt = "bearer-token-env"
 const tokenEnvironmentOpt = "vault-token-env"
+const tokenResourceEnvironmentOpt = "vault-token-resource-env"
+const tokenResourceOpt = "vault-token-resource"
 const qpsOps = "qps"
 const outputJsonOps = "as-json"
 const helpOpt = "help"
@@ -25,8 +27,10 @@ const helpOpt = "help"
 var qps int64
 var travelTimeComp string
 var endpoint string
-var bearerTokenEnv string
-var vaultTokenEnv string
+var envBearerToken string
+var envVaultToken string
+var cliVaultTokenResource string
+var envVaultTokenResource string
 var globalOptOutputJson bool
 var showHelp bool
 var jsonEncoder *json.Encoder
@@ -35,22 +39,32 @@ type ExecutorFunc func(context.Context, v3client.Client, []string) int
 
 var subCommandFinders []*SubcommandFinder
 
-var handler func(context.Context, v3client.Client, interface{}) int = nil
-
 func init() {
 	jsonEncoder = json.NewEncoder(os.Stdout)
 	jsonEncoder.SetIndent("", "  ")
 }
 
+func getEffectiveVaultTokenResource() string {
+	if len(cliVaultTokenResource) > 0 {
+		return cliVaultTokenResource
+	}
+	return os.Getenv(envVaultTokenResource)
+}
+
 func authorizer() (transport.Authorizer, error) {
-	if len(vaultTokenEnv) > 0 {
-		if vaultToken := os.Getenv(vaultTokenEnv); len(vaultToken) > 0 {
-			return transport.NewVaultAuthorizer(vaultToken), nil
-		}
+	vaultTokenResource := getEffectiveVaultTokenResource()
+	vaultToken := transport.VaultToken(os.Getenv(envVaultToken))
+
+	if len(vaultTokenResource) > 0 && len(vaultToken) > 0 && len(endpoint) == 0 {
+		return transport.NewVaultTokenResourceAuthorizer(vaultTokenResource, vaultToken), nil
 	}
 
-	if len(bearerTokenEnv) > 0 {
-		if bearerToken := os.Getenv(bearerTokenEnv); len(bearerToken) > 0 {
+	if len(vaultToken) > 0 && len(endpoint) > 0 {
+		return transport.NewVaultAuthorizer(vaultToken), nil
+	}
+
+	if len(endpoint) == 0 && len(envBearerToken) > 0 {
+		if bearerToken := os.Getenv(envBearerToken); len(bearerToken) > 0 {
 			return transport.NewBearerAuthorizer(bearerToken), nil
 		}
 	}
@@ -66,8 +80,10 @@ func main() {
 	flag.Int64Var(&qps, qpsOps, 2, "Observe specified queries-per-second while querying")
 	flag.StringVar(&travelTimeComp, customNetTTLOpt, "173ms", "Consider specified network travel time")
 	flag.StringVar(&endpoint, endpointOpt, "", "A non-standard endpoint to connect to")
-	flag.StringVar(&bearerTokenEnv, bearerEnvironmentOpt, "MASH_BEARER_TOKEN", "An environment variable containing bearer token")
-	flag.StringVar(&vaultTokenEnv, tokenEnvironmentOpt, "VAULT_TOKEN", "An environment variable containing HashiCorp vault access token")
+	flag.StringVar(&envBearerToken, bearerEnvironmentOpt, "MASH_BEARER_TOKEN", "An environment variable containing bearer token")
+	flag.StringVar(&envVaultToken, tokenEnvironmentOpt, "VAULT_TOKEN", "An environment variable containing HashiCorp vault access token")
+	flag.StringVar(&envVaultTokenResource, tokenResourceEnvironmentOpt, "VAULT_TOKEN_RESOURCE", "An environment variable containing HashiCorp resource that will provide the V3 access token")
+	flag.StringVar(&cliVaultTokenResource, tokenResourceOpt, "", "URL of the resource in the Vault to read an access token from. Requires specifying Vault credentials.")
 	flag.BoolVar(&globalOptOutputJson, outputJsonOps, false, "Output JSON rather than a pretty-printed template")
 	flag.BoolVar(&showHelp, helpOpt, false, "Show help options")
 	flag.Parse()

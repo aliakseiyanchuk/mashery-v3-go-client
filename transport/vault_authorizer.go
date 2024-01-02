@@ -23,10 +23,10 @@ func (va VaultAuthorizer) Close() {
 }
 
 // NewVaultAuthorizer Create HashiCorp vault authorizer
-func NewVaultAuthorizer(token string) Authorizer {
+func NewVaultAuthorizer(token VaultToken) Authorizer {
 	rv := &VaultAuthorizer{
 		auth: map[string]string{
-			"X-Vault-Token": token,
+			"X-Vault-Token": string(token),
 		},
 	}
 

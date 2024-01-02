@@ -18,9 +18,7 @@ type MiddlewareFunc func(ctx context.Context, transport *HttpTransport) (*Wrappe
 type ChainedMiddlewareFunc func(ctx context.Context, transport *HttpTransport, middlewareFunc MiddlewareFunc) (*WrappedResponse, error)
 
 func GetObject[T any](ctx context.Context, opCtx ObjectFetchSpec[T], c *HttpTransport) (T, bool, error) {
-	rv, resp, err := performGenericObjectCRUDWithResponse[T](ctx, c, opCtx, func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
-		return c.Fetch(ctx, opCtx.DestResource())
-	})
+	rv, resp, err := performGenericObjectCRUDWithResponse[T](ctx, c, opCtx, opCtx.FetchFunc())
 	return rv, resp.StatusCode == 200, err
 }
 

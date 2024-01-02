@@ -128,6 +128,12 @@ func (ctx *CommonFetchSpec) DestResource() string {
 	}
 }
 
+func (cfs *CommonFetchSpec) FetchFunc() func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+	return func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Fetch(ctx, cfs.DestResource())
+	}
+}
+
 // WithQuery Append extra query parameters to the parent context
 func (ctx *FetchSpec) WithQuery(qs url.Values) FetchSpec {
 	return FetchSpec{
