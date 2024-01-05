@@ -212,8 +212,6 @@ func performGenericObjectCRUDWithResponse[T any](entryCtx context.Context, c *Ht
 
 		if wr.StatusCode == 200 && !opCtx.IgnoreResponse {
 			if jsonErr := json.Unmarshal(wr.MustBody(), &rv); jsonErr != nil {
-				fmt.Println(string(wr.MustBody()))
-
 				return rv, wr, &errwrap.WrappedError{
 					Context: fmt.Sprintf("%s %s->unmarshal response", wr.Request.Request.Method, opCtx.AppContext),
 					Cause:   jsonErr,
