@@ -9,7 +9,7 @@ import (
 
 var applicationFields = []string{
 	"id", "name", "created", "updated", "username", "description",
-	"type", "commercial", "ads",
+	"type", "commercial", "ads", "tags",
 	"notes", "howDidYouHear", "preferredProtocol",
 	"preferredOutput", "externalId", "uri", "oauthRedirectUri",
 }
@@ -64,6 +64,13 @@ func init() {
 				return "", errors.New("unsupported identification for upsert")
 			}
 		},
+
+		UpsertCleaner: func(m *masherytypes.Application) {
+			m.Id = ""
+			m.Created = nil
+			m.Updated = nil
+		},
+
 		DefaultFields: applicationFields,
 		GetFields:     DefaultGetFieldsFromContext(applicationFields),
 		Pagination:    transport.PerPage,

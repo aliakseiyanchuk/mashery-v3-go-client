@@ -11,15 +11,19 @@ import (
 var packageListTemplate string
 var subCmdPackageList *SubcommandTemplate[int, []masherytypes.Package]
 
-func execPackageList(ctx context.Context, cl v3client.Client, _ int) ([]masherytypes.Package, error) {
-	return cl.ListPackages(ctx)
+func execPackageList(ctx context.Context, cl v3client.Client, _ int, params []string) ([]masherytypes.Package, error) {
+	if len(params) > 0 {
+		return cl.ListPackagesFiltered(ctx, kvArrayToMap(params))
+	} else {
+		return cl.ListPackages(ctx)
+	}
 }
 
 func init() {
 	subCmdPackageList = &SubcommandTemplate[int, []masherytypes.Package]{
-		Command:  []string{"package", "list"},
-		Executor: execPackageList,
-		Template: mustTemplate(packageListTemplate),
+		Command:               []string{"package", "list"},
+		ParameterizedExecutor: execPackageList,
+		Template:              mustTemplate(packageListTemplate),
 	}
 
 	enableSubcommand(subCmdPackageList.Finder())

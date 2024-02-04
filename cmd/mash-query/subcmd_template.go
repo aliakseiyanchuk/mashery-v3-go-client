@@ -5,12 +5,15 @@ import (
 	"context"
 	_ "embed"
 	json2 "encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
 	"strings"
 	"text/template"
+	"time"
 )
 
 type ObjectWithExists[TIdent, TObj any] struct {
@@ -38,13 +41,15 @@ type SubcommandTemplate[TArg, TOut any] struct {
 	Command  []string
 	Template *template.Template
 
-	Arg TArg
+	Arg           TArg
+	RemainderArgs []string
 
 	FlagSetInit    func(arg *TArg, fs *flag.FlagSet)
 	EnvFlagSetInit func(arg *TArg) []EnvFlag
 
-	Validator func(arg *TArg) error
-	Executor  func(context.Context, v3client.Client, TArg) (TOut, error)
+	Validator             func(arg *TArg) error
+	ParameterizedExecutor func(context.Context, v3client.Client, TArg, []string) (TOut, error)
+	Executor              func(context.Context, v3client.Client, TArg) (TOut, error)
 }
 
 type SubcommandFinder struct {
@@ -87,9 +92,20 @@ func joinStrings(str []string, sem string) string {
 	}
 }
 
+func masheryTimeToString(t *masherytypes.MasheryJSONTime) string {
+	if t == nil {
+		return "null-time"
+	}
+
+	return time.Time(*t).Format(time.RFC1123)
+}
+
 func mustTemplate(str string) *template.Template {
 	if t, err := template.New("templ").
-		Funcs(template.FuncMap{"StringsJoin": joinStrings}).
+		Funcs(template.FuncMap{
+			"StringsJoin": joinStrings,
+			"MasheryTime": masheryTimeToString,
+		}).
 		Parse(str); err != nil {
 		panic(err.Error())
 	} else {
@@ -117,6 +133,8 @@ func (st *SubcommandTemplate[TArg, TOut]) parseCommand(args []string) error {
 
 	if parseErr := st.flagSet.Parse(args); parseErr != nil {
 		return parseErr
+	} else {
+		st.RemainderArgs = st.flagSet.Args()
 	}
 
 	// Load data from the environment set
@@ -136,6 +154,19 @@ func (st *SubcommandTemplate[TArg, TOut]) parseCommand(args []string) error {
 
 //go:embed templates/subcmd_env_flag_set.tmpl
 var subcmdEnvFlagSetTemplate string
+
+func (st *SubcommandTemplate[TArg, TOut]) ExecCommand(ctx context.Context, cl v3client.Client) (TOut, error) {
+	if st.ParameterizedExecutor != nil {
+		return st.ParameterizedExecutor(ctx, cl, st.Arg, st.RemainderArgs)
+	}
+
+	if st.Executor != nil {
+		return st.Executor(ctx, cl, st.Arg)
+	}
+
+	rv := new(TOut)
+	return *rv, errors.New("no command implementation has been supplied")
+}
 
 func (st *SubcommandTemplate[TArg, TOut]) Execute(ctx context.Context, cl v3client.Client, args []string) int {
 	cmdParseErr := st.parseCommand(args[len(st.Command):])
@@ -164,7 +195,7 @@ func (st *SubcommandTemplate[TArg, TOut]) Execute(ctx context.Context, cl v3clie
 		}
 	}
 
-	if tOut, execErr := st.Executor(ctx, cl, st.Arg); execErr != nil {
+	if tOut, execErr := st.ExecCommand(ctx, cl); execErr != nil {
 		os.Stderr.WriteString(fmt.Sprintf("Command execution has failed: %s\n", execErr.Error()))
 		return 2
 	} else {

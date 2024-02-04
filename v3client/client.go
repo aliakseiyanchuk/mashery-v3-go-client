@@ -78,6 +78,7 @@ type Client interface {
 	UpdateMember(ctx context.Context, member masherytypes.Member) (masherytypes.Member, error)
 	DeleteMember(ctx context.Context, memberId masherytypes.MemberIdentifier) error
 	ListMembers(ctx context.Context) ([]masherytypes.Member, error)
+	ListMembersFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Member, error)
 
 	// Packages
 	GetPackage(ctx context.Context, id masherytypes.PackageIdentifier) (masherytypes.Package, bool, error)
@@ -86,6 +87,7 @@ type Client interface {
 	ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier) (masherytypes.Package, error)
 	DeletePackage(ctx context.Context, packId masherytypes.PackageIdentifier) error
 	ListPackages(ctx context.Context) ([]masherytypes.Package, error)
+	ListPackagesFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Package, error)
 
 	// Package plans
 	CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (masherytypes.AddressableV3Object, error)
@@ -102,6 +104,7 @@ type Client interface {
 	DeletePlan(ctx context.Context, ident masherytypes.PackagePlanIdentifier) error
 	CountPlans(ctx context.Context, packageId masherytypes.PackageIdentifier) (int64, error)
 	ListPlans(ctx context.Context, packageId masherytypes.PackageIdentifier) ([]masherytypes.Plan, error)
+	ListPlansFiltered(ctx context.Context, packageId masherytypes.PackageIdentifier, params map[string]string) ([]masherytypes.Plan, error)
 	ListPlanServices(ctx context.Context, ident masherytypes.PackagePlanIdentifier) ([]masherytypes.Service, error)
 
 	CountPlanEndpoints(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (int64, error)
@@ -245,12 +248,13 @@ type ClientMethodSchema struct {
 	CountEndpointsMethodsFiltersOf        func(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, c *transport.HttpTransport) (int64, error)
 
 	// Member
-	GetMember     func(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.HttpTransport) (masherytypes.Member, bool, error)
-	GetFullMember func(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.HttpTransport) (masherytypes.Member, bool, error)
-	CreateMember  func(ctx context.Context, member masherytypes.Member, c *transport.HttpTransport) (masherytypes.Member, error)
-	UpdateMember  func(ctx context.Context, member masherytypes.Member, c *transport.HttpTransport) (masherytypes.Member, error)
-	DeleteMember  func(ctx context.Context, memberId masherytypes.MemberIdentifier, c *transport.HttpTransport) error
-	ListMembers   func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Member, error)
+	GetMember           func(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.HttpTransport) (masherytypes.Member, bool, error)
+	GetFullMember       func(ctx context.Context, id masherytypes.MemberIdentifier, c *transport.HttpTransport) (masherytypes.Member, bool, error)
+	CreateMember        func(ctx context.Context, member masherytypes.Member, c *transport.HttpTransport) (masherytypes.Member, error)
+	UpdateMember        func(ctx context.Context, member masherytypes.Member, c *transport.HttpTransport) (masherytypes.Member, error)
+	DeleteMember        func(ctx context.Context, memberId masherytypes.MemberIdentifier, c *transport.HttpTransport) error
+	ListMembers         func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Member, error)
+	ListMembersFiltered func(ctx context.Context, m map[string]string, c *transport.HttpTransport) ([]masherytypes.Member, error)
 
 	// Packages
 	GetPackage            func(ctx context.Context, id masherytypes.PackageIdentifier, c *transport.HttpTransport) (masherytypes.Package, bool, error)
@@ -258,8 +262,9 @@ type ClientMethodSchema struct {
 	UpdatePackage         func(ctx context.Context, pack masherytypes.Package, c *transport.HttpTransport) (masherytypes.Package, error)
 	ResetPackageOwnership func(ctx context.Context, pack masherytypes.PackageIdentifier, c *transport.HttpTransport) (masherytypes.Package, error)
 
-	DeletePackage func(ctx context.Context, packId masherytypes.PackageIdentifier, c *transport.HttpTransport) error
-	ListPackages  func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Package, error)
+	DeletePackage        func(ctx context.Context, packId masherytypes.PackageIdentifier, c *transport.HttpTransport) error
+	ListPackages         func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Package, error)
+	ListPackagesFiltered func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.Package, error)
 
 	// Package plans
 	CreatePlanService       func(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier, c *transport.HttpTransport) (masherytypes.AddressableV3Object, error)
@@ -278,6 +283,7 @@ type ClientMethodSchema struct {
 	DeletePlan         func(ctx context.Context, dent masherytypes.PackagePlanIdentifier, c *transport.HttpTransport) error
 	CountPlans         func(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.HttpTransport) (int64, error)
 	ListPlans          func(ctx context.Context, packageId masherytypes.PackageIdentifier, c *transport.HttpTransport) ([]masherytypes.Plan, error)
+	ListPlansFiltered  func(ctx context.Context, packageId masherytypes.PackageIdentifier, params map[string]string, c *transport.HttpTransport) ([]masherytypes.Plan, error)
 	ListPlanServices   func(ctx context.Context, dent masherytypes.PackagePlanIdentifier, c *transport.HttpTransport) ([]masherytypes.Service, error)
 
 	// Plan methods
@@ -761,6 +767,14 @@ func (c *PluggableClient) ListMembers(ctx context.Context) ([]masherytypes.Membe
 	}
 }
 
+func (c *PluggableClient) ListMembersFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Member, error) {
+	if c.schema.ListMembersFiltered != nil {
+		return c.schema.ListMembersFiltered(ctx, params, c.transport)
+	} else {
+		return []masherytypes.Member{}, c.notImplemented("ListMembersFiltered")
+	}
+}
+
 // ---------------------------------------------
 // Packages
 
@@ -809,6 +823,14 @@ func (c *PluggableClient) ListPackages(ctx context.Context) ([]masherytypes.Pack
 		return c.schema.ListPackages(ctx, c.transport)
 	} else {
 		return []masherytypes.Package{}, c.notImplemented("ListPackages")
+	}
+}
+
+func (c *PluggableClient) ListPackagesFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Package, error) {
+	if c.schema.ListPackagesFiltered != nil {
+		return c.schema.ListPackagesFiltered(ctx, params, c.transport)
+	} else {
+		return []masherytypes.Package{}, c.notImplemented("ListPackagesFiltered")
 	}
 }
 
@@ -884,6 +906,14 @@ func (c *PluggableClient) ListPlans(ctx context.Context, packageId masherytypes.
 		return c.schema.ListPlans(ctx, packageId, c.transport)
 	} else {
 		return []masherytypes.Plan{}, c.notImplemented("ListPlans")
+	}
+}
+
+func (c *PluggableClient) ListPlansFiltered(ctx context.Context, packageId masherytypes.PackageIdentifier, params map[string]string) ([]masherytypes.Plan, error) {
+	if c.schema.ListPlansFiltered != nil {
+		return c.schema.ListPlansFiltered(ctx, packageId, params, c.transport)
+	} else {
+		return []masherytypes.Plan{}, c.notImplemented("ListPlansFiltered")
 	}
 }
 

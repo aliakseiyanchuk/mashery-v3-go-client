@@ -18,9 +18,12 @@ type GenericCRUDDecorator[ParentIdent, TIdent, T any] struct {
 	// ResourceForUpsert Return a resource for upsert operation.
 	ResourceForUpsert func(T) (string, error)
 	ResourceForParent func(ParentIdent) (string, error)
-	DefaultFields     []string
-	GetFields         func(context.Context) []string
-	Pagination        transport.PaginationType
+
+	UpsertCleaner func(*T)
+
+	DefaultFields []string
+	GetFields     func(context.Context) []string
+	Pagination    transport.PaginationType
 
 	AcceptObjectIdent BiConsumer[TIdent, *T]
 	AcceptParentIdent BiConsumer[ParentIdent, *T]
@@ -181,6 +184,10 @@ func (crud *GenericCRUD[TParent, TIdent, T]) Update(ctx context.Context, upsert 
 	if resourceURL, err := crud.Decorator.ResourceForUpsert(upsert); err != nil {
 		return crud.StubValue(), err
 	} else {
+		if crud.Decorator.UpsertCleaner != nil {
+			crud.Decorator.UpsertCleaner(&upsert)
+		}
+
 		objectUpsertSpecBuilder := transport.ObjectUpsertSpecBuilder[T]{}
 		objectUpsertSpecBuilder.
 			WithUpsert(upsert).

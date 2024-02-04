@@ -9,6 +9,7 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,7 @@ const tokenResourceOpt = "vault-token-resource"
 const qpsOps = "qps"
 const outputJsonOps = "as-json"
 const helpOpt = "help"
+const verboseTrafficOpt = "verbose-traffic"
 
 var qps int64
 var travelTimeComp string
@@ -33,6 +35,7 @@ var cliVaultTokenResource string
 var envVaultTokenResource string
 var globalOptOutputJson bool
 var showHelp bool
+var showVerboseTraffic bool
 var jsonEncoder *json.Encoder
 
 type ExecutorFunc func(context.Context, v3client.Client, []string) int
@@ -76,6 +79,33 @@ func enableSubcommand(cmd *SubcommandFinder) {
 	subCommandFinders = append(subCommandFinders, cmd)
 }
 
+func kvArrayToMap(in []string) map[string]string {
+	rv := map[string]string{}
+
+	for _, str := range in {
+		s := strings.Split(str, "=")
+		if len(s) == 1 {
+			rv[s[0]] = ""
+		} else if len(s) >= 2 {
+			rv[s[0]] = s[1]
+		}
+	}
+
+	return rv
+}
+
+func trafficListener(_ context.Context, req *transport.WrappedRequest, res *transport.WrappedResponse, err error) {
+	if showVerboseTraffic {
+		fmt.Printf("-> %s %s\n", req.Request.Method, req.Request.URL.String())
+		if req.Body != nil {
+			str, _ := json.Marshal(req.Body)
+			fmt.Println(string(str))
+		}
+		fmt.Println("<-")
+		fmt.Println(string(res.MustBody()))
+	}
+}
+
 func main() {
 	flag.Int64Var(&qps, qpsOps, 2, "Observe specified queries-per-second while querying")
 	flag.StringVar(&travelTimeComp, customNetTTLOpt, "173ms", "Consider specified network travel time")
@@ -86,6 +116,7 @@ func main() {
 	flag.StringVar(&cliVaultTokenResource, tokenResourceOpt, "", "URL of the resource in the Vault to read an access token from. Requires specifying Vault credentials.")
 	flag.BoolVar(&globalOptOutputJson, outputJsonOps, false, "Output JSON rather than a pretty-printed template")
 	flag.BoolVar(&showHelp, helpOpt, false, "Show help options")
+	flag.BoolVar(&showVerboseTraffic, verboseTrafficOpt, false, "Show verbose traffic")
 	flag.Parse()
 
 	if showHelp {
@@ -128,6 +159,9 @@ func main() {
 			Authorizer:    tknProvider,
 			QPS:           qps,
 			AvgNetLatency: dur,
+			HTTPClientParams: transport.HTTPClientParams{
+				ExchangeListener: trafficListener,
+			},
 		})
 
 		exitCode := execFunc(ctx, cl, subCmd)

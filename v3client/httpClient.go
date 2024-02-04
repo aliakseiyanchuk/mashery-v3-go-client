@@ -235,12 +235,13 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		CountEndpointsMethodsFiltersOf:        endpointMethodFilterCRUD.Count,
 
 		// Member
-		GetMember:     memberCRUD.Get,
-		GetFullMember: GetWithFields(memberDeepFields, memberCRUD.Get),
-		CreateMember:  RootCreator(memberCRUD.Create, 0),
-		UpdateMember:  memberCRUD.Update,
-		DeleteMember:  memberCRUD.Delete,
-		ListMembers:   RootFetcher(memberCRUD.FetchAll, 0),
+		GetMember:           memberCRUD.Get,
+		GetFullMember:       GetWithFields(memberDeepFields, memberCRUD.Get),
+		CreateMember:        RootCreator(memberCRUD.Create, 0),
+		UpdateMember:        memberCRUD.Update,
+		DeleteMember:        memberCRUD.Delete,
+		ListMembers:         RootFetcher(memberCRUD.FetchAll, 0),
+		ListMembersFiltered: RootFilteredFetcher(memberCRUD.FetchFiltered, 0),
 
 		// Packages
 		GetPackage:            packageCRUD.Get,
@@ -248,6 +249,7 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		UpdatePackage:         packageCRUD.Update,
 		DeletePackage:         packageCRUD.Delete,
 		ListPackages:          RootFetcher(packageCRUD.FetchAll, 0),
+		ListPackagesFiltered:  RootFilteredFetcher(packageCRUD.FetchFiltered, 0),
 		ResetPackageOwnership: ResetPackageOwnership,
 
 		// Package plans
@@ -259,12 +261,13 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		DeletePlanEndpoint:      DeletePlanEndpoint,
 		ListPlanEndpoints:       ListPlanEndpoints,
 
-		GetPlan:    packagePlanCRDU.Get,
-		CreatePlan: packagePlanCRDU.Create,
-		UpdatePlan: packagePlanCRDU.Update,
-		DeletePlan: packagePlanCRDU.Delete,
-		CountPlans: packagePlanCRDU.Count,
-		ListPlans:  packagePlanCRDU.FetchAll,
+		GetPlan:           packagePlanCRDU.Get,
+		CreatePlan:        packagePlanCRDU.Create,
+		UpdatePlan:        packagePlanCRDU.Update,
+		DeletePlan:        packagePlanCRDU.Delete,
+		CountPlans:        packagePlanCRDU.Count,
+		ListPlans:         packagePlanCRDU.FetchAll,
+		ListPlansFiltered: packagePlanCRDU.FetchFiltered,
 
 		CountPlanService:   CountPlanService,
 		CountPlanEndpoints: CountPlanEndpoints,
