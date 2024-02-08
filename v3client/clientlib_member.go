@@ -28,6 +28,11 @@ func init() {
 				return "/members", nil
 			}
 		},
+		UpsertCleaner: func(m *masherytypes.Member) {
+			m.Id = ""
+			m.Username = ""
+			m.Email = ""
+		},
 		ResourceForParent: func(_ int) (string, error) {
 			return "/members", nil
 		},

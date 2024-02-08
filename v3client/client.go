@@ -29,6 +29,8 @@ type Client interface {
 
 	// GetApplication Retrieve the details of the application
 	GetApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier) (masherytypes.Application, bool, error)
+	GetApplicationExtendedAttributes(ctx context.Context, appId masherytypes.ApplicationIdentifier) (map[string]string, error)
+	UpdateApplicationExtendedAttributes(ctx context.Context, appId masherytypes.ApplicationIdentifier, params map[string]string) (map[string]string, error)
 	GetApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) ([]masherytypes.PackageKey, error)
 	CountApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) (int64, error)
 	GetFullApplication(ctx context.Context, id masherytypes.ApplicationIdentifier) (masherytypes.Application, bool, error)
@@ -204,7 +206,10 @@ type ClientMethodSchema struct {
 	GetSystemDomains func(ctx context.Context, transport *transport.HttpTransport) ([]masherytypes.DomainAddress, error)
 
 	// Applications
-	GetApplicationContext       func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) (masherytypes.Application, bool, error)
+	GetApplicationContext               func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) (masherytypes.Application, bool, error)
+	GetApplicationExtendedAttributes    func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) (map[string]string, error)
+	UpdateApplicationExtendedAttributes func(ctx context.Context, appId masherytypes.ApplicationIdentifier, params map[string]string, transport *transport.HttpTransport) (map[string]string, error)
+
 	GetApplicationPackageKeys   func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) ([]masherytypes.PackageKey, error)
 	CountApplicationPackageKeys func(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.HttpTransport) (int64, error)
 	GetFullApplication          func(ctx context.Context, id masherytypes.ApplicationIdentifier, c *transport.HttpTransport) (masherytypes.Application, bool, error)
@@ -438,6 +443,21 @@ func (c *PluggableClient) GetApplication(ctx context.Context, appId masherytypes
 		return c.schema.GetApplicationContext(ctx, appId, c.transport)
 	} else {
 		return masherytypes.Application{}, false, c.notImplemented("GetApplication")
+	}
+}
+
+func (c *PluggableClient) GetApplicationExtendedAttributes(ctx context.Context, appId masherytypes.ApplicationIdentifier) (map[string]string, error) {
+	if c.schema.GetApplicationContext != nil {
+		return c.schema.GetApplicationExtendedAttributes(ctx, appId, c.transport)
+	} else {
+		return map[string]string{}, c.notImplemented("GetApplicationExtendedAttributes")
+	}
+}
+func (c *PluggableClient) UpdateApplicationExtendedAttributes(ctx context.Context, appId masherytypes.ApplicationIdentifier, params map[string]string) (map[string]string, error) {
+	if c.schema.UpdateApplicationExtendedAttributes != nil {
+		return c.schema.UpdateApplicationExtendedAttributes(ctx, appId, params, c.transport)
+	} else {
+		return map[string]string{}, c.notImplemented("UpdateApplicationExtendedAttributes")
 	}
 }
 

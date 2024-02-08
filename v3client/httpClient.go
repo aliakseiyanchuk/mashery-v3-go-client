@@ -185,14 +185,16 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		GetSystemDomains: RootFetcher[int, masherytypes.DomainAddress](systemDomainsCRUD.FetchAll, 0),
 
 		// Application method schema
-		GetApplicationContext:       applicationCRUD.Get,
-		GetApplicationPackageKeys:   applicationPackageKeyCRUD.FetchAll,
-		CountApplicationPackageKeys: applicationPackageKeyCRUD.Count,
-		GetFullApplication:          GetWithFields[masherytypes.ApplicationIdentifier, masherytypes.Application](applicationDeepFields, applicationCRUD.Get),
-		CreateApplication:           applicationCRUD.Create,
-		UpdateApplication:           applicationCRUD.Update,
-		DeleteApplication:           applicationCRUD.Delete,
-		CountApplicationsOfMember:   applicationCRUD.Count,
+		GetApplicationContext:               applicationCRUD.Get,
+		GetApplicationExtendedAttributes:    GetApplicationExtendedAttributes,
+		UpdateApplicationExtendedAttributes: UpdateApplicationExtendedAttributes,
+		GetApplicationPackageKeys:           applicationPackageKeyCRUD.FetchAll,
+		CountApplicationPackageKeys:         applicationPackageKeyCRUD.Count,
+		GetFullApplication:                  GetWithFields[masherytypes.ApplicationIdentifier, masherytypes.Application](applicationDeepFields, applicationCRUD.Get),
+		CreateApplication:                   applicationCRUD.Create,
+		UpdateApplication:                   applicationCRUD.Update,
+		DeleteApplication:                   applicationCRUD.Delete,
+		CountApplicationsOfMember:           applicationCRUD.Count,
 		ListApplications: func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Application, error) {
 			return applicationCRUD.FetchAll(ctx, masherytypes.MemberIdentifier{}, c)
 		},

@@ -71,7 +71,7 @@ func (h *HttpResourceFetcher) fetch() error {
 		if resp, respErr := h.client.Do(req); respErr != nil {
 			return respErr
 		} else if resp.StatusCode > 299 {
-			return errors.New(fmt.Sprintf("received an unexpected code %d", resp.StatusCode))
+			return errors.New(fmt.Sprintf("http resource fetcher received an unexpected code %d while attempting to read token from %s", resp.StatusCode, h.url))
 		} else {
 			wr := &WrappedResponse{Response: resp}
 			if respData, rcvErr := wr.Body(); rcvErr != nil {

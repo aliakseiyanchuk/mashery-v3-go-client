@@ -405,7 +405,7 @@ type Application struct {
 	Uri               string        `json:"uri,omitempty"`
 	OAuthRedirectUri  string        `json:"oauthRedirectUri,omitempty"`
 	PackageKeys       *[]PackageKey `json:"packageKeys,omitempty"`
-	Eav               *EAV          `json:"eav,omitempty"`
+	Eav               EAV           `json:"-"`
 }
 
 func (a *Application) Identifier() ApplicationIdentifier {
@@ -430,8 +430,8 @@ type RolePermission struct {
 type Member struct {
 	AddressableV3Object
 
-	Username     string         `json:"username"`
-	Email        string         `json:"email"`
+	Username     string         `json:"username,omitempty"`
+	Email        string         `json:"email,omitempty"`
 	DisplayName  string         `json:"displayName,omitempty"`
 	Uri          string         `json:"uri,omitempty"`
 	Blog         string         `json:"blog,omitempty"`

@@ -19,7 +19,11 @@ type ChainedMiddlewareFunc func(ctx context.Context, transport *HttpTransport, m
 
 func GetObject[T any](ctx context.Context, opCtx ObjectFetchSpec[T], c *HttpTransport) (T, bool, error) {
 	rv, resp, err := performGenericObjectCRUDWithResponse[T](ctx, c, opCtx, opCtx.FetchFunc())
-	return rv, resp.StatusCode == 200, err
+	objectExists := false
+	if resp != nil {
+		objectExists = resp.StatusCode == 200
+	}
+	return rv, objectExists, err
 }
 
 func CreateObject[T any](ctx context.Context, opCtx ObjectUpsertSpec[T], c *HttpTransport) (T, error) {
