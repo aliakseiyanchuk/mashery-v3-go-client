@@ -433,22 +433,22 @@ type Member struct {
 	Username     string         `json:"username,omitempty"`
 	Email        string         `json:"email,omitempty"`
 	DisplayName  string         `json:"displayName,omitempty"`
-	Uri          string         `json:"uri,omitempty"`
-	Blog         string         `json:"blog,omitempty"`
-	Im           string         `json:"im,omitempty"`
-	Imsvc        string         `json:"imsvc,omitempty"`
-	Phone        string         `json:"phone,omitempty"`
-	Company      string         `json:"company,omitempty"`
-	Address1     string         `json:"address1,omitempty"`
-	Address2     string         `json:"address2,omitempty"`
-	Locality     string         `json:"locality,omitempty"`
-	Region       string         `json:"region,omitempty"`
-	PostalCode   string         `json:"postalCode,omitempty"`
-	CountryCode  string         `json:"countryCode,omitempty"`
-	FirstName    string         `json:"firstName,omitempty"`
-	LastName     string         `json:"lastName,omitempty"`
+	Uri          string         `json:"uri"`
+	Blog         string         `json:"blog"`
+	Im           string         `json:"im"`
+	Imsvc        string         `json:"imsvc"`
+	Phone        string         `json:"phone"`
+	Company      string         `json:"company"`
+	Address1     string         `json:"address1"`
+	Address2     string         `json:"address2"`
+	Locality     string         `json:"locality"`
+	Region       string         `json:"region"`
+	PostalCode   string         `json:"postalCode"`
+	CountryCode  string         `json:"countryCode"`
+	FirstName    string         `json:"firstName"`
+	LastName     string         `json:"lastName"`
 	AreaStatus   string         `json:"areaStatus,omitempty"`
-	ExternalId   string         `json:"externalId,omitempty"`
+	ExternalId   string         `json:"externalId"`
 	PasswdNew    *string        `json:"passwdNew,omitempty"`
 	Applications *[]Application `json:"applications,omitempty"`
 	PackageKeys  *[]PackageKey  `json:"packageKeys,omitempty"`
