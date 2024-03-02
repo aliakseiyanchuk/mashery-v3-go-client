@@ -27,6 +27,13 @@ func init() {
 			}
 			return "", errors.New("insufficient identification")
 		},
+
+		UpsertCleaner: func(m *masherytypes.PackageKey) {
+			m.Id = ""
+			m.Created = nil
+			m.Updated = nil
+		},
+
 		ResourceForParent: func(ident int) (string, error) {
 			return "/packageKeys", nil
 		},

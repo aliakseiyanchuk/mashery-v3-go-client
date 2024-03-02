@@ -85,7 +85,7 @@ func createBaselineApplicationObject() ObjectWithExists[masherytypes.Application
 			PackageKeys: &[]masherytypes.PackageKey{
 				createBaselinePackageKey(),
 			},
-			Eav: &masherytypes.EAV{
+			Eav: masherytypes.EAV{
 				"a": "b",
 				"c": "d",
 			},

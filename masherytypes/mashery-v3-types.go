@@ -372,9 +372,9 @@ type PackageKey struct {
 	QpsLimitCeiling  *int64   `json:"qpsLimitCeiling"`
 	QpsLimitExempt   bool     `json:"qpsLimitExempt"`
 	Status           string   `json:"status"`
-	Limits           *[]Limit `json:"limits"`
-	Package          *Package `json:"package"`
-	Plan             *Plan    `json:"plan"`
+	Limits           *[]Limit `json:"limits,omitempty"`
+	Package          *Package `json:"package,omitempty"`
+	Plan             *Plan    `json:"plan,omitempty"`
 }
 
 func (mpk *PackageKey) Identifier() PackageKeyIdentifier {

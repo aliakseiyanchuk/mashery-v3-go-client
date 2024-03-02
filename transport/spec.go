@@ -216,11 +216,25 @@ func (b *CommonFetchSpecBuilder) WithIgnoreResponse(p bool) *CommonFetchSpecBuil
 	return b
 }
 
+func (b *CommonFetchSpecBuilder) BuildQuery() url.Values {
+	if b.Query != nil {
+		var rv = make(url.Values, len(b.Query))
+
+		for k, v := range b.Query {
+			rv[k] = v
+		}
+
+		return rv
+	} else {
+		return nil
+	}
+}
+
 func (b *CommonFetchSpecBuilder) Build() CommonFetchSpec {
 	rv := CommonFetchSpec{
 		Pagination:     b.Pagination,
 		Resource:       b.Resource,
-		Query:          b.Query,
+		Query:          b.BuildQuery(),
 		AppContext:     b.AppContext,
 		Return404AsNil: b.Return404AsNil,
 		IgnoreResponse: b.IgnoreResponse,

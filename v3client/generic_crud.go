@@ -100,7 +100,16 @@ func NewCRUD[TParent, TIdent, T any](appContext string, d *GenericCRUDDecorator[
 		}
 
 		rv.querySupplier = func(_ context.Context) url.Values {
-			return rv.fixedFieldsQuery
+			if rv.fixedFieldsQuery != nil {
+				q := make(url.Values, len(rv.fixedFieldsQuery))
+				for k, v := range rv.fixedFieldsQuery {
+					q[k] = v
+				}
+
+				return q
+			} else {
+				return nil
+			}
 		}
 	}
 
