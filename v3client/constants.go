@@ -79,6 +79,8 @@ var MasheryPackageKeyFields = []string{
 	"id", "apikey", "secret", "created", "updated", "rateLimitCeiling", "rateLimitExempt", "qpsLimitCeiling",
 	"qpsLimitExempt", "status", "limits",
 }
+var MasheryApplicationPackageKeyFields = append(MasheryPackageKeyFields,
+	"package", "plan")
 
 var MasheryPackageKeyFullFields = append(MasheryPackageKeyFields, "package", "plan")
 

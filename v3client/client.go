@@ -31,7 +31,7 @@ type Client interface {
 	GetApplication(ctx context.Context, appId masherytypes.ApplicationIdentifier) (masherytypes.Application, bool, error)
 	GetApplicationExtendedAttributes(ctx context.Context, appId masherytypes.ApplicationIdentifier) (map[string]string, error)
 	UpdateApplicationExtendedAttributes(ctx context.Context, appId masherytypes.ApplicationIdentifier, params map[string]string) (map[string]string, error)
-	GetApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) ([]masherytypes.PackageKey, error)
+	GetApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) ([]masherytypes.ApplicationPackageKey, error)
 	CountApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) (int64, error)
 	GetFullApplication(ctx context.Context, id masherytypes.ApplicationIdentifier) (masherytypes.Application, bool, error)
 	CreateApplication(ctx context.Context, memberId masherytypes.MemberIdentifier, app masherytypes.Application) (masherytypes.Application, error)
@@ -122,11 +122,17 @@ type Client interface {
 	CreatePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier) (masherytypes.PackagePlanServiceEndpointMethodFilter, error)
 	DeletePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) error
 
-	// Package key
+	// GetPackageKey Retrieves the application package key
+	GetApplicationPackageKey(ctx context.Context, id masherytypes.ApplicationPackageKeyIdentifier) (masherytypes.ApplicationPackageKey, bool, error)
+	CreateApplicationPackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.ApplicationPackageKey) (masherytypes.ApplicationPackageKey, error)
+	UpdateApplicationPackageKey(ctx context.Context, packageKey masherytypes.ApplicationPackageKey) (masherytypes.ApplicationPackageKey, error)
+	DeleteApplicationPackageKey(ctx context.Context, keyId masherytypes.ApplicationPackageKeyIdentifier) error
+
 	GetPackageKey(ctx context.Context, id masherytypes.PackageKeyIdentifier) (masherytypes.PackageKey, bool, error)
-	CreatePackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error)
+	CreatePackageKey(ctx context.Context, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error)
 	UpdatePackageKey(ctx context.Context, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error)
 	DeletePackageKey(ctx context.Context, keyId masherytypes.PackageKeyIdentifier) error
+
 	ListPackageKeysFiltered(ctx context.Context, params map[string]string) ([]masherytypes.PackageKey, error)
 	ListPackageKeys(ctx context.Context) ([]masherytypes.PackageKey, error)
 
@@ -210,7 +216,7 @@ type ClientMethodSchema struct {
 	GetApplicationExtendedAttributes    func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) (map[string]string, error)
 	UpdateApplicationExtendedAttributes func(ctx context.Context, appId masherytypes.ApplicationIdentifier, params map[string]string, transport *transport.HttpTransport) (map[string]string, error)
 
-	GetApplicationPackageKeys   func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) ([]masherytypes.PackageKey, error)
+	GetApplicationPackageKeys   func(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) ([]masherytypes.ApplicationPackageKey, error)
 	CountApplicationPackageKeys func(ctx context.Context, appId masherytypes.ApplicationIdentifier, c *transport.HttpTransport) (int64, error)
 	GetFullApplication          func(ctx context.Context, id masherytypes.ApplicationIdentifier, c *transport.HttpTransport) (masherytypes.Application, bool, error)
 	CreateApplication           func(ctx context.Context, memberId masherytypes.MemberIdentifier, app masherytypes.Application, c *transport.HttpTransport) (masherytypes.Application, error)
@@ -303,10 +309,16 @@ type ClientMethodSchema struct {
 	DeletePackagePlanMethodFilter func(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier, c *transport.HttpTransport) error
 
 	// Package key
-	GetPackageKey           func(ctx context.Context, id masherytypes.PackageKeyIdentifier, c *transport.HttpTransport) (masherytypes.PackageKey, bool, error)
-	CreatePackageKey        func(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey, c *transport.HttpTransport) (masherytypes.PackageKey, error)
-	UpdatePackageKey        func(ctx context.Context, packageKey masherytypes.PackageKey, c *transport.HttpTransport) (masherytypes.PackageKey, error)
-	DeletePackageKey        func(ctx context.Context, keyId masherytypes.PackageKeyIdentifier, c *transport.HttpTransport) error
+	GetApplicationPackageKey    func(ctx context.Context, id masherytypes.ApplicationPackageKeyIdentifier, c *transport.HttpTransport) (masherytypes.ApplicationPackageKey, bool, error)
+	CreateApplicationPackageKey func(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.ApplicationPackageKey, c *transport.HttpTransport) (masherytypes.ApplicationPackageKey, error)
+	UpdateApplicationPackageKey func(ctx context.Context, packageKey masherytypes.ApplicationPackageKey, c *transport.HttpTransport) (masherytypes.ApplicationPackageKey, error)
+	DeleteApplicationPackageKey func(ctx context.Context, keyId masherytypes.ApplicationPackageKeyIdentifier, c *transport.HttpTransport) error
+
+	GetPackageKey    func(ctx context.Context, id masherytypes.PackageKeyIdentifier, c *transport.HttpTransport) (masherytypes.PackageKey, bool, error)
+	CreatePackageKey func(ctx context.Context, packageKey masherytypes.PackageKey, c *transport.HttpTransport) (masherytypes.PackageKey, error)
+	UpdatePackageKey func(ctx context.Context, packageKey masherytypes.PackageKey, c *transport.HttpTransport) (masherytypes.PackageKey, error)
+	DeletePackageKey func(ctx context.Context, keyId masherytypes.PackageKeyIdentifier, c *transport.HttpTransport) error
+
 	ListPackageKeysFiltered func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.PackageKey, error)
 	ListPackageKeys         func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.PackageKey, error)
 
@@ -461,7 +473,7 @@ func (c *PluggableClient) UpdateApplicationExtendedAttributes(ctx context.Contex
 	}
 }
 
-func (c *PluggableClient) GetApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) ([]masherytypes.PackageKey, error) {
+func (c *PluggableClient) GetApplicationPackageKeys(ctx context.Context, appId masherytypes.ApplicationIdentifier) ([]masherytypes.ApplicationPackageKey, error) {
 	if c.schema.GetApplicationContext != nil {
 		return c.schema.GetApplicationPackageKeys(ctx, appId, c.transport)
 	} else {
@@ -1058,19 +1070,51 @@ func (c *PluggableClient) DeletePackagePlanMethodFilter(ctx context.Context, id 
 // ------------------------------------------------------------
 // Package key
 
+func (c *PluggableClient) GetApplicationPackageKey(ctx context.Context, id masherytypes.ApplicationPackageKeyIdentifier) (masherytypes.ApplicationPackageKey, bool, error) {
+	if c.schema.GetApplicationPackageKey != nil {
+		return c.schema.GetApplicationPackageKey(ctx, id, c.transport)
+	} else {
+		return masherytypes.ApplicationPackageKey{}, false, c.notImplemented("GetApplicationPackageKey")
+	}
+}
+
+func (c *PluggableClient) CreateApplicationPackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.ApplicationPackageKey) (masherytypes.ApplicationPackageKey, error) {
+	if c.schema.CreateApplicationPackageKey != nil {
+		return c.schema.CreateApplicationPackageKey(ctx, appId, packageKey, c.transport)
+	} else {
+		return masherytypes.ApplicationPackageKey{}, c.notImplemented("CreateApplicationPackageKey")
+	}
+}
+
+func (c *PluggableClient) UpdateApplicationPackageKey(ctx context.Context, packageKey masherytypes.ApplicationPackageKey) (masherytypes.ApplicationPackageKey, error) {
+	if c.schema.UpdateApplicationPackageKey != nil {
+		return c.schema.UpdateApplicationPackageKey(ctx, packageKey, c.transport)
+	} else {
+		return masherytypes.ApplicationPackageKey{}, c.notImplemented("UpdateApplicationPackageKey")
+	}
+}
+
+func (c *PluggableClient) DeleteApplicationPackageKey(ctx context.Context, keyId masherytypes.ApplicationPackageKeyIdentifier) error {
+	if c.schema.DeleteApplicationPackageKey != nil {
+		return c.schema.DeleteApplicationPackageKey(ctx, keyId, c.transport)
+	} else {
+		return c.notImplemented("DeleteApplicationPackageKey")
+	}
+}
+
 func (c *PluggableClient) GetPackageKey(ctx context.Context, id masherytypes.PackageKeyIdentifier) (masherytypes.PackageKey, bool, error) {
 	if c.schema.GetPackageKey != nil {
 		return c.schema.GetPackageKey(ctx, id, c.transport)
 	} else {
-		return masherytypes.PackageKey{}, false, c.notImplemented("GetPackageKey")
+		return masherytypes.PackageKey{}, false, c.notImplemented("GetApplicationPackageKey")
 	}
 }
 
-func (c *PluggableClient) CreatePackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error) {
+func (c *PluggableClient) CreatePackageKey(ctx context.Context, packageKey masherytypes.PackageKey) (masherytypes.PackageKey, error) {
 	if c.schema.CreatePackageKey != nil {
-		return c.schema.CreatePackageKey(ctx, appId, packageKey, c.transport)
+		return c.schema.CreatePackageKey(ctx, packageKey, c.transport)
 	} else {
-		return masherytypes.PackageKey{}, c.notImplemented("CreatePackageKey")
+		return masherytypes.PackageKey{}, c.notImplemented("CreateApplicationPackageKey")
 	}
 }
 

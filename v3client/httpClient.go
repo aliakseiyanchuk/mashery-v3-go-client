@@ -185,7 +185,7 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		GetSystemDomains: RootFetcher[int, masherytypes.DomainAddress](systemDomainsCRUD.FetchAll, 0),
 
 		// Application method schema
-		GetApplicationContext:               applicationCRUD.Get,
+		GetApplicationContext:               GetApplicationWithExtendedAttributes,
 		GetApplicationExtendedAttributes:    GetApplicationExtendedAttributes,
 		UpdateApplicationExtendedAttributes: UpdateApplicationExtendedAttributes,
 		GetApplicationPackageKeys:           applicationPackageKeyCRUD.FetchAll,
@@ -287,12 +287,16 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		DeletePackagePlanMethodFilter: packagePlanServiceEndpointMethodFilterCRUD.Delete,
 
 		// Package key
+		GetApplicationPackageKey:    applicationPackageKeyCRUD.Get,
+		UpdateApplicationPackageKey: applicationPackageKeyCRUD.Update,
+		CreateApplicationPackageKey: applicationPackageKeyCRUD.Create,
+		DeleteApplicationPackageKey: applicationPackageKeyCRUD.Delete,
+
 		GetPackageKey:    packageKeyCRUD.Get,
 		UpdatePackageKey: packageKeyCRUD.Update,
+		CreatePackageKey: RootCreator(packageKeyCRUD.Create, 0),
+		DeletePackageKey: packageKeyCRUD.Delete,
 
-		CreatePackageKey: CreatePackageKey,
-
-		DeletePackageKey:        packageKeyCRUD.Delete,
 		ListPackageKeysFiltered: RootFilteredFetcher(packageKeyCRUD.FetchFiltered, 0),
 		ListPackageKeys:         RootFetcher(packageKeyCRUD.FetchAll, 0),
 

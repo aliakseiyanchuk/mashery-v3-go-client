@@ -377,6 +377,23 @@ type PackageKey struct {
 	Plan             *Plan    `json:"plan,omitempty"`
 }
 
+type ApplicationPackageKey struct {
+	PackageKey
+	ParentApplicationId ApplicationIdentifier
+}
+
+func (apk *ApplicationPackageKey) Identifier() ApplicationPackageKeyIdentifier {
+	return ApplicationPackageKeyIdentifier{
+		PackageKeyIdentifier:  apk.PackageKey.Identifier(),
+		ApplicationIdentifier: apk.ParentApplicationId,
+	}
+}
+
+type ApplicationPackageKeyIdentifier struct {
+	PackageKeyIdentifier
+	ApplicationIdentifier
+}
+
 func (mpk *PackageKey) Identifier() PackageKeyIdentifier {
 	return PackageKeyIdentifier{PackageKeyId: mpk.Id}
 }
@@ -389,23 +406,23 @@ func (mpk *PackageKey) LinksPackageAndPlan() bool {
 type Application struct {
 	AddressableV3Object
 
-	Username          string        `json:"username"`
-	Description       string        `json:"description,omitempty"`
-	Type              string        `json:"type,omitempty"`
-	Commercial        bool          `json:"commercial"`
-	Ads               bool          `json:"ads"`
-	AdsSystem         string        `json:"adsSystem,omitempty"`
-	UsageModel        string        `json:"usageModel,omitempty"`
-	Tags              string        `json:"tags,omitempty"`
-	Notes             string        `json:"notes,omitempty"`
-	HowDidYouHear     string        `json:"howDidYouHear,omitempty"`
-	PreferredProtocol string        `json:"preferredProtocol,omitempty"`
-	PreferredOutput   string        `json:"preferredOutput,omitempty"`
-	ExternalId        string        `json:"externalId,omitempty"`
-	Uri               string        `json:"uri,omitempty"`
-	OAuthRedirectUri  string        `json:"oauthRedirectUri,omitempty"`
-	PackageKeys       *[]PackageKey `json:"packageKeys,omitempty"`
-	Eav               EAV           `json:"-"`
+	Username          string                   `json:"username"`
+	Description       string                   `json:"description,omitempty"`
+	Type              string                   `json:"type,omitempty"`
+	Commercial        bool                     `json:"commercial"`
+	Ads               bool                     `json:"ads"`
+	AdsSystem         string                   `json:"adsSystem,omitempty"`
+	UsageModel        string                   `json:"usageModel,omitempty"`
+	Tags              string                   `json:"tags,omitempty"`
+	Notes             string                   `json:"notes,omitempty"`
+	HowDidYouHear     string                   `json:"howDidYouHear,omitempty"`
+	PreferredProtocol string                   `json:"preferredProtocol,omitempty"`
+	PreferredOutput   string                   `json:"preferredOutput,omitempty"`
+	ExternalId        string                   `json:"externalId,omitempty"`
+	Uri               string                   `json:"uri,omitempty"`
+	OAuthRedirectUri  string                   `json:"oauthRedirectUri,omitempty"`
+	PackageKeys       *[]ApplicationPackageKey `json:"packageKeys,omitempty"`
+	Eav               EAV                      `json:"-"`
 }
 
 func (a *Application) Identifier() ApplicationIdentifier {

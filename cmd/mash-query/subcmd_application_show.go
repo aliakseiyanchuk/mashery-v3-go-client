@@ -26,13 +26,6 @@ func execApplicationShow(ctx context.Context, cl v3client.Client, id masherytype
 		} else {
 			rv.PackageKeys = &appkeys
 		}
-
-		// Let's read the extended attribute values
-		if attrs, attrErr := cl.GetApplicationExtendedAttributes(ctx, id); attrErr != nil {
-			err = attrErr
-		} else {
-			rv.Eav = attrs
-		}
 	}
 
 	return ObjectWithExists[masherytypes.ApplicationIdentifier, masherytypes.Application]{

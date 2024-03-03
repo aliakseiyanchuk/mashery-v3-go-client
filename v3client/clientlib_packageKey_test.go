@@ -30,7 +30,7 @@ func TestGetPackageKey(t *testing.T) {
 		expRvPackage,
 		mockVisitor,
 		func(cl Client) ClientBoolExchangeFunc[masherytypes.PackageKeyIdentifier, masherytypes.PackageKey] {
-			return cl.GetPackageKey
+			return cl.GetApplicationPackageKey
 		},
 	)
 }
@@ -66,7 +66,7 @@ func TestCreatePackageKey(t *testing.T) {
 		apiResponseJson,
 		mockVisitor,
 		func(client Client) ClientDualExchangeFunc[masherytypes.ApplicationIdentifier, masherytypes.PackageKey, masherytypes.PackageKey] {
-			return client.CreatePackageKey
+			return client.CreateApplicationPackageKey
 		},
 	)
 }
@@ -92,7 +92,7 @@ func TestUpdatePackageKey(t *testing.T) {
 		payload,
 		mockVisitor,
 		func(client Client) ClientExchangeFunc[masherytypes.PackageKey, masherytypes.PackageKey] {
-			return client.UpdatePackageKey
+			return client.UpdateApplicationPackageKey
 		},
 	)
 }
@@ -114,7 +114,7 @@ func TestDeletePackageKey(t *testing.T) {
 		postIdent,
 		mockVisitor,
 		func(cl Client) BiConsumerCanErr[context.Context, masherytypes.PackageKeyIdentifier] {
-			return cl.DeletePackageKey
+			return cl.DeleteApplicationPackageKey
 		},
 	)
 }

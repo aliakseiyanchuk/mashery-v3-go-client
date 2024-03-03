@@ -1,14 +1,10 @@
 package v3client
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/errwrap"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
-	"net/url"
-	"strings"
 )
 
 var packageKeyCRUDDecorator *GenericCRUDDecorator[int, masherytypes.PackageKeyIdentifier, masherytypes.PackageKey]
@@ -42,30 +38,3 @@ func init() {
 	}
 	packageKeyCRUD = NewCRUD[int, masherytypes.PackageKeyIdentifier, masherytypes.PackageKey]("package key", packageKeyCRUDDecorator)
 }
-
-// TODO: Convert this method
-// CreatePackageKey Create a new service.
-func CreatePackageKey(ctx context.Context, appId masherytypes.ApplicationIdentifier, packageKey masherytypes.PackageKey, c *transport.HttpTransport) (masherytypes.PackageKey, error) {
-	if !packageKey.LinksPackageAndPlan() {
-		return masherytypes.PackageKey{}, &errwrap.WrappedError{
-			Context: "create package key",
-			Cause:   errors.New("package key must supply associated package and plan"),
-		}
-	}
-
-	builder := transport.ObjectUpsertSpecBuilder[masherytypes.PackageKey]{}
-	builder.
-		WithUpsert(packageKey).
-		WithValueFactory(func() masherytypes.PackageKey {
-			return masherytypes.PackageKey{}
-		}).
-		WithResource("/applications/%s/packageKeys", appId.ApplicationId).
-		WithQuery(url.Values{
-			"fields": {strings.Join(MasheryPackageKeyFields, ",")},
-		}).
-		WithAppContext("package key")
-
-	return transport.CreateObject(ctx, builder.Build(), c)
-}
-
-// UpdatePackageKey Create a new service.

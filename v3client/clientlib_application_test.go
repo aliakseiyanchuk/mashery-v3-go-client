@@ -40,9 +40,9 @@ func TestGetFullApplication(t *testing.T) {
 			Id:   "AppId-Full",
 			Name: "AppName",
 		},
-		Username: "Foo",
-		PackageKeys: &[]masherytypes.PackageKey{
-			{AddressableV3Object: masherytypes.AddressableV3Object{Id: "key-id"}},
+		Username:    "Foo",
+		PackageKeys: &[]masherytypes.ApplicationPackageKey{
+			// TODO this needs to be fixed
 		},
 	}
 

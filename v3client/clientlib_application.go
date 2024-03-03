@@ -2,6 +2,7 @@ package v3client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
@@ -118,11 +119,28 @@ func GetApplicationExtendedAttributes(ctx context.Context, appId masherytypes.Ap
 	} else if !exists {
 		return map[string]string{}, errors.New("application should exist before this call can succeed")
 	} else {
-		return filterApplicationExtendedAttributes(rv)
+		return filterApplicationExtendedAttributes(rv), nil
 	}
 }
 
-func filterApplicationExtendedAttributes(rv map[string]interface{}) (map[string]string, error) {
+func GetApplicationWithExtendedAttributes(ctx context.Context, appId masherytypes.ApplicationIdentifier, transport *transport.HttpTransport) (masherytypes.Application, bool, error) {
+	if rv, exists, err := applicationRawCRUD.Get(ctx, appId, transport); err != nil {
+		return masherytypes.Application{}, false, err
+	} else if !exists {
+		return masherytypes.Application{}, false, err
+	} else {
+		appRV := masherytypes.Application{}
+
+		jsonStr, _ := json.Marshal(rv)
+		_ = json.Unmarshal(jsonStr, &appRV)
+
+		appRV.Eav = filterApplicationExtendedAttributes(rv)
+
+		return appRV, true, nil
+	}
+}
+
+func filterApplicationExtendedAttributes(rv map[string]interface{}) map[string]string {
 	filteredRV := map[string]string{}
 	for k, v := range rv {
 		if isApplicationSystemAttr(k) {
@@ -132,7 +150,7 @@ func filterApplicationExtendedAttributes(rv map[string]interface{}) (map[string]
 		}
 	}
 
-	return filteredRV, nil
+	return filteredRV
 }
 
 func isApplicationSystemAttr(s string) bool {
@@ -197,7 +215,7 @@ func UpdateApplicationExtendedAttributes(ctx context.Context, appId masherytypes
 	if rv, err := applicationRawCRUD.Update(ctx, callParams, transport); err != nil {
 		return map[string]string{}, err
 	} else {
-		return filterApplicationExtendedAttributes(rv)
+		return filterApplicationExtendedAttributes(rv), nil
 	}
 }
 
@@ -205,30 +223,48 @@ func UpdateApplicationExtendedAttributes(ctx context.Context, appId masherytypes
 // Application package keys
 // -------
 
-var applicationPackageKeysCRUDDecorator *GenericCRUDDecorator[masherytypes.ApplicationIdentifier, masherytypes.PackageKeyIdentifier, masherytypes.PackageKey]
-
-var applicationPackageKeyCRUD *GenericCRUD[masherytypes.ApplicationIdentifier, masherytypes.PackageKeyIdentifier, masherytypes.PackageKey]
+var applicationPackageKeyCRUDDecorator *GenericCRUDDecorator[masherytypes.ApplicationIdentifier, masherytypes.ApplicationPackageKeyIdentifier, masherytypes.ApplicationPackageKey]
+var applicationPackageKeyCRUD *GenericCRUD[masherytypes.ApplicationIdentifier, masherytypes.ApplicationPackageKeyIdentifier, masherytypes.ApplicationPackageKey]
 
 func init() {
-	applicationPackageKeysCRUDDecorator = &GenericCRUDDecorator[masherytypes.ApplicationIdentifier, masherytypes.PackageKeyIdentifier, masherytypes.PackageKey]{
-		ValueSupplier:      func() masherytypes.PackageKey { return masherytypes.PackageKey{} },
-		ValueArraySupplier: func() []masherytypes.PackageKey { return []masherytypes.PackageKey{} },
+	applicationPackageKeyCRUDDecorator = &GenericCRUDDecorator[masherytypes.ApplicationIdentifier, masherytypes.ApplicationPackageKeyIdentifier, masherytypes.ApplicationPackageKey]{
+		ValueSupplier:      func() masherytypes.ApplicationPackageKey { return masherytypes.ApplicationPackageKey{} },
+		ValueArraySupplier: func() []masherytypes.ApplicationPackageKey { return []masherytypes.ApplicationPackageKey{} },
+		ResourceFor: func(ident masherytypes.ApplicationPackageKeyIdentifier) (string, error) {
+			return fmt.Sprintf("/applications/%s/packageKeys/%s", ident.ApplicationId, ident.PackageKeyId), nil
+		},
+		ResourceForUpsert: func(t masherytypes.ApplicationPackageKey) (string, error) {
+			if len(t.Id) > 0 && len(t.ParentApplicationId.ApplicationId) > 0 {
+				return fmt.Sprintf("/applicaitons/%s/packageKeys/%s", t.ParentApplicationId.ApplicationId, t.Id), nil
+			}
+			return "", errors.New("insufficient identification")
+		},
+
+		UpsertCleaner: func(m *masherytypes.ApplicationPackageKey) {
+			m.Id = ""
+			m.Created = nil
+			m.Updated = nil
+		},
+
+		AcceptParentIdent: func(t1 masherytypes.ApplicationIdentifier, t2 *masherytypes.ApplicationPackageKey) {
+			t2.ParentApplicationId = t1
+		},
+
+		AcceptObjectIdent: func(t1 masherytypes.ApplicationPackageKeyIdentifier, t2 *masherytypes.ApplicationPackageKey) {
+			t2.Id = t1.PackageKeyId
+			t2.ParentApplicationId = t1.ApplicationIdentifier
+		},
+
+		AcceptIdentFrom: func(t1 masherytypes.ApplicationPackageKey, t2 *masherytypes.ApplicationPackageKey) {
+			t2.Id = t1.Id
+			t2.ParentApplicationId = t1.ParentApplicationId
+		},
 
 		ResourceForParent: func(ident masherytypes.ApplicationIdentifier) (string, error) {
-			if len(ident.ApplicationId) > 0 {
-				return fmt.Sprintf("/applications/%s/packageKeys", ident.ApplicationId), nil
-			} else {
-				return "", errors.New("application identifier is required")
-			}
+			return fmt.Sprintf("/applications/%s/packageKeys", ident.ApplicationId), nil
 		},
-		DefaultFields: packageKeyFields,
+		DefaultFields: MasheryApplicationPackageKeyFields,
 		Pagination:    transport.PerPage,
 	}
-
-	applicationPackageKeyCRUD = NewCRUD[masherytypes.ApplicationIdentifier,
-		masherytypes.PackageKeyIdentifier,
-		masherytypes.PackageKey](
-		"application package key",
-		applicationPackageKeysCRUDDecorator,
-	)
+	applicationPackageKeyCRUD = NewCRUD[masherytypes.ApplicationIdentifier, masherytypes.ApplicationPackageKeyIdentifier, masherytypes.ApplicationPackageKey]("package key", applicationPackageKeyCRUDDecorator)
 }
