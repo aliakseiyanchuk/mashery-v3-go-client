@@ -375,11 +375,12 @@ type PackageKey struct {
 	Limits           *[]Limit `json:"limits,omitempty"`
 	Package          *Package `json:"package,omitempty"`
 	Plan             *Plan    `json:"plan,omitempty"`
+	Expires          string   `json:"expires,omitempty"`
 }
 
 type ApplicationPackageKey struct {
 	PackageKey
-	ParentApplicationId ApplicationIdentifier
+	ParentApplicationId ApplicationIdentifier `json:"-"`
 }
 
 func (apk *ApplicationPackageKey) Identifier() ApplicationPackageKeyIdentifier {

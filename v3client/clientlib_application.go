@@ -235,7 +235,7 @@ func init() {
 		},
 		ResourceForUpsert: func(t masherytypes.ApplicationPackageKey) (string, error) {
 			if len(t.Id) > 0 && len(t.ParentApplicationId.ApplicationId) > 0 {
-				return fmt.Sprintf("/applicaitons/%s/packageKeys/%s", t.ParentApplicationId.ApplicationId, t.Id), nil
+				return fmt.Sprintf("/applications/%s/packageKeys/%s", t.ParentApplicationId.ApplicationId, t.Id), nil
 			}
 			return "", errors.New("insufficient identification")
 		},
