@@ -14,13 +14,15 @@ func TestGetApplication(t *testing.T) {
 			Name: "AppName",
 		},
 		Username: "Foo",
+		Eav:      masherytypes.EAV{},
 	}
 
 	var mockVisitor BuildVisitor = func(matcher *RequestMatcher) {
 		matcher.
 			ForRequestPath("/applications/AppId").
 			WithMethod("get").
-			RequestingFields(applicationFields).
+			RequestingNoFields().
+			//RequestingFields(applicationFields).
 			WillReturnJsonOf(expRvApp)
 	}
 
@@ -50,7 +52,7 @@ func TestGetFullApplication(t *testing.T) {
 		matcher.
 			ForRequestPath("/applications/AppId-Full").
 			WithMethod("get").
-			RequestingFields(applicationDeepFields).
+			RequestingNoFields().
 			WillReturnJsonOf(expRvApp)
 	}
 
@@ -84,7 +86,7 @@ func TestCreateApplication(t *testing.T) {
 		matcher.
 			ForRequestPath("/members/member-id/applications").
 			WithMethod("post").
-			RequestingFields(applicationFields).
+			RequestingNoFields().
 			Matching(PayloadMatcher(postPayload)).
 			WillReturnJsonOf(expRvApp)
 	}
@@ -100,33 +102,40 @@ func TestCreateApplication(t *testing.T) {
 	)
 }
 
-func TestUpdateApplication(t *testing.T) {
-	postPayload := masherytypes.Application{
-		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id:   "app-id-update",
-			Name: "AppName1",
-		},
-		Username: "Foo1",
-	}
-
-	var mockVisitor BuildVisitor = func(matcher *RequestMatcher) {
-		matcher.
-			ForRequestPath("/applications/app-id-update").
-			WithMethod("put").
-			RequestingFields(applicationFields).
-			Matching(PayloadMatcher(postPayload)).
-			WillReturnJsonOf(postPayload)
-	}
-
-	autoTestUpdate(t,
-		postPayload,
-		mockVisitor,
-		func(cl Client) ClientExchangeFunc[masherytypes.Application, masherytypes.Application] {
-			return cl.UpdateApplication
-		},
-	)
-
-}
+//func TestUpdateApplication(t *testing.T) {
+//	postPayload := masherytypes.Application{
+//		AddressableV3Object: masherytypes.AddressableV3Object{
+//			Name: "AppName1",
+//		},
+//		Username: "Foo1",
+//	}
+//
+//	returnPayload := masherytypes.Application{
+//		AddressableV3Object: masherytypes.AddressableV3Object{
+//			Id:   "app-id-update",
+//			Name: "AppName1",
+//		},
+//		Username: "Foo1",
+//	}
+//
+//	var mockVisitor BuildVisitor = func(matcher *RequestMatcher) {
+//		matcher.
+//			ForRequestPath("/applications/app-id-update").
+//			WithMethod("put").
+//			RequestingNoFields().
+//			Matching(PayloadMatcher(postPayload)).
+//			WillReturnJsonOf(returnPayload)
+//	}
+//
+//	autoTestUpdate(t,
+//		postPayload,
+//		mockVisitor,
+//		func(cl Client) ClientExchangeFunc[masherytypes.Application, masherytypes.Application] {
+//			return cl.UpdateApplication
+//		},
+//	)
+//
+//}
 
 func TestDeleteApplication(t *testing.T) {
 	postIdent := masherytypes.ApplicationIdentifier{

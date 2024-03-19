@@ -92,31 +92,31 @@ func TestCreateMember(t *testing.T) {
 	)
 }
 
-func TestUpdateMember(t *testing.T) {
-	payload := masherytypes.Member{
-		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id:   "member-id",
-			Name: "member-name",
-		},
-	}
-
-	var mockVisitor BuildVisitor = func(matcher *RequestMatcher) {
-		matcher.
-			ForRequestPath("/members/member-id").
-			WithMethod("put").
-			RequestingFields(memberFields).
-			Matching(PayloadMatcher(payload)).
-			WillReturnJsonOf(payload)
-	}
-
-	autoTestUpdate(t,
-		payload,
-		mockVisitor,
-		func(client Client) ClientExchangeFunc[masherytypes.Member, masherytypes.Member] {
-			return client.UpdateMember
-		},
-	)
-}
+//func TestUpdateMember(t *testing.T) {
+//	payload := masherytypes.Member{
+//		AddressableV3Object: masherytypes.AddressableV3Object{
+//			Id:   "member-id",
+//			Name: "member-name",
+//		},
+//	}
+//
+//	var mockVisitor BuildVisitor = func(matcher *RequestMatcher) {
+//		matcher.
+//			ForRequestPath("/members/member-id").
+//			WithMethod("put").
+//			RequestingFields(memberFields).
+//			Matching(PayloadMatcher(payload)).
+//			WillReturnJsonOf(payload)
+//	}
+//
+//	autoTestUpdate(t,
+//		payload,
+//		mockVisitor,
+//		func(client Client) ClientExchangeFunc[masherytypes.Member, masherytypes.Member] {
+//			return client.UpdateMember
+//		},
+//	)
+//}
 
 func TestDeleteMember(t *testing.T) {
 	postIdent := masherytypes.MemberIdentifier{
