@@ -1,0 +1,18 @@
+{{- $srv_cnt := len (.) }} {{- if gt $srv_cnt 0}}
+There are {{ $srv_cnt }} members defined
+{{- range $srv := . }}
+- Member {{ $srv.Name }} (id={{ $srv.Id}} since {{ MasheryTime $srv.Created }})
+  User name     | {{ $srv.Username }}
+  Email         | {{ $srv.Email }}
+  Display name  | {{ $srv.DisplayName }}
+  First name    | {{ $srv.FirstName }}
+  Last name     | {{ $srv.LastName }}
+  Area status   | {{ $srv.AreaStatus }}
+  > export MASH_MEMBER_ID={{ $srv.Id}}
+
+The complete list of member properties can be displayed with member show command
+
+{{- end}}
+{{- else }}
+There are no members defined in this area.
+{{ end }}

@@ -6,80 +6,43 @@ import (
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
-	"net/url"
 )
 
-func GetPackage(ctx context.Context, id masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error) {
-	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource: fmt.Sprintf("/packages/%s", id.PackageId),
-		Query: url.Values{
-			"fields": {MasheryPackageFieldsStr},
+var packageCRUDDecorator *GenericCRUDDecorator[int, masherytypes.PackageIdentifier, masherytypes.Package]
+var packageCRUD *GenericCRUD[int, masherytypes.PackageIdentifier, masherytypes.Package]
+
+func init() {
+	packageCRUDDecorator = &GenericCRUDDecorator[int, masherytypes.PackageIdentifier, masherytypes.Package]{
+		ValueSupplier:      func() masherytypes.Package { return masherytypes.Package{} },
+		ValueArraySupplier: func() []masherytypes.Package { return []masherytypes.Package{} },
+		ResourceFor: func(ident masherytypes.PackageIdentifier) (string, error) {
+			if len(ident.PackageId) == 0 {
+				return "", errors.New("insufficient identifier")
+			}
+			return fmt.Sprintf("/packages/%s", ident.PackageId), nil
 		},
-		AppContext:     "service",
-		ResponseParser: masherytypes.ParseMasheryPackage,
-	})
-
-	if err != nil {
-		return nil, err
-	} else {
-		retServ, _ := rv.(masherytypes.Package)
-		return &retServ, nil
-	}
-}
-
-// CreatePackage Create a new service.
-func CreatePackage(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error) {
-	rawResp, err := c.CreateObject(ctx, pack, transport.FetchSpec{
-		Resource:   "/packages",
-		AppContext: "package",
-		Query: url.Values{
-			"fields": {MasheryPackageFieldsStr},
+		ResourceForUpsert: func(t masherytypes.Package) (string, error) {
+			if len(t.Id) > 0 {
+				return fmt.Sprintf("/packages/%s", t.Id), nil
+			}
+			return "", errors.New("insufficient identification")
 		},
-		ResponseParser: masherytypes.ParseMasheryPackage,
-	})
-
-	if err == nil {
-		rv, _ := rawResp.(masherytypes.Package)
-		return &rv, nil
-	} else {
-		return nil, err
+		ResourceForParent: func(_ int) (string, error) {
+			return "/packages", nil
+		},
+		DefaultFields: MasheryPackageFields,
+		Pagination:    transport.PerItem,
 	}
-}
-
-// UpdatePackage Create a new service.
-func UpdatePackage(ctx context.Context, pack masherytypes.Package, c *transport.V3Transport) (*masherytypes.Package, error) {
-	if pack.Id == "" {
-		return nil, errors.New("illegal argument: package Id must be set and not nil")
-	}
-
-	opContext := transport.FetchSpec{
-		Resource: fmt.Sprintf("/packages/%s", pack.Id),
-
-		AppContext:     "package",
-		ResponseParser: masherytypes.ParseService,
-	}
-
-	if d, err := c.UpdateObject(ctx, pack, opContext); err == nil {
-		rv, _ := d.(masherytypes.Package)
-		return &rv, nil
-	} else {
-		return nil, err
-	}
+	packageCRUD = NewCRUD[int, masherytypes.PackageIdentifier, masherytypes.Package]("package", packageCRUDDecorator)
 }
 
 type orgPutSchema struct {
 	Organization masherytypes.NilAddressableOrganization `json:"organization"`
 }
 
-func ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier, c *transport.V3Transport) (*masherytypes.Package, error) {
+func ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentifier, c *transport.HttpTransport) (masherytypes.Package, error) {
 	if len(pack.PackageId) == 0 {
-		return nil, errors.New("illegal argument: package Id must be set")
-	}
-
-	opContext := transport.FetchSpec{
-		Resource:       fmt.Sprintf("/packages/%s", pack.PackageId),
-		AppContext:     "package ownership reset",
-		ResponseParser: nil,
+		return masherytypes.Package{}, errors.New("illegal argument: package Id must be set")
 	}
 
 	dat := orgPutSchema{
@@ -90,43 +53,16 @@ func ResetPackageOwnership(ctx context.Context, pack masherytypes.PackageIdentif
 		},
 	}
 
-	if _, err := c.UpdateObject(ctx, dat, opContext); err == nil {
-		return GetPackage(ctx, pack, c)
+	orgPutSchemaReq := transport.ObjectUpsertSpecBuilder[orgPutSchema]{}
+	orgPutSchemaReq.
+		WithUpsert(dat).
+		WithResource("/packages/%s", pack.PackageId).
+		WithAppContext("package ownership reset")
+
+	if _, updateErr := transport.UpdateObject(ctx, orgPutSchemaReq.Build(), c); updateErr == nil {
+		get, _, getErr := packageCRUD.Get(ctx, pack, c)
+		return get, getErr
 	} else {
-		return nil, err
-	}
-}
-
-func DeletePackage(ctx context.Context, packId masherytypes.PackageIdentifier, c *transport.V3Transport) error {
-	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/packages/%s", packId.PackageId),
-		AppContext: "package",
-	}
-
-	return c.DeleteObject(ctx, opContext)
-}
-
-func ListPackages(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Package, error) {
-	opCtx := transport.FetchSpec{
-		Pagination:     transport.PerItem,
-		Resource:       "/packages",
-		Query:          nil,
-		AppContext:     "all service",
-		ResponseParser: masherytypes.ParseMasheryPackageArray,
-	}
-
-	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.Package{}, err
-	} else {
-		// Convert individual fetches into the array of elements
-		var rv []masherytypes.Package
-		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.Package)
-			if ok {
-				rv = append(rv, ms...)
-			}
-		}
-
-		return rv, nil
+		return masherytypes.Package{}, updateErr
 	}
 }

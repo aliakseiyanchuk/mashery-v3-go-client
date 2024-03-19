@@ -1,0 +1,47 @@
+{{if .Exists }}
+{{- with .Object}}
+Service {{ .Name }} (ID={{ .Id }})
+-----------------+----------------------
+Editor Handle    |  {{ .EditorHandle }}
+Revision Number  |  {{ .RevisionNumber }}
+Description      |  {{ .Description }}
+Version          |  {{ .Version }}
+Qps LimitOverall |  {{ .QpsLimitOverall }}
+RFC 3986 Encode  |  {{ .RFC3986Encode }}
+{{- if .SecurityProfile }}
+{{ with .SecurityProfile.OAuth}}
+Service specifies an OAuth profile as follows:
+--------------------------------+-------------------------
+Access Token Ttl Enabled:        {{ .AccessTokenTtlEnabled }}
+Access Token Ttl:                {{ .AccessTokenTtlEnabled }}
+Allow Multiple Tokens:           {{ .AllowMultipleToken }}
+Authorization Code Ttl:          {{ .AuthorizationCodeTtl }}
+Forwarded Headers:               {{- if .ForwardedHeaders }}
+{{- range $h := .ForwardedHeaders }}
+  - {{ $h }}
+{{- end}}
+{{- else}}               None {{end}}
+Mashery Token Api Enabled:       {{ .MasheryTokenApiEnabled }}
+Refresh Token Enabled:           {{ .RefreshTokenEnabled }}
+Enable Refresh Token Ttl:        {{ .EnableRefreshTokenTtl }}
+Token Based Rate Limits Enabled: {{ .TokenBasedRateLimitsEnabled }}
+Force Oauth Redirect Url:        {{ .ForceOauthRedirectUrl }}
+Force Ssl Redirect Url Enabled:  {{ .ForceSslRedirectUrlEnabled }}
+GrantTypes:                      {{- if .GrantTypes }}
+{{- range $h := .GrantTypes }}
+- {{ $h }}
+{{- end}}
+{{- else}}                      None {{end}}
+MAC Algorithm:                   {{ .MACAlgorithm }}
+QPS Limit Ceiling:               {{ .QPSLimitCeiling }}
+Rate Limit Ceiling:              {{ .RateLimitCeiling }}
+Refresh Token Ttl:               {{ .RefreshTokenTtl }}
+Secure Tokens Enabled:           {{ .SecureTokensEnabled }}
+{{else}}
+No OAuth profile is set for this service
+{{- end}}
+{{- end}}
+{{- end}}
+{{else}}
+Service with identifier {{  .Identifier.ServiceId }} does not exist
+{{end}}

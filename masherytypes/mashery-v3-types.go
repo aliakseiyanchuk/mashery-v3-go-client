@@ -186,6 +186,8 @@ type MasheryErrorMessage struct {
 	Status       string `json:"status"`
 	DetailHeader string `json:"detailHeader"`
 	ResponseBody string `json:"responseBody"`
+
+	ParentErrorSet ErrorSetIdentifier `json:"-"`
 }
 
 type ErrorSet struct {
@@ -274,6 +276,8 @@ func (s *Service) Identifier() ServiceIdentifier {
 
 type ServiceCache struct {
 	CacheTtl float64 `json:"cacheTtl"`
+
+	ParentServiceId ServiceIdentifier `json:"-"`
 }
 
 // -----------------------------------------------------------------------------
@@ -303,7 +307,7 @@ type Plan struct {
 	// as int. It is actually UUID of the email template set Id.
 	// Null values are essential to disable notifications.
 	EmailTemplateSetId      *string           `json:"emailTemplateSetId"`
-	AdminEmailTemplateSetId *string           `json:"adminEmailTemplateSetId"`
+	AdminEmailTemplateSetId *int              `json:"adminEmailTemplateSetId"`
 	Services                *[]Service        `json:"services,omitempty"`
 	Roles                   *[]RolePermission `json:"roles,omitempty"`
 
@@ -368,9 +372,27 @@ type PackageKey struct {
 	QpsLimitCeiling  *int64   `json:"qpsLimitCeiling"`
 	QpsLimitExempt   bool     `json:"qpsLimitExempt"`
 	Status           string   `json:"status"`
-	Limits           *[]Limit `json:"limits"`
-	Package          *Package `json:"package"`
-	Plan             *Plan    `json:"plan"`
+	Limits           *[]Limit `json:"limits,omitempty"`
+	Package          *Package `json:"package,omitempty"`
+	Plan             *Plan    `json:"plan,omitempty"`
+	Expires          string   `json:"expires,omitempty"`
+}
+
+type ApplicationPackageKey struct {
+	PackageKey
+	ParentApplicationId ApplicationIdentifier `json:"-"`
+}
+
+func (apk *ApplicationPackageKey) Identifier() ApplicationPackageKeyIdentifier {
+	return ApplicationPackageKeyIdentifier{
+		PackageKeyIdentifier:  apk.PackageKey.Identifier(),
+		ApplicationIdentifier: apk.ParentApplicationId,
+	}
+}
+
+type ApplicationPackageKeyIdentifier struct {
+	PackageKeyIdentifier
+	ApplicationIdentifier
 }
 
 func (mpk *PackageKey) Identifier() PackageKeyIdentifier {
@@ -385,23 +407,23 @@ func (mpk *PackageKey) LinksPackageAndPlan() bool {
 type Application struct {
 	AddressableV3Object
 
-	Username          string        `json:"username"`
-	Description       string        `json:"description,omitempty"`
-	Type              string        `json:"type,omitempty"`
-	Commercial        bool          `json:"commercial"`
-	Ads               bool          `json:"ads"`
-	AdsSystem         string        `json:"adsSystem,omitempty"`
-	UsageModel        string        `json:"usageModel,omitempty"`
-	Tags              string        `json:"tags,omitempty"`
-	Notes             string        `json:"notes,omitempty"`
-	HowDidYouHear     string        `json:"howDidYouHear,omitempty"`
-	PreferredProtocol string        `json:"preferredProtocol,omitempty"`
-	PreferredOutput   string        `json:"preferredOutput,omitempty"`
-	ExternalId        string        `json:"externalId,omitempty"`
-	Uri               string        `json:"uri,omitempty"`
-	OAuthRedirectUri  string        `json:"oauthRedirectUri,omitempty"`
-	PackageKeys       *[]PackageKey `json:"packageKeys,omitempty"`
-	Eav               *EAV          `json:"eav,omitempty"`
+	Username          string                   `json:"username"`
+	Description       string                   `json:"description,omitempty"`
+	Type              string                   `json:"type,omitempty"`
+	Commercial        bool                     `json:"commercial"`
+	Ads               bool                     `json:"ads"`
+	AdsSystem         string                   `json:"adsSystem,omitempty"`
+	UsageModel        string                   `json:"usageModel,omitempty"`
+	Tags              string                   `json:"tags,omitempty"`
+	Notes             string                   `json:"notes,omitempty"`
+	HowDidYouHear     string                   `json:"howDidYouHear,omitempty"`
+	PreferredProtocol string                   `json:"preferredProtocol,omitempty"`
+	PreferredOutput   string                   `json:"preferredOutput,omitempty"`
+	ExternalId        string                   `json:"externalId,omitempty"`
+	Uri               string                   `json:"uri,omitempty"`
+	OAuthRedirectUri  string                   `json:"oauthRedirectUri,omitempty"`
+	PackageKeys       *[]ApplicationPackageKey `json:"packageKeys,omitempty"`
+	Eav               EAV                      `json:"-"`
 }
 
 func (a *Application) Identifier() ApplicationIdentifier {
@@ -426,25 +448,25 @@ type RolePermission struct {
 type Member struct {
 	AddressableV3Object
 
-	Username     string         `json:"username"`
-	Email        string         `json:"email"`
+	Username     string         `json:"username,omitempty"`
+	Email        string         `json:"email,omitempty"`
 	DisplayName  string         `json:"displayName,omitempty"`
-	Uri          string         `json:"uri,omitempty"`
-	Blog         string         `json:"blog,omitempty"`
-	Im           string         `json:"im,omitempty"`
-	Imsvc        string         `json:"imsvc,omitempty"`
-	Phone        string         `json:"phone,omitempty"`
-	Company      string         `json:"company,omitempty"`
-	Address1     string         `json:"address1,omitempty"`
-	Address2     string         `json:"address2,omitempty"`
-	Locality     string         `json:"locality,omitempty"`
-	Region       string         `json:"region,omitempty"`
-	PostalCode   string         `json:"postalCode,omitempty"`
-	CountryCode  string         `json:"countryCode,omitempty"`
-	FirstName    string         `json:"firstName,omitempty"`
-	LastName     string         `json:"lastName,omitempty"`
+	Uri          string         `json:"uri"`
+	Blog         string         `json:"blog"`
+	Im           string         `json:"im"`
+	Imsvc        string         `json:"imsvc"`
+	Phone        string         `json:"phone"`
+	Company      string         `json:"company"`
+	Address1     string         `json:"address1"`
+	Address2     string         `json:"address2"`
+	Locality     string         `json:"locality"`
+	Region       string         `json:"region"`
+	PostalCode   string         `json:"postalCode"`
+	CountryCode  string         `json:"countryCode"`
+	FirstName    string         `json:"firstName"`
+	LastName     string         `json:"lastName"`
 	AreaStatus   string         `json:"areaStatus,omitempty"`
-	ExternalId   string         `json:"externalId,omitempty"`
+	ExternalId   string         `json:"externalId"`
 	PasswdNew    *string        `json:"passwdNew,omitempty"`
 	Applications *[]Application `json:"applications,omitempty"`
 	PackageKeys  *[]PackageKey  `json:"packageKeys,omitempty"`

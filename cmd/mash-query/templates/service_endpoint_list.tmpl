@@ -1,0 +1,9 @@
+{{- $srv_cnt := len (.) }} {{- if gt $srv_cnt 0}}
+There are {{ $srv_cnt }} services endpoints defined
+{{- range $srv := . }}
+- Service Endpoint {{ $srv.Name }} (id={{ $srv.Id}})
+  > export MASH_SERVICE_ENDPOINT_ID={{ $srv.Id }}
+{{- end}}
+{{- else }}
+There are no services endpoints defined in this service.
+{{ end }}

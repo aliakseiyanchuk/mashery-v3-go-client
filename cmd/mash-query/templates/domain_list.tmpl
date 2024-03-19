@@ -1,0 +1,8 @@
+{{- $srv_cnt := len (.) }} {{- if gt $srv_cnt 0}}
+There are {{ $srv_cnt }} domains defined
+{{- range $srv := . }}
+- {{ .Address }}
+{{- end }}
+{{- else }}
+There are no services defined in this area.
+{{ end }}

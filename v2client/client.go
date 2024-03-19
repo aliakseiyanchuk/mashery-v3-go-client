@@ -80,7 +80,7 @@ func (ci *ClientImpl) InvokeDirect(ctx context.Context, req V2Request) (V2Result
 }
 
 func (ci *ClientImpl) Close(ctx context.Context) {
-	ci.transport.HttpClient.CloseIdleConnections()
+	ci.transport.HttpExecutor.CloseIdleConnections()
 }
 
 func (ci *ClientImpl) GetRawResponse(ctx context.Context, req V2Request) (*transport.WrappedResponse, error) {
@@ -151,8 +151,8 @@ func NewHTTPClient(params Params) Client {
 
 			AvgNetLatency: params.TravelTimeComp,
 
-			HttpClient: params.CreateClient(),
-			Mutex:      &sync.Mutex{},
-			MaxQPS:     params.QPS,
+			HttpExecutor: params.CreateHttpExecutor(),
+			Mutex:        &sync.Mutex{},
+			MaxQPS:       params.QPS,
 		}}
 }

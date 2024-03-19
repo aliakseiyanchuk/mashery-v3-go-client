@@ -2,46 +2,55 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
-	"fmt"
+	"flag"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
-	"os"
 )
 
-func showAppData(ctx context.Context, cl v3client.Client, rawIds interface{}) int {
-	ids, _ := rawIds.([]string)
-
-	for _, idv := range ids {
-		id := masherytypes.ApplicationIdentifier{ApplicationId: idv}
-		if srv, err := cl.GetFullApplication(ctx, id); err == nil {
-			fmt.Printf("Application %s (id=%s):", srv.Name, id)
-			fmt.Println()
-
-			_ = jsonEncoder.Encode(&srv)
-		} else {
-			fmt.Printf("ERROR: Failed to retrieve service %s: %s", id, err)
-		}
-		fmt.Println()
+func validateApplicationShowArg(arg *masherytypes.ApplicationIdentifier) error {
+	if len(arg.ApplicationId) == 0 {
+		return errors.New("application identifier required")
 	}
 
-	return 0
+	return nil
 }
 
-func showAppDataArgParser() (bool, error) {
-	if argAt(0) == "application" && argAt(1) == "show" {
-		if len(os.Args) > 2 {
-			handler = showAppData
-			handlerArgs = os.Args[3:]
-			return true, nil
+func execApplicationShow(ctx context.Context, cl v3client.Client, id masherytypes.ApplicationIdentifier) (ObjectWithExists[masherytypes.ApplicationIdentifier, masherytypes.Application], error) {
+	rv, appExists, err := cl.GetApplication(ctx, id)
+
+	if appExists {
+		if appkeys, appKeysErr := cl.GetApplicationPackageKeys(ctx, id); appKeysErr != nil {
+			err = appKeysErr
 		} else {
-			return true, errors.New("application show requires at least once application Id parameter")
+			rv.PackageKeys = &appkeys
 		}
 	}
 
-	return false, nil
+	return ObjectWithExists[masherytypes.ApplicationIdentifier, masherytypes.Application]{
+		Identifier: id,
+		Object:     rv,
+		Exists:     appExists,
+	}, err
+}
+
+//go:embed templates/application_show.tmpl
+var applicationShowTemplate string
+var subCmdApplicationShow *SubcommandTemplate[masherytypes.ApplicationIdentifier, ObjectWithExists[masherytypes.ApplicationIdentifier, masherytypes.Application]]
+
+func initApplicationShowFlagSet(arg *masherytypes.ApplicationIdentifier, fs *flag.FlagSet) {
+	fs.StringVar(&arg.ApplicationId, "app-id", "", "Application identifier")
 }
 
 func init() {
-	argParsers = append(argParsers, showAppDataArgParser)
+	subCmdApplicationShow = &SubcommandTemplate[masherytypes.ApplicationIdentifier, ObjectWithExists[masherytypes.ApplicationIdentifier, masherytypes.Application]]{
+		Command:     []string{"application", "show"},
+		FlagSetInit: initApplicationShowFlagSet,
+		Validator:   validateApplicationShowArg,
+		Executor:    execApplicationShow,
+		Template:    mustTemplate(applicationShowTemplate),
+	}
+
+	enableSubcommand(subCmdApplicationShow.Finder())
 }

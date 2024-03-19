@@ -32,7 +32,7 @@ func (w *WildcardClientImpl) PutAny(ctx context.Context, resource string, body i
 }
 
 func (w *WildcardClientImpl) Close(ctx context.Context) {
-	w.transport.HttpClient.CloseIdleConnections()
+	w.transport.HttpExecutor.CloseIdleConnections()
 }
 
 // NewWildcardClient creates a "wildcard" client, which will auto-apply access tokens and will throttle the

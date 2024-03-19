@@ -1,36 +1,51 @@
 package v3client
 
 import (
-	"context"
+	"errors"
+	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 )
 
-func ListOrganizations(ctx context.Context, c *transport.V3Transport) ([]masherytypes.Organization, error) {
-	return ListOrganizationsFiltered(ctx, nil, c)
+type OrganizationCRUDDecorator struct {
 }
 
-func ListOrganizationsFiltered(ctx context.Context, qs map[string]string, c *transport.V3Transport) ([]masherytypes.Organization, error) {
-	opCtx := transport.FetchSpec{
-		Pagination:     transport.PerPage,
-		Resource:       "/organizations",
-		Query:          c.V3FilteringParams(qs, nil),
-		AppContext:     "all organizations",
-		ResponseParser: masherytypes.ParseMasheryOriganizationsArray,
+func (o OrganizationCRUDDecorator) ValueSupplier() transport.Supplier[masherytypes.Organization] {
+	return func() masherytypes.Organization {
+		return masherytypes.Organization{}
 	}
+}
 
-	if d, err := c.FetchAll(ctx, opCtx); err != nil {
-		return []masherytypes.Organization{}, err
-	} else {
-		// Convert individual fetches into the array of elements
-		var rv []masherytypes.Organization
-		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.Organization)
-			if ok {
-				rv = append(rv, ms...)
+func (o OrganizationCRUDDecorator) ValueArraySupplier() transport.Supplier[[]masherytypes.Organization] {
+	return func() []masherytypes.Organization {
+		return []masherytypes.Organization{}
+	}
+}
+
+var organizationCRUDDecorator *GenericCRUDDecorator[int, string, masherytypes.Organization]
+var organizationCRUD *GenericCRUD[int, string, masherytypes.Organization]
+
+func init() {
+	organizationCRUDDecorator = &GenericCRUDDecorator[int, string, masherytypes.Organization]{
+		ValueSupplier:      func() masherytypes.Organization { return masherytypes.Organization{} },
+		ValueArraySupplier: func() []masherytypes.Organization { return []masherytypes.Organization{} },
+		ResourceFor: func(ident string) (string, error) {
+			return fmt.Sprintf("/organizations/%s", ident), nil
+		},
+		ResourceForUpsert: func(t masherytypes.Organization) (string, error) {
+			if len(t.Id) > 0 {
+				return fmt.Sprintf("/organizations/%s", t.Id), nil
 			}
-		}
 
-		return rv, nil
+			return "", errors.New("insufficient identification")
+		},
+		ResourceForParent: func(ident int) (string, error) {
+			return "/organizations", nil
+		},
+		Pagination: transport.PerPage,
 	}
+	organizationCRUD = NewCRUD[int, string, masherytypes.Organization](
+		"organization",
+		organizationCRUDDecorator,
+	)
 }

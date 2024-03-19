@@ -3,83 +3,146 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"os"
+	"strings"
 	"time"
 )
 
 const logHeader = "--------------------------------------------------------------------------------------"
 
-const customTokenFileOpt = "token-file"
 const customNetTTLOpt = "net-ttl"
+const endpointOpt = "endpoint"
+const bearerEnvironmentOpt = "bearer-token-env"
+const tokenEnvironmentOpt = "vault-token-env"
+const tokenResourceEnvironmentOpt = "vault-token-resource-env"
+const tokenResourceOpt = "vault-token-resource"
 const qpsOps = "qps"
+const outputJsonOps = "as-json"
+const helpOpt = "help"
+const verboseTrafficOpt = "verbose-traffic"
 
-var cmdTokenFile string
 var qps int64
 var travelTimeComp string
-var subCmd []string
+var endpoint string
+var envBearerToken string
+var envVaultToken string
+var cliVaultTokenResource string
+var envVaultTokenResource string
+var globalOptOutputJson bool
+var showHelp bool
+var showVerboseTraffic bool
 var jsonEncoder *json.Encoder
 
-var argParsers []func() (bool, error)
+type ExecutorFunc func(context.Context, v3client.Client, []string) int
 
-var handler func(context.Context, v3client.Client, interface{}) int = nil
-var handlerArgs interface{}
-
-func argAt(idx int) string {
-	if len(subCmd) > idx {
-		return subCmd[idx]
-	} else {
-		return ""
-	}
-}
+var subCommandFinders []*SubcommandFinder
 
 func init() {
 	jsonEncoder = json.NewEncoder(os.Stdout)
 	jsonEncoder.SetIndent("", "  ")
 }
 
-func tokenProvider() (v3client.V3AccessTokenProvider, error) {
-	if envProp := os.Getenv(v3client.MasheryTokenSystemProperty); len(envProp) > 0 {
-		return v3client.NewFixedTokenProvider(envProp), nil
+func getEffectiveVaultTokenResource() string {
+	if len(cliVaultTokenResource) > 0 {
+		return cliVaultTokenResource
 	}
-
-	fsProvider := v3client.NewFileSystemTokenProviderFrom(cmdTokenFile)
-	_, err := fsProvider.AccessToken()
-
-	return fsProvider, err
+	return os.Getenv(envVaultTokenResource)
 }
 
-func main() {
-	fmt.Println("----------------------------------")
+func authorizer() (transport.Authorizer, error) {
+	vaultTokenResource := getEffectiveVaultTokenResource()
+	vaultToken := transport.VaultToken(os.Getenv(envVaultToken))
 
-	flag.StringVar(&cmdTokenFile, customTokenFileOpt, v3client.DefaultSavedAccessTokenFilePath(), "Use locally saved token file")
-	flag.Int64Var(&qps, qpsOps, 2, "Observe specified queries-per-second while querying")
-	flag.StringVar(&travelTimeComp, customNetTTLOpt, "173ms", "Consider specified network travel time")
-	flag.Parse()
-	subCmd = flag.Args()
+	if len(vaultTokenResource) > 0 && len(vaultToken) > 0 && len(endpoint) == 0 {
+		return transport.NewVaultTokenResourceAuthorizer(vaultTokenResource, vaultToken), nil
+	}
 
-	for _, p := range argParsers {
-		rec, err := p()
-		if rec {
-			if err != nil {
-				fmt.Println("Error in command:")
-				fmt.Println(err)
-				os.Exit(1)
-			} else {
-				break
-			}
+	if len(vaultToken) > 0 && len(endpoint) > 0 {
+		return transport.NewVaultAuthorizer(vaultToken), nil
+	}
+
+	if len(endpoint) == 0 && len(envBearerToken) > 0 {
+		if bearerToken := os.Getenv(envBearerToken); len(bearerToken) > 0 {
+			return transport.NewBearerAuthorizer(bearerToken), nil
 		}
 	}
 
-	if handler == nil {
+	return nil, errors.New("no suitable authorization supplied")
+}
+
+func enableSubcommand(cmd *SubcommandFinder) {
+	subCommandFinders = append(subCommandFinders, cmd)
+}
+
+func kvArrayToMap(in []string) map[string]string {
+	rv := map[string]string{}
+
+	for _, str := range in {
+		s := strings.Split(str, "=")
+		if len(s) == 1 {
+			rv[s[0]] = ""
+		} else if len(s) >= 2 {
+			rv[s[0]] = s[1]
+		}
+	}
+
+	return rv
+}
+
+func trafficListener(_ context.Context, req *transport.WrappedRequest, res *transport.WrappedResponse, err error) {
+	if showVerboseTraffic {
+		fmt.Printf("-> %s %s\n", req.Request.Method, req.Request.URL.String())
+		if req.Body != nil {
+			str, _ := json.Marshal(req.Body)
+			fmt.Println(string(str))
+		}
+		fmt.Println("<-")
+		fmt.Println(string(res.MustBody()))
+	}
+}
+
+func main() {
+	flag.Int64Var(&qps, qpsOps, 2, "Observe specified queries-per-second while querying")
+	flag.StringVar(&travelTimeComp, customNetTTLOpt, "173ms", "Consider specified network travel time")
+	flag.StringVar(&endpoint, endpointOpt, "", "A non-standard endpoint to connect to")
+	flag.StringVar(&envBearerToken, bearerEnvironmentOpt, "MASH_BEARER_TOKEN", "An environment variable containing bearer token")
+	flag.StringVar(&envVaultToken, tokenEnvironmentOpt, "VAULT_TOKEN", "An environment variable containing HashiCorp vault access token")
+	flag.StringVar(&envVaultTokenResource, tokenResourceEnvironmentOpt, "VAULT_TOKEN_RESOURCE", "An environment variable containing HashiCorp resource that will provide the V3 access token")
+	flag.StringVar(&cliVaultTokenResource, tokenResourceOpt, "", "URL of the resource in the Vault to read an access token from. Requires specifying Vault credentials.")
+	flag.BoolVar(&globalOptOutputJson, outputJsonOps, false, "Output JSON rather than a pretty-printed template")
+	flag.BoolVar(&showHelp, helpOpt, false, "Show help options")
+	flag.BoolVar(&showVerboseTraffic, verboseTrafficOpt, false, "Show verbose traffic")
+	flag.Parse()
+
+	if showHelp {
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+
+	subCmd := flag.Args()
+	if len(subCmd) == 0 {
+		fmt.Println("Sub-command required")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	execFunc := locateSubCommandExecutor(subCmd)
+
+	if execFunc == nil {
 		fmt.Println("Unrecognized command")
+		for _, p := range subCmd {
+			fmt.Println(p)
+		}
 		os.Exit(1)
 	}
 
 	// Arguments have been parsed correctly.
-	if tknProvider, err := tokenProvider(); err != nil {
+	if tknProvider, err := authorizer(); err != nil {
 		fmt.Printf("Access token provider is not ready: %s", err)
 		fmt.Println()
 		os.Exit(1)
@@ -92,12 +155,28 @@ func main() {
 		}
 
 		cl := v3client.NewHttpClient(v3client.Params{
+			MashEndpoint:  endpoint,
 			Authorizer:    tknProvider,
 			QPS:           qps,
 			AvgNetLatency: dur,
+			HTTPClientParams: transport.HTTPClientParams{
+				ExchangeListener: trafficListener,
+			},
 		})
 
-		exitCode := handler(ctx, cl, handlerArgs)
+		exitCode := execFunc(ctx, cl, subCmd)
 		os.Exit(exitCode)
 	}
+}
+
+func locateSubCommandExecutor(subCmd []string) ExecutorFunc {
+	specificity := 0
+	var execFunc ExecutorFunc
+
+	for _, p := range subCommandFinders {
+		if match := p.Matches(subCmd); match > specificity {
+			execFunc = p.Executor
+		}
+	}
+	return execFunc
 }

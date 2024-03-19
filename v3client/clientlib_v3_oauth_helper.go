@@ -14,7 +14,7 @@ import (
 )
 
 type V3OAuthHelper struct {
-	client        *http.Client
+	client        transport.HttpExecutor
 	TokenEndpoint string
 }
 
@@ -41,7 +41,7 @@ func NewOAuthHelper(params OAuthHelperParams) *V3OAuthHelper {
 	params.FillDefaults()
 
 	rv := V3OAuthHelper{
-		client:        params.CreateClient(),
+		client:        params.CreateHttpExecutor(),
 		TokenEndpoint: params.MasheryTokenEndpoint,
 	}
 

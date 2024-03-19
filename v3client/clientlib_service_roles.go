@@ -7,42 +7,18 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 )
 
-func masheryServiceRolesSpec(id masherytypes.ServiceIdentifier) transport.FetchSpec {
-	return transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/roles", id.ServiceId),
-		Query:          nil,
-		AppContext:     "get service roles",
-		ResponseParser: masherytypes.ParseRolePermissionArray,
-		Return404AsNil: true,
-	}
-}
-
-func masheryServiceRolesPutSpec(id masherytypes.ServiceIdentifier) transport.FetchSpec {
-	return transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s", id),
-		Query:          nil,
-		AppContext:     "put service roles",
-		ResponseParser: masherytypes.NilParser,
-	}
-}
-
 // GetServiceRoles retrieve the roles that are attached to this service.
-func GetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) ([]masherytypes.RolePermission, error) {
-	d, err := c.FetchAll(ctx, masheryServiceRolesSpec(id))
+func GetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.HttpTransport) ([]masherytypes.RolePermission, bool, error) {
+	objectListSpecBuilder := transport.ObjectListFetchSpecBuilder[masherytypes.RolePermission]{}
+	objectListSpecBuilder.
+		WithValueFactory(func() []masherytypes.RolePermission {
+			return []masherytypes.RolePermission{}
+		}).
+		WithReturn404AsNil(true).
+		WithResource(fmt.Sprintf("/services/%s/roles", id.ServiceId)).
+		WithAppContext("service role")
 
-	if err != nil {
-		return nil, err
-	} else {
-		var rv []masherytypes.RolePermission
-		for _, raw := range d {
-			ms, ok := raw.([]masherytypes.RolePermission)
-			if ok {
-				rv = append(rv, ms...)
-			}
-		}
-
-		return rv, nil
-	}
+	return transport.FetchAllWithExists(ctx, objectListSpecBuilder.Build(), c)
 }
 
 type setServiceRolesWrapper struct {
@@ -50,19 +26,33 @@ type setServiceRolesWrapper struct {
 }
 
 // SetServiceRoles set service roles for the given service. Empty array effectively deletes all associated roles.
-func SetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.RolePermission, c *transport.V3Transport) error {
+func SetServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, roles []masherytypes.RolePermission, c *transport.HttpTransport) error {
 	wrappedUpsert := setServiceRolesWrapper{Roles: roles}
 
-	_, err := c.UpdateObject(ctx, wrappedUpsert, masheryServiceRolesPutSpec(id))
+	objectUpsertSpecBuilder := transport.ObjectUpsertSpecBuilder[setServiceRolesWrapper]{}
+	objectUpsertSpecBuilder.
+		WithUpsert(wrappedUpsert).
+		WithValueFactory(func() setServiceRolesWrapper {
+			return setServiceRolesWrapper{}
+		}).
+		WithIgnoreResponse(true).
+		WithResource("/services/%s/roles", id.ServiceId).
+		WithAppContext("put service role")
 
-	if err == nil {
-		return nil
-	} else {
-		return err
-	}
+	_, err := transport.UpdateObject(ctx, objectUpsertSpecBuilder.Build(), c)
+	return err
 }
 
 // DeleteServiceRoles delete service roles
-func DeleteServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error {
-	return c.DeleteObject(ctx, masheryServiceRolesSpec(id))
+func DeleteServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.HttpTransport) error {
+	objectUpsertSpecBuilder := transport.ObjectFetchSpecBuilder[masherytypes.RolePermission]{}
+	objectUpsertSpecBuilder.
+		WithValueFactory(func() masherytypes.RolePermission {
+			return masherytypes.RolePermission{}
+		}).
+		WithIgnoreResponse(true).
+		WithResource("/services/%s/roles", id.ServiceId).
+		WithAppContext("delete service role")
+
+	return transport.DeleteObject(ctx, objectUpsertSpecBuilder.Build(), c)
 }

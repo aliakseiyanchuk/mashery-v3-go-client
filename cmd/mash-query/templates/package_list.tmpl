@@ -1,0 +1,10 @@
+{{- $srv_cnt := len (.) }} {{- if gt $srv_cnt 0}}
+There are {{ $srv_cnt }} package defined
+{{- range $srv := . }}
+- Package {{ $srv.Name }} (id={{ $srv.Id}})
+  > export MASH_PACKAGE_ID={{ $srv.Id}}
+
+{{- end}}
+{{- else }}
+There are no packages defined in this area.
+{{ end }}

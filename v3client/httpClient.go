@@ -2,6 +2,7 @@ package v3client
 
 import (
 	"context"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"net/http"
 	"sync"
@@ -46,6 +47,8 @@ type Params struct {
 	Authorizer    transport.Authorizer
 	QPS           int64
 	AvgNetLatency time.Duration
+
+	Pipeline []transport.ChainedMiddlewareFunc
 }
 
 func (p *Params) FillDefaults() {
@@ -68,23 +71,34 @@ func (p *Params) FillDefaults() {
 	if p.TLSConfig == nil && !p.TLSConfigDelegateSystem {
 		p.TLSConfig = transport.DefaultTLSConfig()
 	}
+
+	if len(p.Pipeline) == 0 {
+		p.Pipeline = []transport.ChainedMiddlewareFunc{
+			transport.ThrottleFunc,
+			transport.BreakOnDeveloperOverRateFunc,
+			transport.BackOffOnDeveloperOverQPSFunc,
+			transport.ErrorOn404Func,
+			transport.RetryOn400Func,
+			transport.EnsureBodyWasRead,
+			transport.UnmarshalServerError,
+		}
+	}
 }
 
 func NewHttpClient(p Params) Client {
 	return newHttpClientWithSchema(p, StandardClientMethodSchema())
 }
 
-func NewHttpClientWithAutoRetries(p Params) Client {
+func NewHttpClientWithBadRequestAutoRetries(p Params) Client {
 	return newHttpClientWithSchema(p, AutoRetryOnBadRequestMethodSchema())
 }
 
 func newHttpClientWithSchema(p Params, s *ClientMethodSchema) Client {
 	p.FillDefaults()
 
-	impl := transport.V3Transport{
-		HttpTransport: createHTTPTransport(p),
-	}
+	impl := createHTTPTransport(p)
 
+	// TODO Refactor this to allow accepting the mocks on the HTTP transport.
 	rv := FixedSchemeClient{
 		PluggableClient{
 			schema:    s,
@@ -103,9 +117,10 @@ func createHTTPTransport(p Params) transport.HttpTransport {
 		Mutex:         &sync.Mutex{},
 		MaxQPS:        p.QPS,
 
-		HttpClient: p.CreateClient(),
+		HttpExecutor: p.CreateHttpExecutor(),
 
 		ExchangeListener: p.ExchangeListener,
+		Pipeline:         transport.BuildPipeline(transport.ExecuteFunction, p.Pipeline),
 	}
 }
 
@@ -113,118 +128,131 @@ func AutoRetryOnBadRequestMethodSchema() *ClientMethodSchema {
 	rv := StandardClientMethodSchema()
 
 	// Application methods that needs supporting
-	rv.GetApplicationContext = autoRetryBadRequest(GetApplication)
-	rv.GetApplicationPackageKeys = autoRetryBadRequest(GetApplicationPackageKeys)
-	rv.CountApplicationPackageKeys = autoRetryBadRequest(CountApplicationPackageKeys)
-	rv.GetFullApplication = autoRetryBadRequest(GetFullApplication)
-	rv.UpdateApplication = autoRetryBadRequest(UpdateApplication)
+	rv.GetApplicationContext = autoRetryBadGetRequest(rv.GetApplicationContext)
+	rv.GetApplicationPackageKeys = autoRetryBadRequest(rv.GetApplicationPackageKeys)
+	rv.CountApplicationPackageKeys = autoRetryBadRequest(rv.CountApplicationPackageKeys)
+	rv.GetFullApplication = autoRetryBadGetRequest(rv.GetFullApplication)
+	rv.UpdateApplication = autoRetryBadRequest(rv.UpdateApplication)
 
-	rv.UpdateEndpoint = autoRetryBadRequest(UpdateEndpoint)
-	rv.GetEndpoint = autoRetryBadRequest(GetEndpoint)
+	rv.CreateEndpoint = autoRetryBadBiRequest(rv.CreateEndpoint)
+	rv.UpdateEndpoint = autoRetryBadRequest(rv.UpdateEndpoint)
+	rv.GetEndpoint = autoRetryBadGetRequest(rv.GetEndpoint)
 
 	// Endpoint methods
-	rv.ListEndpointMethods = autoRetryBadRequest(ListEndpointMethods)
-	rv.CreateEndpointMethod = autoRetryBiBadRequest(CreateEndpointMethod)
-	rv.UpdateEndpointMethod = autoRetryBadRequest(UpdateEndpointMethod)
-	rv.GetEndpointMethod = autoRetryBadRequest(GetEndpointMethod)
+	rv.ListEndpointMethods = autoRetryBadRequest(rv.ListEndpointMethods)
+	rv.CreateEndpointMethod = autoRetryBiBadRequest(rv.CreateEndpointMethod)
+	rv.UpdateEndpointMethod = autoRetryBadRequest(rv.UpdateEndpointMethod)
+	rv.GetEndpointMethod = autoRetryBadGetRequest(rv.GetEndpointMethod)
 
 	// Endpoint method filters
-	rv.ListEndpointMethodFilters = autoRetryBadRequest(ListEndpointMethodFilters)
-	rv.CreateEndpointMethodFilter = autoRetryBiBadRequest(CreateEndpointMethodFilter)
-	rv.UpdateEndpointMethodFilter = autoRetryBadRequest(UpdateEndpointMethodFilter)
-	rv.GetEndpointMethodFilter = autoRetryBadRequest(GetEndpointMethodFilter)
-	rv.CountEndpointsMethodsFiltersOf = autoRetryBadRequest(CountEndpointsMethodsFiltersOf)
+	rv.ListEndpointMethodFilters = autoRetryBadRequest(rv.ListEndpointMethodFilters)
+	rv.CreateEndpointMethodFilter = autoRetryBiBadRequest(rv.CreateEndpointMethodFilter)
+	rv.UpdateEndpointMethodFilter = autoRetryBadRequest(rv.UpdateEndpointMethodFilter)
+	rv.GetEndpointMethodFilter = autoRetryBadGetRequest(rv.GetEndpointMethodFilter)
+	rv.CountEndpointsMethodsFiltersOf = autoRetryBadRequest(rv.CountEndpointsMethodsFiltersOf)
 
 	// Package plans
-	rv.CreatePlanService = autoRetryBadRequest(CreatePlanService)
-	rv.CheckPlanServiceExists = autoRetryBadRequest(CheckPlanServiceExists)
-	rv.CreatePlanEndpoint = autoRetryBadRequest(CreatePlanEndpoint)
-	rv.CheckPlanEndpointExists = autoRetryBadRequest(CheckPlanEndpointExists)
-	rv.ListPlanEndpoints = autoRetryBadRequest(ListPlanEndpoints)
+	rv.CreatePlanService = autoRetryBadRequest(rv.CreatePlanService)
+	rv.CheckPlanServiceExists = autoRetryBadRequest(rv.CheckPlanServiceExists)
+	rv.CreatePlanEndpoint = autoRetryBadRequest(rv.CreatePlanEndpoint)
+	rv.CheckPlanEndpointExists = autoRetryBadRequest(rv.CheckPlanEndpointExists)
+	rv.ListPlanEndpoints = autoRetryBadRequest(rv.ListPlanEndpoints)
 
-	rv.CountPlanEndpoints = autoRetryBadRequest(CountPlanEndpoints)
-	rv.CountPlanService = autoRetryBadRequest(CountPlanService)
-	rv.GetPlan = autoRetryBadRequest(GetPlan)
-	rv.CreatePlan = autoRetryBiBadRequest(CreatePlan)
-	rv.UpdatePlan = autoRetryBadRequest(UpdatePlan)
-	rv.CountPlans = autoRetryBadRequest(CountPlans)
-	rv.ListPlans = autoRetryBadRequest(ListPlans)
-	rv.ListPlanServices = autoRetryBadRequest(ListPlanServices)
+	rv.CountPlanEndpoints = autoRetryBadRequest(rv.CountPlanEndpoints)
+	rv.CountPlanService = autoRetryBadRequest(rv.CountPlanService)
+	rv.GetPlan = autoRetryBadGetRequest(rv.GetPlan)
+	rv.CreatePlan = autoRetryBiBadRequest(rv.CreatePlan)
+	rv.UpdatePlan = autoRetryBadRequest(rv.UpdatePlan)
+	rv.CountPlans = autoRetryBadRequest(rv.CountPlans)
+	rv.ListPlans = autoRetryBadRequest(rv.ListPlans)
+	rv.ListPlanServices = autoRetryBadRequest(rv.ListPlanServices)
 
 	// Plan methods
-	rv.ListPackagePlanMethods = autoRetryBadRequest(ListPackagePlanMethods)
-	rv.GetPackagePlanMethod = autoRetryBadRequest(GetPackagePlanMethod)
-	rv.CreatePackagePlanMethod = autoRetryBadRequest(CreatePackagePlanServiceEndpointMethod)
+	rv.ListPackagePlanMethods = autoRetryBadRequest(rv.ListPackagePlanMethods)
+	rv.GetPackagePlanMethod = autoRetryBadGetRequest(rv.GetPackagePlanMethod)
+	rv.CreatePackagePlanMethod = autoRetryBadRequest(rv.CreatePackagePlanMethod)
 
 	// Plan method filter
-	rv.GetPackagePlanMethodFilter = autoRetryBadRequest(GetPackagePlanMethodFilter)
-	rv.CreatePackagePlanMethodFilter = autoRetryBadRequest(CreatePackagePlanMethodFilter)
+	rv.GetPackagePlanMethodFilter = autoRetryBadGetRequest(rv.GetPackagePlanMethodFilter)
+	rv.CreatePackagePlanMethodFilter = autoRetryBadRequest(rv.CreatePackagePlanMethodFilter)
 
 	return rv
 }
 
 func StandardClientMethodSchema() *ClientMethodSchema {
 	return &ClientMethodSchema{
-		GetPublicDomains: ListPublicDomains,
-		GetSystemDomains: ListSystemDomains,
+		GetPublicDomains: RootFetcher[int, masherytypes.DomainAddress](publicDomainsCRUD.FetchAll, 0),
+		GetSystemDomains: RootFetcher[int, masherytypes.DomainAddress](systemDomainsCRUD.FetchAll, 0),
 
 		// Application method schema
-		GetApplicationContext:       GetApplication,
-		GetApplicationPackageKeys:   GetApplicationPackageKeys,
-		CountApplicationPackageKeys: CountApplicationPackageKeys,
-		GetFullApplication:          GetFullApplication,
-		CreateApplication:           CreateApplication,
-		UpdateApplication:           UpdateApplication,
-		DeleteApplication:           DeleteApplication,
-		CountApplicationsOfMember:   CountApplicationsOfMember,
-		ListApplications:            ListApplications,
+		GetApplicationContext:               GetApplicationWithExtendedAttributes,
+		GetApplicationExtendedAttributes:    GetApplicationExtendedAttributes,
+		UpdateApplicationExtendedAttributes: UpdateApplicationExtendedAttributes,
+		GetApplicationPackageKeys:           applicationPackageKeyCRUD.FetchAll,
+		CountApplicationPackageKeys:         applicationPackageKeyCRUD.Count,
+		GetFullApplication:                  GetWithFields[masherytypes.ApplicationIdentifier, masherytypes.Application](applicationDeepFields, applicationCRUD.Get),
+		CreateApplication:                   applicationCRUD.Create,
+		UpdateApplication:                   applicationCRUD.Update,
+		DeleteApplication:                   applicationCRUD.Delete,
+		CountApplicationsOfMember:           applicationCRUD.Count,
+		ListApplications: func(ctx context.Context, c *transport.HttpTransport) ([]masherytypes.Application, error) {
+			return applicationCRUD.FetchAll(ctx, masherytypes.MemberIdentifier{}, c)
+		},
+		ListApplicationsFiltered: func(ctx context.Context, params map[string]string, c *transport.HttpTransport) ([]masherytypes.Application, error) {
+			return applicationCRUD.FetchFiltered(ctx, masherytypes.MemberIdentifier{}, params, c)
+		},
 
 		// Email sets
-		GetEmailTemplateSet:           GetEmailTemplateSet,
-		ListEmailTemplateSets:         ListEmailTemplateSets,
-		ListEmailTemplateSetsFiltered: ListEmailTemplateSetsFiltered,
+		GetEmailTemplateSet:           emailTemplateSetCRUD.Get,
+		ListEmailTemplateSets:         RootFetcher[int, masherytypes.EmailTemplateSet](emailTemplateSetCRUD.FetchAll, 0),
+		ListEmailTemplateSetsFiltered: RootFilteredFetcher[int, masherytypes.EmailTemplateSet](emailTemplateSetCRUD.FetchFiltered, 0),
 
 		// Endpoints
-		ListEndpoints:             ListEndpoints,
-		ListEndpointsWithFullInfo: ListEndpointsWithFullInfo,
-		CreateEndpoint:            CreateEndpoint,
-		UpdateEndpoint:            UpdateEndpoint,
-		GetEndpoint:               GetEndpoint,
-		DeleteEndpoint:            DeleteEndpoint,
-		CountEndpointsOf:          CountEndpointsOf,
+		ListEndpoints: endpointCRUD.FetchAllAsAddressable,
+
+		ListEndpointsWithFullInfo: endpointCRUD.FetchAll,
+		CreateEndpoint:            endpointCRUD.Create,
+		UpdateEndpoint:            endpointCRUD.Update,
+		GetEndpoint:               endpointCRUD.Get,
+		DeleteEndpoint:            endpointCRUD.Delete,
+		CountEndpointsOf:          endpointCRUD.Count,
 
 		// Endpoint methods
-		ListEndpointMethods:             ListEndpointMethods,
-		ListEndpointMethodsWithFullInfo: ListEndpointMethodsWithFullInfo,
-		CreateEndpointMethod:            CreateEndpointMethod,
-		UpdateEndpointMethod:            UpdateEndpointMethod,
-		GetEndpointMethod:               GetEndpointMethod,
-		DeleteEndpointMethod:            DeleteEndpointMethod,
-		CountEndpointsMethodsOf:         CountEndpointsMethodsOf,
+		ListEndpointMethods: endpointMethodCRUD.FetchAllAsAddressable,
+
+		ListEndpointMethodsWithFullInfo: endpointMethodCRUD.FetchAll,
+		CreateEndpointMethod:            endpointMethodCRUD.Create,
+		UpdateEndpointMethod:            endpointMethodCRUD.Update,
+		GetEndpointMethod:               endpointMethodCRUD.Get,
+		DeleteEndpointMethod:            endpointMethodCRUD.Delete,
+		CountEndpointsMethodsOf:         endpointMethodCRUD.Count,
 
 		// Endpoint method filters
-		ListEndpointMethodFilters:             ListEndpointMethodFilters,
-		ListEndpointMethodFiltersWithFullInfo: ListEndpointMethodFiltersWithFullInfo,
-		CreateEndpointMethodFilter:            CreateEndpointMethodFilter,
-		UpdateEndpointMethodFilter:            UpdateEndpointMethodFilter,
-		GetEndpointMethodFilter:               GetEndpointMethodFilter,
-		DeleteEndpointMethodFilter:            DeleteEndpointMethodFilter,
-		CountEndpointsMethodsFiltersOf:        CountEndpointsMethodsFiltersOf,
+		ListEndpointMethodFilters:             endpointMethodFilterCRUD.FetchAllAsAddressable,
+		ListEndpointMethodFiltersWithFullInfo: endpointMethodFilterCRUD.FetchAll,
+		CreateEndpointMethodFilter:            endpointMethodFilterCRUD.Create,
+		UpdateEndpointMethodFilter:            endpointMethodFilterCRUD.Update,
+		GetEndpointMethodFilter:               endpointMethodFilterCRUD.Get,
+		DeleteEndpointMethodFilter:            endpointMethodFilterCRUD.Delete,
+		CountEndpointsMethodsFiltersOf:        endpointMethodFilterCRUD.Count,
 
 		// Member
-		GetMember:     GetMember,
-		GetFullMember: GetFullMember,
-		CreateMember:  CreateMember,
-		UpdateMember:  UpdateMember,
-		DeleteMember:  DeleteMember,
-		ListMembers:   ListMembers,
+		GetMember:           memberCRUD.Get,
+		GetFullMember:       GetWithFields(memberDeepFields, memberCRUD.Get),
+		CreateMember:        RootCreator(memberCRUD.Create, 0),
+		UpdateMember:        memberCRUD.Update,
+		DeleteMember:        memberCRUD.Delete,
+		ListMembers:         RootFetcher(memberCRUD.FetchAll, 0),
+		ListMembersFiltered: RootFilteredFetcher(memberCRUD.FetchFiltered, 0),
 
 		// Packages
-		GetPackage:    GetPackage,
-		CreatePackage: CreatePackage,
-		UpdatePackage: UpdatePackage,
-		DeletePackage: DeletePackage,
-		ListPackages:  ListPackages,
+		GetPackage:            packageCRUD.Get,
+		CreatePackage:         RootCreator(packageCRUD.Create, 0),
+		UpdatePackage:         packageCRUD.Update,
+		DeletePackage:         packageCRUD.Delete,
+		ListPackages:          RootFetcher(packageCRUD.FetchAll, 0),
+		ListPackagesFiltered:  RootFilteredFetcher(packageCRUD.FetchFiltered, 0),
+		ResetPackageOwnership: ResetPackageOwnership,
 
 		// Package plans
 		CreatePlanService:       CreatePlanService,
@@ -235,14 +263,16 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		DeletePlanEndpoint:      DeletePlanEndpoint,
 		ListPlanEndpoints:       ListPlanEndpoints,
 
-		CountPlanEndpoints: CountPlanEndpoints,
+		GetPlan:           packagePlanCRDU.Get,
+		CreatePlan:        packagePlanCRDU.Create,
+		UpdatePlan:        packagePlanCRDU.Update,
+		DeletePlan:        packagePlanCRDU.Delete,
+		CountPlans:        packagePlanCRDU.Count,
+		ListPlans:         packagePlanCRDU.FetchAll,
+		ListPlansFiltered: packagePlanCRDU.FetchFiltered,
+
 		CountPlanService:   CountPlanService,
-		GetPlan:            GetPlan,
-		CreatePlan:         CreatePlan,
-		UpdatePlan:         UpdatePlan,
-		DeletePlan:         DeletePlan,
-		CountPlans:         CountPlans,
-		ListPlans:          ListPlans,
+		CountPlanEndpoints: CountPlanEndpoints,
 		ListPlanServices:   ListPlanServices,
 
 		// Plan methods
@@ -252,59 +282,64 @@ func StandardClientMethodSchema() *ClientMethodSchema {
 		DeletePackagePlanMethod: DeletePackagePlanMethod,
 
 		// Plan method filter
-		GetPackagePlanMethodFilter:    GetPackagePlanMethodFilter,
+		GetPackagePlanMethodFilter:    packagePlanServiceEndpointMethodFilterCRUD.Get,
 		CreatePackagePlanMethodFilter: CreatePackagePlanMethodFilter,
-		DeletePackagePlanMethodFilter: DeletePackagePlanMethodFilter,
+		DeletePackagePlanMethodFilter: packagePlanServiceEndpointMethodFilterCRUD.Delete,
 
 		// Package key
-		GetPackageKey:           GetPackageKey,
-		CreatePackageKey:        CreatePackageKey,
-		UpdatePackageKey:        UpdatePackageKey,
-		ResetPackageOwnership:   ResetPackageOwnership,
-		DeletePackageKey:        DeletePackageKey,
-		ListPackageKeysFiltered: ListPackageKeysFiltered,
-		ListPackageKeys:         ListPackageKeys,
+		GetApplicationPackageKey:    applicationPackageKeyCRUD.Get,
+		UpdateApplicationPackageKey: applicationPackageKeyCRUD.Update,
+		CreateApplicationPackageKey: applicationPackageKeyCRUD.Create,
+		DeleteApplicationPackageKey: applicationPackageKeyCRUD.Delete,
+
+		GetPackageKey:    packageKeyCRUD.Get,
+		UpdatePackageKey: packageKeyCRUD.Update,
+		CreatePackageKey: RootCreator(packageKeyCRUD.Create, 0),
+		DeletePackageKey: packageKeyCRUD.Delete,
+
+		ListPackageKeysFiltered: RootFilteredFetcher(packageKeyCRUD.FetchFiltered, 0),
+		ListPackageKeys:         RootFetcher(packageKeyCRUD.FetchAll, 0),
 
 		// Roles
-		GetRole:           GetRole,
-		ListRoles:         ListRoles,
-		ListRolesFiltered: ListRolesFiltered,
+		GetRole:           roleCRUD.Get,
+		ListRoles:         RootFetcher(roleCRUD.FetchAll, 0),
+		ListRolesFiltered: RootFilteredFetcher(roleCRUD.FetchFiltered, 0),
 
 		// Service
-		GetService:           GetService,
-		CreateService:        CreateService,
-		UpdateService:        UpdateService,
-		DeleteService:        DeleteService,
-		ListServicesFiltered: ListServicesFiltered,
-		ListServices:         ListServices,
-		CountServices:        CountServices,
+		GetService:           serviceCRUD.Get,
+		CreateService:        RootCreator(serviceCRUD.Create, 0),
+		UpdateService:        serviceCRUD.Update,
+		DeleteService:        serviceCRUD.Delete,
+		ListServicesFiltered: RootFilteredFetcher(serviceCRUD.FetchFiltered, 0),
+		ListServices:         RootFetcher(serviceCRUD.FetchAll, 0),
+		CountServices:        RootFilteredCounter[int, masherytypes.Service](serviceCRUD.CountFiltered, 0),
 
-		ListErrorSets:         ListErrorSets,
-		GetErrorSet:           GetErrorSet,
-		CreateErrorSet:        CreateErrorSet,
-		UpdateErrorSet:        UpdateErrorSet,
-		DeleteErrorSet:        DeleteErrorSet,
-		UpdateErrorSetMessage: UpdateErrorSetMessage,
+		ListErrorSets:         errorSetCRUD.FetchFiltered,
+		GetErrorSet:           errorSetCRUD.Get,
+		CreateErrorSet:        errorSetCRUD.Create,
+		UpdateErrorSet:        errorSetCRUD.Update,
+		DeleteErrorSet:        errorSetCRUD.Delete,
+		UpdateErrorSetMessage: errorSetMessageCRUD.Update,
 
 		GetServiceRoles:    GetServiceRoles,
 		SetServiceRoles:    SetServiceRoles,
 		DeleteServiceRoles: DeleteServiceRoles,
 
 		// Service cache,
-		GetServiceCache:    GetServiceCache,
-		CreateServiceCache: CreateServiceCache,
-		UpdateServiceCache: UpdateServiceCache,
-		DeleteServiceCache: DeleteServiceCache,
+		GetServiceCache:    serviceCacheCRUD.Get,
+		CreateServiceCache: serviceCacheCRUD.Create,
+		UpdateServiceCache: serviceCacheCRUD.Update,
+		DeleteServiceCache: serviceCacheCRUD.Delete,
 
 		// Service OAuth
-		GetServiceOAuthSecurityProfile:    GetServiceOAuthSecurityProfile,
-		CreateServiceOAuthSecurityProfile: CreateServiceOAuthSecurityProfile,
-		UpdateServiceOAuthSecurityProfile: UpdateServiceOAuthSecurityProfile,
-		DeleteServiceOAuthSecurityProfile: DeleteServiceOAuthSecurityProfile,
+		GetServiceOAuthSecurityProfile:    serviceOAuthCRUD.Get,
+		CreateServiceOAuthSecurityProfile: serviceOAuthCRUD.Create,
+		UpdateServiceOAuthSecurityProfile: serviceOAuthCRUD.Update,
+		DeleteServiceOAuthSecurityProfile: serviceOAuthCRUD.Delete,
 
 		// List organizations
-		ListOrganizations:         ListOrganizations,
-		ListOrganizationsFiltered: ListOrganizationsFiltered,
+		ListOrganizations:         RootFetcher(organizationCRUD.FetchAll, 0),
+		ListOrganizationsFiltered: RootFilteredFetcher(organizationCRUD.FetchFiltered, 0),
 	}
 }
 

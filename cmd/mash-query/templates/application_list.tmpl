@@ -1,0 +1,8 @@
+{{- $srv_cnt := len (.) }} {{- if gt $srv_cnt 0}}
+There are {{ $srv_cnt }} applications defined in this area
+{{- range $app := . }}
+- App {{ $app.Name }} of {{ $app.Username}} (id={{ $app.Id }})
+{{- end}}
+{{- else }}
+There are no applications defined in this area.
+{{ end }}

@@ -29,6 +29,19 @@ type PackagePlanServiceEndpointIdentifier struct {
 	ServiceEndpointIdentifier
 }
 
+func (ppsemi PackagePlanServiceEndpointMethodIdentifier) GetPackagePlanServiceEndpointIdentifier() PackagePlanServiceEndpointIdentifier {
+	return PackagePlanServiceEndpointIdentifier{
+		PackagePlanIdentifier: PackagePlanIdentifier{
+			PackageIdentifier: PackageIdentifier{PackageId: ppsemi.PackageId},
+			PlanId:            ppsemi.PlanId,
+		},
+		ServiceEndpointIdentifier: ServiceEndpointIdentifier{
+			ServiceIdentifier: ServiceIdentifier{ServiceId: ppsemi.ServiceId},
+			EndpointId:        ppsemi.EndpointId,
+		},
+	}
+}
+
 type PackagePlanServiceEndpointMethodIdentifier struct {
 	PackagePlanIdentifier
 	ServiceEndpointMethodIdentifier
@@ -37,6 +50,22 @@ type PackagePlanServiceEndpointMethodIdentifier struct {
 type PackagePlanServiceEndpointMethodFilterIdentifier struct {
 	PackagePlanIdentifier
 	ServiceEndpointMethodFilterIdentifier
+}
+
+func (ppsemfi PackagePlanServiceEndpointMethodFilterIdentifier) AsPackagePlanServiceEndpointMethodIdentifier() PackagePlanServiceEndpointMethodIdentifier {
+	return PackagePlanServiceEndpointMethodIdentifier{
+		PackagePlanIdentifier: PackagePlanIdentifier{
+			PackageIdentifier: PackageIdentifier{PackageId: ppsemfi.PackageId},
+			PlanId:            ppsemfi.PlanId,
+		},
+		ServiceEndpointMethodIdentifier: ServiceEndpointMethodIdentifier{
+			ServiceEndpointIdentifier: ServiceEndpointIdentifier{
+				ServiceIdentifier: ServiceIdentifier{ServiceId: ppsemfi.ServiceId},
+				EndpointId:        ppsemfi.EndpointId,
+			},
+			MethodId: ppsemfi.MethodId,
+		},
+	}
 }
 
 type ServiceIdentifier struct {
@@ -65,4 +94,9 @@ type PackageKeyIdentifier struct {
 type ErrorSetIdentifier struct {
 	ServiceIdentifier
 	ErrorSetId string `json:"esid"`
+}
+
+type ErrorSetMessageIdentifier struct {
+	ErrorSetIdentifier
+	ErrorSetMessageId string `json:"esmid"`
 }

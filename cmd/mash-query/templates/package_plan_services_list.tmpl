@@ -1,0 +1,18 @@
+{{- $srv_cnt := len (.) }} {{- if gt $srv_cnt 0}}
+There are {{ $srv_cnt }} services defined in this plan
+{{- range $srv := . }}
+- Service {{ $srv.Name }} (id={{ $srv.Id}})
+  > export MASH_PACKAGE_PLAN_SERVICE_ID={{ $srv.Id}}
+  {{- $endp_cnt := len ($srv.Endpoints) }} {{- if gt $endp_cnt 0}}
+  The service in includes {{ $endp_cnt }} endpoints:
+  {{- range $e := $srv.Endpoints }}
+  - {{ $e.Name }} (Id={{$e.Id}})
+    > export MASH_PACKAGE_PLAN_SERVICE_ENDPOINT_ID={{$e.Id}}
+  {{- end}}
+  {{- else }}
+  | The service includes no endpoints.
+  {{- end}}
+{{- end}}
+{{- else }}
+There are no services defined in this plan.
+{{ end }}

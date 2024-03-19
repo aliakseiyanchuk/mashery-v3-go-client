@@ -10,140 +10,229 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
-type V3Transport struct {
-	HttpTransport
+type MiddlewareFunc func(ctx context.Context, transport *HttpTransport) (*WrappedResponse, error)
+
+// ChainedMiddlewareFunc is a middleware function
+type ChainedMiddlewareFunc func(ctx context.Context, transport *HttpTransport, middlewareFunc MiddlewareFunc) (*WrappedResponse, error)
+
+func GetObject[T any](ctx context.Context, opCtx ObjectFetchSpec[T], c *HttpTransport) (T, bool, error) {
+	rv, resp, err := performGenericObjectCRUDWithResponse[T](ctx, c, opCtx, opCtx.FetchFunc())
+	objectExists := false
+	if resp != nil {
+		objectExists = resp.StatusCode == 200
+	}
+	return rv, objectExists, err
+}
+
+func CreateObject[T any](ctx context.Context, opCtx ObjectUpsertSpec[T], c *HttpTransport) (T, error) {
+	return performGenericObjectCRUD(ctx, c, opCtx.ObjectFetchSpec, func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Post(ctx, opCtx.DestResource(), opCtx.Upsert)
+	})
+}
+
+func UpdateObject[T any](ctx context.Context, opCtx ObjectUpsertSpec[T], c *HttpTransport) (T, error) {
+	return performGenericObjectCRUD(ctx, c, opCtx.ObjectFetchSpec, func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Put(ctx, opCtx.DestResource(), opCtx.Upsert)
+	})
+}
+
+// ExchangeObject exchange an input object for the output one.
+func ExchangeObject[TIn, TOut any](ctx context.Context, opCtx ObjectExchangeSpec[TIn, TOut], verb string, c *HttpTransport) (TOut, error) {
+	return performGenericObjectCRUD(ctx, c, opCtx.ObjectFetchSpec, func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Send(ctx, verb, opCtx.DestResource(), opCtx.Body)
+	})
+}
+
+func DeleteObject[T any](ctx context.Context, opCtx ObjectFetchSpec[T], c *HttpTransport) error {
+	_, err := performGenericObjectCRUD(ctx, c, opCtx, func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Delete(ctx, opCtx.DestResource())
+	})
+
+	return err
+}
+
+// Count the number of objects that match the specified criteria
+func Count[T any](ctx context.Context, opCtx ObjectListFetchSpec[T], c *HttpTransport) (int64, error) {
+	limitQuery := url.Values{
+		"limit": []string{"1"},
+	}
+
+	builder := opCtx.ToBuilder()
+	builder.WithMergedQuery(limitQuery)
+
+	if _, wr, err := performGenericObjectCRUDWithResponse(ctx, c, builder.Build().AsObjectFetchSpec(), func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Fetch(ctx, opCtx.DestResource())
+	}); err != nil {
+		return -1, err
+	} else {
+		return extractTotalCount(wr), nil
+	}
+}
+
+func Exists[T any](ctx context.Context, opCtx ObjectFetchSpec[T], c *HttpTransport) (bool, error) {
+	if _, wr, err := performGenericObjectCRUDWithResponse(ctx, c, opCtx, func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Fetch(ctx, opCtx.DestResource())
+	}); err != nil {
+		return false, err
+	} else {
+		return wr.StatusCode == 200, err
+	}
 }
 
 // AsyncFetch Perform a fetch asynchronously, returning the response in the provided channel.
-func (c *V3Transport) AsyncFetch(ctx context.Context, opContext FetchSpec, comm chan AsyncFetchResult) {
-	rv, err := c.Fetch(ctx, opContext.DestResource())
+func AsyncFetch[T any](ctx context.Context, opCtx ObjectFetchSpec[T], c *HttpTransport, comm chan AsyncFetchResult[T]) {
+	rv, err := performGenericObjectCRUD(ctx, c, opCtx, func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Fetch(ctx, opCtx.DestResource())
+	})
 
 	// Send the communication back.
-	comm <- AsyncFetchResult{
+	comm <- AsyncFetchResult[T]{
 		Data: rv,
 		Err:  err,
 	}
 }
 
-func (c *V3Transport) GetObject(ctx context.Context, opCtx FetchSpec) (interface{}, error) {
-	if resp, err := c.Fetch(ctx, opCtx.DestResource()); err == nil {
-		if dat, err := resp.Body(); err != nil {
-			return nil, &errwrap.WrappedError{
-				Context: fmt.Sprintf("get %s->read server response", opCtx.AppContext),
-				Cause:   err,
-			}
-		} else {
-			if resp.StatusCode == 200 {
-				// Ignore page when retrieving an object
-				if rv, _, jsonErr := opCtx.ResponseParser(dat); jsonErr != nil {
-					return nil, &errwrap.WrappedError{
-						Context: fmt.Sprintf("get %s->unmarshal response", opCtx.AppContext),
-						Cause:   jsonErr,
-					}
-				} else {
-					return rv, nil
+func FetchAll[T any](ctx context.Context, opCtx ObjectListFetchSpec[T], c *HttpTransport) ([]T, error) {
+	rv, _, err := FetchAllWithExists(ctx, opCtx, c)
+	return rv, err
+}
+
+// FetchAllWithExists Fetch all Mashery objects, including the handling for the pagination
+func FetchAllWithExists[T any](ctx context.Context, opCtx ObjectListFetchSpec[T], c *HttpTransport) ([]T, bool, error) {
+
+	firstPageData, firstPageResponse, firstPageFetchErr := performGenericObjectCRUDWithResponse[[]T](ctx, c, opCtx.AsObjectFetchSpec(), func(ctx context.Context, c *HttpTransport) (*WrappedResponse, error) {
+		return c.Fetch(ctx, opCtx.DestResource())
+	})
+
+	if firstPageFetchErr != nil {
+		return nil, false, firstPageFetchErr
+	} else if firstPageData == nil {
+		return nil, firstPageResponse.StatusCode != 404, nil
+	}
+
+	rv := firstPageData
+	var collErr error
+
+	pageSize := len(rv)
+	// Don't try doing anything else if the response contains no data.
+	if pageSize == 0 {
+		return rv, firstPageResponse.StatusCode != 404, nil
+	}
+
+	totalCountHdr := firstPageResponse.Header.Get("X-Total-Count")
+	//fmt.Println(totalCountHdr)
+
+	if len(totalCountHdr) > 0 {
+		totalCount, _ := strconv.ParseInt(totalCountHdr, 10, 0)
+
+		if totalCount > int64(pageSize) {
+			allFetches := int(totalCount / int64(pageSize))
+
+			commChan := make(chan AsyncFetchResult[[]T])
+			defer close(commChan)
+
+			for p := 1; p <= allFetches; p++ {
+				offset := p
+				if opCtx.Pagination == PerItem {
+					offset *= pageSize
 				}
-			} else if resp.StatusCode == 404 {
-				return nil, nil
-			} else {
-				return nil, v3ErrorFromResponse(fmt.Sprintf("get %s", opCtx.AppContext), resp.StatusCode, resp.Header, dat)
+
+				offsetParam := url.Values{
+					"offset": {strconv.Itoa(offset)},
+				}
+				//fmt.Println(offsetParam)
+
+				pageFetchSpec := opCtx.ToBuilder()
+				pageFetchSpec.WithMergedQuery(offsetParam)
+
+				go AsyncFetch(ctx, pageFetchSpec.Build().AsObjectFetchSpec(), c, commChan)
+			}
+
+			for p := 1; p <= allFetches; p++ {
+				asyncRead := <-commChan
+				if asyncRead.Err != nil {
+					collErr = asyncRead.Err
+					// TODO: if error occurred, we might need to terminate the rest
+					// of the fetching operations.
+				} else {
+					if asyncRead.Data == nil {
+						collErr = &errwrap.WrappedError{
+							Context: fmt.Sprintf("fetch all %s->read async response", opCtx.AppContext),
+							Cause:   errors.New("nil response received"),
+						}
+						// TODO Terminate making any remaining calls to the server
+					} else {
+						rv = append(rv, asyncRead.Data...)
+					}
+				}
 			}
 		}
-	} else {
-		return nil, err
+	}
+
+	return rv, true, collErr
+}
+
+type CallFunc func(ctx context.Context) (*WrappedResponse, error)
+
+func performGenericObjectCRUD[T any](ctx context.Context, c *HttpTransport, opCtx ObjectFetchSpec[T], f MiddlewareFunc) (T, error) {
+	rv, _, err := performGenericObjectCRUDWithResponse(ctx, c, opCtx, f)
+	return rv, err
+}
+
+// BuildPipeline builds a call execution pipeline from the supplied chained middleware functions.
+func BuildPipeline(mf MiddlewareFunc, funcs []ChainedMiddlewareFunc) MiddlewareFunc {
+	rv := mf
+	for _, cmf := range funcs {
+		rv = wrapMiddleware(cmf, rv)
+	}
+
+	return rv
+}
+
+func wrapMiddleware(p1 ChainedMiddlewareFunc, mf MiddlewareFunc) MiddlewareFunc {
+	return func(ctx context.Context, transport *HttpTransport) (*WrappedResponse, error) {
+		return p1(ctx, transport, mf)
 	}
 }
 
-func (c *V3Transport) DeleteObject(ctx context.Context, opCtx FetchSpec) error {
-	if resp, err := c.Delete(ctx, opCtx.Resource); err == nil {
-		if resp.StatusCode == 200 {
-			return nil
-		} else {
-			return errors.New(fmt.Sprintf("delete %s->response code %d", opCtx.AppContext, resp.StatusCode))
-		}
-	} else {
-		return &errwrap.WrappedError{
-			Context: fmt.Sprintf("delete %s->connect", opCtx.AppContext),
-			Cause:   err,
-		}
-	}
+func executeCallPipeline(ctx context.Context, c *HttpTransport, execFunc MiddlewareFunc) (*WrappedResponse, error) {
+	cCtx := context.WithValue(ctx, LeafExecutor, execFunc)
+
+	return c.Pipeline(cCtx, c)
 }
 
-// CreateObject Create a new service.
-func (c *V3Transport) CreateObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
-	if resp, err := c.Post(ctx, opCtx.DestResource(), objIn); err == nil {
-		if dat, err := resp.Body(); err != nil {
-			return nil, &errwrap.WrappedError{
-				Context: fmt.Sprintf("create %s->read server response", opCtx.AppContext),
-				Cause:   err,
-			}
-		} else {
-			if resp.StatusCode == 200 {
-				// Ignore page size when retrieving an object
-				if rv, _, jsonErr := opCtx.ResponseParser(dat); jsonErr != nil {
-					return nil, &errwrap.WrappedError{
-						Context: fmt.Sprintf("create %s->unmarshal response (%s)", opCtx.AppContext, dat),
-						Cause:   jsonErr,
-					}
-				} else {
-					return rv, nil
-				}
-			} else {
-				return nil, v3ErrorFromResponse(fmt.Sprintf("create %s", opCtx.AppContext), resp.StatusCode, resp.Header, dat)
-			}
-		}
-	} else {
-		return nil, &errwrap.WrappedError{
-			Context: fmt.Sprintf("create %s->connect", opCtx.AppContext),
-			Cause:   err,
-		}
+func performGenericObjectCRUDWithResponse[T any](entryCtx context.Context, c *HttpTransport, opCtx ObjectFetchSpec[T], f MiddlewareFunc) (T, *WrappedResponse, error) {
+	ctx := entryCtx
+	if !opCtx.Return404AsNil {
+		ctx = context.WithValue(ctx, SendErrorOn404, true)
 	}
-}
 
-// UpdateObject Update existing object
-func (c *V3Transport) UpdateObject(ctx context.Context, objIn interface{}, opCtx FetchSpec) (interface{}, error) {
-	if resp, err := c.Put(ctx, opCtx.DestResource(), objIn); err == nil {
-		if dat, err := resp.Body(); err != nil {
-			return nil, &errwrap.WrappedError{
-				Context: fmt.Sprintf("update %s->read server response", opCtx.AppContext),
-				Cause:   err,
-			}
-
-		} else {
-			if resp.StatusCode == 200 {
-				if opCtx.ResponseParser == nil {
-					return nil, nil
-				}
-
-				// Ignoring page size when retrieving an object
-				if rv, _, jsonErr := opCtx.ResponseParser(dat); jsonErr != nil {
-					return nil, &errwrap.WrappedError{
-						Context: fmt.Sprintf("update %s->unmarshal response", opCtx.AppContext),
-						Cause:   err,
-					}
-				} else {
-					return &rv, nil
-				}
-			} else {
-				return nil, v3ErrorFromResponse(opCtx.AppContext, resp.StatusCode, resp.Header, dat)
-			}
-		}
+	if wr, err := executeCallPipeline(ctx, c, f); err != nil {
+		return opCtx.ValueFactory(), wr, err
 	} else {
-		return nil, &errwrap.WrappedError{
-			Context: fmt.Sprintf("update %s->connect", opCtx.AppContext),
-			Cause:   err,
+		rv := opCtx.ValueFactory()
+
+		if wr.StatusCode == 200 && !opCtx.IgnoreResponse {
+			if jsonErr := json.Unmarshal(wr.MustBody(), &rv); jsonErr != nil {
+				return rv, wr, &errwrap.WrappedError{
+					Context: fmt.Sprintf("%s %s->unmarshal response", wr.Request.Request.Method, opCtx.AppContext),
+					Cause:   jsonErr,
+				}
+			}
 		}
+
+		return rv, wr, err
 	}
 }
 
 // Count the number of objects that match the specified criteria
-func (c *V3Transport) Count(ctx context.Context, opCtx FetchSpec) (int64, error) {
-	countSpec := opCtx.WithQuery(url.Values{
+func (c *HttpTransport) Count(ctx context.Context, opCtx CommonFetchSpec) (int64, error) {
+	builder := opCtx.ToBuilder()
+	countSpec := builder.WithQuery(url.Values{
 		"limit": {"1"},
-	})
+	}).Build()
 
 	if cnt, err := c.Fetch(ctx, countSpec.DestResource()); err != nil {
 		return -1, &errwrap.WrappedError{
@@ -156,110 +245,26 @@ func (c *V3Transport) Count(ctx context.Context, opCtx FetchSpec) (int64, error)
 
 }
 
-// FetchAll Fetch all Mashery objects, including the handling for the pagination
-func (c *V3Transport) FetchAll(ctx context.Context, opCtx FetchSpec) ([]interface{}, error) {
-
-	firstPage, err := c.Fetch(ctx, opCtx.DestResource())
-	if err != nil {
-		return nil, &errwrap.WrappedError{
-			Context: fmt.Sprintf("fetch all %s->fetch first page", opCtx.AppContext),
-			Cause:   err,
-		}
+func v3BasicError(wr *WrappedResponse) error {
+	// Did we receive a generic error?
+	var rv masherytypes.V3GenericErrorResponse
+	if err := json.Unmarshal(wr.MustBody(), &rv); err == nil && rv.HasData() {
+		return &rv
 	}
 
-	if firstPage.StatusCode == 200 {
-		if dat, err := firstPage.Body(); err != nil {
-			return nil, &errwrap.WrappedError{
-				Context: fmt.Sprintf("fetch all %s->read first page server response", opCtx.AppContext),
-				Cause:   err,
-			}
-		} else {
-			fp, pageSize, err := opCtx.ResponseParser(dat)
-			if err != nil {
-				return nil, &errwrap.WrappedError{
-					Context: fmt.Sprintf("fetch all %s->unmarshal first page", opCtx.AppContext),
-					Cause:   err,
-				}
-			}
-
-			// Store the first page to be returned
-			rv := []interface{}{fp}
-			var collErr error
-
-			// Check if reading further pages is necessary
-			totalCountHdr := firstPage.Header.Get("X-Total-Count")
-			if len(totalCountHdr) > 0 {
-				totalCountI, _ := strconv.ParseInt(totalCountHdr, 10, 0)
-
-				totalCount := int(totalCountI)
-				if totalCount > pageSize {
-					allFetches := totalCount / pageSize
-
-					commChan := make(chan AsyncFetchResult)
-					defer close(commChan)
-
-					for p := 1; p <= allFetches; p++ {
-						offset := p
-						if opCtx.Pagination == PerItem {
-							offset *= pageSize
-						}
-
-						qs := url.Values{
-							"offset": {strconv.Itoa(offset)},
-						}
-
-						go c.AsyncFetch(ctx, opCtx.WithQuery(qs), commChan)
-					}
-
-					for p := 1; p <= allFetches; p++ {
-						asyncRead := <-commChan
-						if asyncRead.Err != nil {
-							collErr = asyncRead.Err
-							// TODO: if error occurred, we might need to terminate the rest
-							// of the fetching operations.
-						} else {
-							if pageDat, pageReadErr := asyncRead.Data.Body(); pageReadErr != nil {
-								collErr = &errwrap.WrappedError{
-									Context: fmt.Sprintf("fetch all %s->read async response", opCtx.AppContext),
-									Cause:   pageReadErr,
-								}
-							} else {
-								fp, _, jsonErr := opCtx.ResponseParser(pageDat)
-
-								if jsonErr != nil {
-									collErr = jsonErr
-								} else {
-									rv = append(rv, fp)
-								}
-							}
-						}
-					}
-				}
-			}
-
-			return rv, collErr
-		}
-	} else if firstPage.StatusCode == 404 && opCtx.Return404AsNil {
-		return nil, nil
+	// Did we receive at least one error?
+	var propRv masherytypes.V3PropertyErrorMessages
+	if err := json.Unmarshal(wr.MustBody(), &propRv); err == nil && len(propRv.Errors) > 0 {
+		return &propRv
 	}
 
-	return nil, &errwrap.WrappedError{
-		Context: fmt.Sprintf("fetchAll %s->fetch first page->response", opCtx.AppContext),
-		Cause:   errors.New(fmt.Sprintf("received status code %d", firstPage.StatusCode)),
-	}
-}
+	// The error is not really know; so the output would be printed in the output
 
-func (c *V3Transport) V3FilteringParams(params map[string]string, fields []string) url.Values {
-	qs := url.Values{}
-	if len(params) > 0 {
-		qs["filter"] = []string{V3FilterExpression(params)}
+	return &masherytypes.V3UndeterminedError{
+		Code:   wr.StatusCode,
+		Header: wr.Header,
+		Body:   wr.MustBody(),
 	}
-
-	if len(fields) > 0 {
-		qs["fields"] = []string{strings.Join(fields, ",")}
-	}
-
-	return qs
 }
 
 func v3ErrorFromResponse(context string, code int, headers http.Header, data []byte) error {
@@ -307,15 +312,4 @@ func extractTotalCount(resp *WrappedResponse) int64 {
 	}
 
 	return 0
-}
-
-// V3FilterExpression Converts query parameters to V3-required filter string.
-func V3FilterExpression(params map[string]string) string {
-	filterTokens := make([]string, len(params))
-	idx := 0
-	for k, v := range params {
-		filterTokens[idx] = fmt.Sprintf("%s:%s", k, v)
-		idx++
-	}
-	return strings.Join(filterTokens, ",")
 }

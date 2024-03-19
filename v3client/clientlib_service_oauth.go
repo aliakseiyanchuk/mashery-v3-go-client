@@ -1,66 +1,53 @@
 package v3client
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 )
 
-func GetServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
-	rv, err := c.GetObject(ctx, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", id.ServiceId),
-		Query:          nil,
-		AppContext:     "service security profile oauth",
-		ResponseParser: masherytypes.ParseMasheryServiceSecurityProfileOAuth,
-	})
+var serviceOAuthCRUDDecorator *GenericCRUDDecorator[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.MasheryOAuth]
+var serviceOAuthCRUD *GenericCRUD[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.MasheryOAuth]
 
-	if err != nil {
-		return nil, err
-	} else {
-		retServ, _ := rv.(masherytypes.MasheryOAuth)
-		return &retServ, nil
+func init() {
+	serviceOAuthCRUDDecorator = &GenericCRUDDecorator[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.MasheryOAuth]{
+		ValueSupplier:      func() masherytypes.MasheryOAuth { return masherytypes.MasheryOAuth{} },
+		ValueArraySupplier: func() []masherytypes.MasheryOAuth { return []masherytypes.MasheryOAuth{} },
+
+		AcceptParentIdent: func(t1 masherytypes.ServiceIdentifier, t2 *masherytypes.MasheryOAuth) {
+			t2.ParentService = t1
+		},
+		AcceptObjectIdent: func(t1 masherytypes.ServiceIdentifier, t2 *masherytypes.MasheryOAuth) {
+			t2.ParentService = t1
+		},
+		AcceptIdentFrom: func(t1 masherytypes.MasheryOAuth, t2 *masherytypes.MasheryOAuth) {
+			t2.ParentService = t1.ParentService
+		},
+
+		ResourceFor: func(ident masherytypes.ServiceIdentifier) (string, error) {
+			return fmt.Sprintf("/services/%s/securityProfile/oauth", ident.ServiceId), nil
+		},
+
+		ResourceForUpsert: func(t masherytypes.MasheryOAuth) (string, error) {
+			if len(t.ParentService.ServiceId) > 0 {
+				return fmt.Sprintf("/services/%s/securityProfile/oauth", t.ParentService.ServiceId), nil
+			}
+
+			return "", errors.New("insufficient identification")
+		},
+
+		ResourceForParent: func(ident masherytypes.ServiceIdentifier) (string, error) {
+			if len(ident.ServiceId) > 0 {
+				return fmt.Sprintf("/services/%s/securityProfile/oauth", ident.ServiceId), nil
+			}
+
+			return "", errors.New("insufficient identification")
+		},
+		Pagination: transport.NotRequired,
 	}
-}
-
-// CreateServiceOAuthSecurityProfile Create a new service.
-func CreateServiceOAuthSecurityProfile(ctx context.Context, oauth masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
-	rawResp, err := c.CreateObject(ctx, oauth, transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", oauth.ParentService.ServiceId),
-		AppContext:     "service security profile oauth",
-		ResponseParser: masherytypes.ParseMasheryServiceSecurityProfileOAuth,
-	})
-
-	if err == nil {
-		rv, _ := rawResp.(masherytypes.MasheryOAuth)
-		return &rv, nil
-	} else {
-		return nil, err
-	}
-}
-
-// UpdateServiceOAuthSecurityProfile Create a new service.
-func UpdateServiceOAuthSecurityProfile(ctx context.Context, oauth masherytypes.MasheryOAuth, c *transport.V3Transport) (*masherytypes.MasheryOAuth, error) {
-	opContext := transport.FetchSpec{
-		Resource:       fmt.Sprintf("/services/%s/securityProfile/oauth", oauth.ParentService.ServiceId),
-		AppContext:     "service security profile oauth",
-		ResponseParser: masherytypes.ParseMasheryServiceSecurityProfileOAuth,
-	}
-
-	if d, err := c.UpdateObject(ctx, oauth, opContext); err == nil {
-		rv, _ := d.(masherytypes.MasheryOAuth)
-		return &rv, nil
-	} else {
-		return nil, err
-	}
-}
-
-// DeleteServiceOAuthSecurityProfile Create a new service.
-func DeleteServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier, c *transport.V3Transport) error {
-	opContext := transport.FetchSpec{
-		Resource:   fmt.Sprintf("/services/%s/securityProfile/oauth", id.ServiceId),
-		AppContext: "service security profile oauth",
-	}
-
-	return c.DeleteObject(ctx, opContext)
+	serviceOAuthCRUD = NewCRUD[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.MasheryOAuth](
+		"service security profile",
+		serviceOAuthCRUDDecorator,
+	)
 }
