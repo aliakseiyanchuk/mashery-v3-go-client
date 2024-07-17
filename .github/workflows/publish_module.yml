@@ -35,4 +35,4 @@ jobs:
         run: go mod tidy
 
       - name: Push the package
-        run: GOPROXY=proxy.golang.org go list -m ${{ PACKAGE_NAME }}@${{ inputs.TAG }}
+        run: GOPROXY=proxy.golang.org go list -m ${{ env.PACKAGE_NAME }}@${{ inputs.TAG }}
