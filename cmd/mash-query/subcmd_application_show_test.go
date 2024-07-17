@@ -25,32 +25,34 @@ func TestApplicationShowTemplateWithoutEAVs(t *testing.T) {
 	fmt.Println(str)
 }
 
-func createBaselinePackageKey() masherytypes.PackageKey {
+func createBaselinePackageKey() masherytypes.ApplicationPackageKey {
 	apiKey := "abc"
 	var ceil int64 = 23
 
-	return masherytypes.PackageKey{
-		AddressableV3Object: masherytypes.AddressableV3Object{},
-		Apikey:              &apiKey,
-		Secret:              nil,
-		RateLimitCeiling:    &ceil,
-		RateLimitExempt:     false,
-		QpsLimitCeiling:     &ceil,
-		QpsLimitExempt:      false,
-		Status:              "active",
-		Limits: &[]masherytypes.Limit{
-			{Period: "day", Source: "plan", Ceiling: ceil},
-		},
-		Package: &masherytypes.Package{
-			AddressableV3Object: masherytypes.AddressableV3Object{
-				Id:   "Package-Id",
-				Name: "Package-Name",
+	return masherytypes.ApplicationPackageKey{
+		PackageKey: masherytypes.PackageKey{
+			AddressableV3Object: masherytypes.AddressableV3Object{},
+			Apikey:              &apiKey,
+			Secret:              nil,
+			RateLimitCeiling:    &ceil,
+			RateLimitExempt:     false,
+			QpsLimitCeiling:     &ceil,
+			QpsLimitExempt:      false,
+			Status:              "active",
+			Limits: &[]masherytypes.Limit{
+				{Period: "day", Source: "plan", Ceiling: ceil},
 			},
-		},
-		Plan: &masherytypes.Plan{
-			AddressableV3Object: masherytypes.AddressableV3Object{
-				Id:   "Plan-Id",
-				Name: "Plan-Name",
+			Package: &masherytypes.Package{
+				AddressableV3Object: masherytypes.AddressableV3Object{
+					Id:   "Package-Id",
+					Name: "Package-Name",
+				},
+			},
+			Plan: &masherytypes.Plan{
+				AddressableV3Object: masherytypes.AddressableV3Object{
+					Id:   "Plan-Id",
+					Name: "Plan-Name",
+				},
 			},
 		},
 	}
@@ -82,7 +84,7 @@ func createBaselineApplicationObject() ObjectWithExists[masherytypes.Application
 			ExternalId:        "http://abc",
 			Uri:               "http://cdr",
 			OAuthRedirectUri:  "http://def",
-			PackageKeys: &[]masherytypes.PackageKey{
+			PackageKeys: &[]masherytypes.ApplicationPackageKey{
 				createBaselinePackageKey(),
 			},
 			Eav: masherytypes.EAV{

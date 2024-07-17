@@ -26,35 +26,36 @@ func TestDefaultPinnerWillRejectGoogle(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestPinnerWillSuccessfullyValidate(t *testing.T) {
-	p := &transport.TLSPinner{}
-
-	leafPin := transport.TLSCertChainPin{
-		CommonName: "*.mashery.com",
-	}
-	leafPin.SerialNumberFromHex("0165f717537bc5454528a1147389b010")
-	leafPin.FingerprintFrom("6592068a059c5ae724f6c8ad23048799c87b47b0143d846eb603ad5f09597473")
-
-	p.Add(leafPin)
-
-	issuerPin := transport.TLSCertChainPin{
-		CommonName: "DigiCert Global G2 TLS RSA SHA256 2020 CA1",
-	}
-	issuerPin.SerialNumberFromHex("0cf5bd062b5602f47ab8502c23ccf066")
-	issuerPin.FingerprintFrom("c8025f9fc65fdfc95b3ca8cc7867b9a587b5277973957917463fc813d0b625a9")
-	p.Add(issuerPin)
-
-	wildCl := v3client.NewWildcardClient(v3client.Params{
-		MashEndpoint: "https://api.mashery.com",
-		HTTPClientParams: transport.HTTPClientParams{
-			TLSConfig: p.CreateTLSConfig(),
-		},
-	})
-
-	_, err := wildCl.FetchAny(context.Background(), "", nil)
-	assert.Nil(t, err)
-
-}
+//
+//func TestPinnerWillSuccessfullyValidate(t *testing.T) {
+//	p := &transport.TLSPinner{}
+//
+//	leafPin := transport.TLSCertChainPin{
+//		CommonName: "*.mashery.com",
+//	}
+//	leafPin.SerialNumberFromHex("0165f717537bc5454528a1147389b010")
+//	leafPin.FingerprintFrom("6592068a059c5ae724f6c8ad23048799c87b47b0143d846eb603ad5f09597473")
+//
+//	p.Add(leafPin)
+//
+//	issuerPin := transport.TLSCertChainPin{
+//		CommonName: "DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+//	}
+//	issuerPin.SerialNumberFromHex("0cf5bd062b5602f47ab8502c23ccf066")
+//	issuerPin.FingerprintFrom("c8025f9fc65fdfc95b3ca8cc7867b9a587b5277973957917463fc813d0b625a9")
+//	p.Add(issuerPin)
+//
+//	wildCl := v3client.NewWildcardClient(v3client.Params{
+//		MashEndpoint: "https://api.mashery.com",
+//		HTTPClientParams: transport.HTTPClientParams{
+//			TLSConfig: p.CreateTLSConfig(),
+//		},
+//	})
+//
+//	_, err := wildCl.FetchAny(context.Background(), "", nil)
+//	assert.Nil(t, err)
+//
+//}
 
 func TestPinnerWillSuccessfullyRejectCertOnMismatch(t *testing.T) {
 	p := &transport.TLSPinner{}

@@ -1,0 +1,38 @@
+name: Publish module
+run-name: Publish module
+
+on:
+  workflow_dispatch:
+    inputs:
+      TAG:
+        default: v0.9.0
+        required: true
+        description: Source tag to publish
+
+env:
+  GO_VER: "1.21.x"
+  PACKAGE_NAME: github.com/aliakseiyanchuk/mashery-v3-go-client
+
+jobs:
+  publish-module:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.TAG }}
+
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v5
+        with:
+          # Semantic version range syntax or exact version of Go
+          go-version: ${{ env.GO_VER }}
+
+      - name: Test with the Go CLI
+        run: go test ./...
+
+      - name: Tidy module
+        run: go mod tidy
+
+      - name: Push the package
+        run: GOPROXY=proxy.golang.org go list -m ${{ PACKAGE_NAME }}@${{ inputs.TAG }}
